@@ -1,0 +1,40 @@
+#!/bin/bash
+
+function powersave() {
+    for ((i=0;i<=7; i++))
+    do
+        echo "powersave" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+    done
+}
+
+function schedutil() {
+    for ((i=0;i<=7; i++))
+    do
+         echo "schedutil" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+    done
+}
+
+if [ ! -f /tmp/batman_stat ]; then
+   touch /tmp/batman_stat
+fi
+
+while [[ true ]]
+do
+    SCREEN_OLD=$(cat /tmp/batman_stat)
+    SCREEN=$(cat /sys/devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm6150l@5:qcom,wled@d800/backlight/backlight/brightness)
+    CHARGING=$(upower -d | grep state | awk '!seen[$0]++' |cut -c 26-)
+
+    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGING" == "discharging" ] && [ "$SCREEN" == "0" ]; then
+       powersave
+    elif [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGING" == "charging" ]; then
+       schedutil
+    else
+       schedutil
+    fi
+
+    if [ "$SCREEN_OLD" != "$SCREEN" ]; then
+       echo $SCREEN > /tmp/batman_stat
+    fi
+
+    sleep 1
+done
