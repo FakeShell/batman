@@ -1,0 +1,11 @@
+[Unit]
+Description=Start battery management
+Requires=phosh.service
+After=phosh.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/batman
+
+[Install]
+WantedBy=multi-user.target

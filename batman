@@ -1,4 +1,5 @@
 #!/bin/bash
+
 CORE_FIRST=(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 
@@ -28,7 +29,7 @@ do
 
     if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGING" == "discharging" ] && [ "$SCREEN" == "0" ]; then
        powersave
-    elif [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGING" == "charging" ]; then
+    elif [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGING" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
        schedutil
     else
        schedutil
