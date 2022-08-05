@@ -18,16 +18,16 @@ function schedutil() {
 }
 
 if [ ! -f /tmp/batman_stat ]; then
-   touch /tmp/batman_stat
+   echo "" > /tmp/batman_stat
 fi
 
 while [[ true ]]
 do
     SCREEN_OLD=$(cat /tmp/batman_stat)
-    SCREEN=$(cat /sys/devices/platform/soc/c440000.qcom,spmi/spmi-0/spmi0-05/c440000.qcom,spmi:qcom,pm6150l@5:qcom,wled@d800/backlight/backlight/brightness)
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/10000/ wlr-randr | grep Enabled | cut -c 12-)
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' |cut -c 26-)
 
-    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "0" ]; then
+    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
        powersave
     elif [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
        schedutil
