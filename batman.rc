@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+  start() {
+    ebegin "Starting batman..."
+    start-stop-daemon --background --start --exec /usr/bin/batman --make-pidfile --pidfile /run/batman.pid
+    eend $?
+ }
+
+  stop() {
+    ebegin "Stopping batman..."
+    start-stop-daemon --stop --exec /usr/bin/batman --pidfile /run/batman.pid
+    eend $?
+}
