@@ -17,9 +17,7 @@ function schedutil() {
     done
 }
 
-if [ ! -f /tmp/batman_stat ]; then
-   echo "" > /tmp/batman_stat
-fi
+echo "" > /tmp/batman_stat
 
 while [[ true ]]
 do
