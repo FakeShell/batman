@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CORE_FIRST=(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
+CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 
 function powersave() {
