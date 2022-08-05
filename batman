@@ -1,14 +1,16 @@
 #!/bin/bash
+CORE_FIRST=(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
+CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 
 function powersave() {
-    for ((i=0;i<=7; i++))
+    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
     do
         echo "powersave" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
     done
 }
 
 function schedutil() {
-    for ((i=0;i<=7; i++))
+    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
     do
          echo "schedutil" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
     done
