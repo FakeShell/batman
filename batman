@@ -38,7 +38,7 @@ while [[ true ]]
 do
     SCREEN_OLD=$(cat /tmp/batman_stat)
     SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UID/ wlr-randr | grep Enabled | cut -c 12-)
-    CHARGE=$(upower -d | grep state | awk '!seen[$0]++' |cut -c 26-)
+    CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
 
     if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
        powersave
