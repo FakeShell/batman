@@ -4,6 +4,19 @@ CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 UID=$(ls /run/user | head -1)
 DEFAULT_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+USERNUM=$(ls /run/user | wc -l)
+
+if [[ $(which wlr-randr) ]]; then
+   true
+else
+   echo "wlr-randr does not exist."
+   exit 0
+fi
+
+if [[ "$USERNUM" -gt "1"]]; then
+   echo "more than one user active."
+   exit 0
+fi
 
 function powersave() {
     for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
