@@ -1,0 +1,19 @@
+#!/bin/bash
+
+CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
+CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
+
+function governor() {
+   for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
+   do
+       cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq
+   done
+}
+
+while [[ true ]];
+do
+    clear
+    governor
+    sleep 1s
+    clear
+done
