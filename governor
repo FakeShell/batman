@@ -6,7 +6,7 @@ CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 function governor() {
    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
    do
-       cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq
+       cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq /sys/devices/system/cpu/cpu$i/online
    done
 }
 

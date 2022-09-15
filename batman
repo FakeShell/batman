@@ -2,7 +2,8 @@
 
 CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
-UID=$(ls /run/user | head -1)
+CORE_HALF=$(expr $(cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l) / 2 - 1)
+UIDS=$(ls /run/user | head -1)
 DEFAULT_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 USERNUM=$(ls /run/user | wc -l)
 
@@ -32,13 +33,28 @@ function default() {
     done
 }
 
+function offline() {
+    for ((i=$CORE_FIRST;i<=$CORE_HALF; i++))
+    do
+         echo "0" > /sys/devices/system/cpu/cpu$i/online
+    done
+}
+
+function online() {
+    for ((i=$CORE_FIRST;i<=$CORE_HALF; i++))
+    do
+         echo "1" > /sys/devices/system/cpu/cpu$i/online
+    done
+}
+
 echo "" > /tmp/batman_stat
 
 while [[ true ]]
 do
     SCREEN_OLD=$(cat /tmp/batman_stat)
-    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UID/ wlr-randr | grep Enabled | cut -c 12-)
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
+    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat) | rev | cut -c6- | rev)
 
     if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
        powersave
@@ -46,6 +62,12 @@ do
        default
     else
        default
+    fi
+
+    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "0" ] && [ "$CPU_USAGE" -le "40"]; then
+       offline
+    else
+       online
     fi
 
     if [ "$SCREEN_OLD" != "$SCREEN" ]; then
