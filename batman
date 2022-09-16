@@ -60,20 +60,18 @@ do
        powersave
     elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
        default
-    elif [ "$SCREEN_OLD" == "$SCREEN" ]; then
-       true
-    else
+    elif [ "$SCREEN" == "yes" ]; then
        default
     fi
 
     CUR_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 
-    if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "0" ] && [ "$CPU_USAGE" -le "40" ]; then
+    if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "40" ]; then
        offline
+    elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "40" ]; then
+       online
     elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
        offline
-    else
-       online
     fi
 
     if [ "$SCREEN_OLD" != "$SCREEN" ]; then

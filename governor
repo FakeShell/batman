@@ -2,11 +2,13 @@
 
 CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
+UIDS=$(ls /run/user | head -1)
 
 function governor() {
    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
    do
        cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq /sys/devices/system/cpu/cpu$i/online
+       XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-
    done
 }
 
@@ -14,7 +16,5 @@ while [[ true ]];
 do
     clear
     governor
-    awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat) | cut -d "." -f1
-    sleep 1s
-    clear
+    sleep 0.5
 done
