@@ -8,13 +8,14 @@ function governor() {
    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
    do
        cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq /sys/devices/system/cpu/cpu$i/online
-       XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-
    done
 }
 
 while [[ true ]];
 do
     clear
+    XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-
+    cat /sys/kernel/gpu/gpu_governor
     governor
     sleep 0.5
 done
