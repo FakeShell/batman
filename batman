@@ -56,15 +56,21 @@ do
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 
-    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
+    if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
        powersave
-    elif [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
+    elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
        default
+    elif [ "$SCREEN_OLD" == "$SCREEN" ]; then
+       true
     else
        default
     fi
 
-    if [ "$SCREEN_OLD" != "SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "0" ] && [ "$CPU_USAGE" -le "40"]; then
+    CUR_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+
+    if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "0" ] && [ "$CPU_USAGE" -le "40" ]; then
+       offline
+    elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
        offline
     else
        online
@@ -76,3 +82,4 @@ do
 
     sleep 1
 done
+
