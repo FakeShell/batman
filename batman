@@ -45,14 +45,14 @@ function default() {
 }
 
 function offline() {
-    for ((i=$CORE_FIRST;i<=$CORE_HALF; i++))
+    for ((i=$FIRSTPOLCORE;i<=$LASTPOLCORE; i++))
     do
          echo "0" > /sys/devices/system/cpu/cpu$i/online
     done
 }
 
 function online() {
-    for ((i=$CORE_FIRST;i<=$CORE_HALF; i++))
+    for ((i=$FIRSTPOLCORE;i<=$LASTPOLCORE; i++))
     do
          echo "1" > /sys/devices/system/cpu/cpu$i/online
     done
@@ -73,7 +73,7 @@ do
     SCREEN_OLD=$(cat /tmp/batman_stat)
     SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
-    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat) | cut -d "." -f1)
+    CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | cut -d "." -f1)
 
     if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
        powersave
