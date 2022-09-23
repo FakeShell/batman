@@ -124,6 +124,8 @@ function gpudefault() {
 # This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
 
+chown $UIDS:$UIDS /var/lib/batman -R
+
 while [[ true ]]
 do
     # Save screen status off the last run to a variable so that we can use it later in our checks. (will be filled after the first run)

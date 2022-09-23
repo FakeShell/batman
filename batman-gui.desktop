@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Batman
+GenericName=Battery Management
+Comment=A graphical user interface to tweak battery management
+Icon=/usr/share/icons/batman.png
+Exec=batman-gui
+Terminal=false
+Categories=System
+Keywords=system;process;task;battery
