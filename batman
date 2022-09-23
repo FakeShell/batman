@@ -28,16 +28,23 @@ if [ ! -d /var/lib/batman/ ]; then
    mkdir -p /var/lib/batman
 fi
 
+# Parse our config file.
+if [ -f /var/lib/batman/config ]; then
+   . /var/lib/batman/config
+else
+   echo "config file does not exist. using default values"
+fi
+
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [[ "$UPTIME" -le "1" ]]; then
    echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
    echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
 fi
 
-# if for some reason the service got restarted unexpectedly at a bad time use the correct values for >
+# if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   echo "bad governor. exiting"
-   exit 0
+   DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
+   DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
 fi
 
 # Make sure wlr-randr is installed on the system because it is used by this script.
@@ -58,8 +65,18 @@ fi
 # If there was only one set a variable to not offline any cpu cores.
 if [[ "$AVPOL" -eq "1" ]]; then
    OFFLINE=false
-else
+elif [ -z "$OFFLINE" ]; then
    OFFLINE=true
+fi
+
+# Make sure that our POWERSAVE variable is set from the config file if not use default value.
+if [ -z "$POWERSAVE" ]; then
+   POWERSAVE=true
+fi
+
+# Make sure that our MAX_OFFLINE_USAGE variable is set from the config file if not use default value.
+if [ -z "$MAX_OFFLINE_USAGE" ]; then
+   MAX_OFFLINE_USAGE=40
 fi
 
 # Function that sets the cpu governor to powersave
@@ -115,21 +132,25 @@ do
     SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
     # Check if device is plugged into a power source.
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
-    # Get cpu usage via top.
+    # Get cpu usage from /proc/stat
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 
-    # if screen is off and device is not charging then device will be set into powersave
-    if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
-       powersave
-       gpusave
-    # if device is charging or fully charged and still plugged into the wall then set everything back to default.
-    elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
-       default
-       gpudefault
-    # if screen is on (user using the device) set everything back to default.
-    elif [ "$SCREEN" == "yes" ]; then
-       default
-       gpudefault
+    # Check if powersave should be enabled.
+    if [ "$POWERSAVE" == "true" ]; then
+
+       # if screen is off and device is not charging then device will be set into powersave
+       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
+          powersave
+          gpusave
+       # if device is charging or fully charged and still plugged into the wall then set everything back to default.
+       elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
+          default
+          gpudefault
+       # if screen is on (user using the device) set everything back to default.
+       elif [ "$SCREEN" == "yes" ]; then
+          default
+          gpudefault
+       fi
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
@@ -139,10 +160,10 @@ do
     if [ "$OFFLINE" == "true" ]; then
 
        # if device is not plugged into a power source and screen is off and cpu usage is less than 40% (as an example user is not listening to some youtube video) then set cpu to offline.
-       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "40" ]; then
+       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_OFFLINE_USAGE" ]; then
           offline
        # if screen or on or current governor is the same as default governor or cpu usage is higher than 40% set cpu cores to online. (all cases to not set cpu cores to offline accidentally)
-       elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "40" ]; then
+       elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "$MAX_OFFLINE_USAGE" ]; then
           online
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
