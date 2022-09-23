@@ -28,11 +28,13 @@ if [ ! -d /var/lib/batman/ ]; then
    mkdir -p /var/lib/batman
 fi
 
-if [[ "$UPTIME" -le "5" ]]; then
+# Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
+if [[ "$UPTIME" -le "1" ]]; then
    echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
    echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
 fi
 
+# if for some reason the service got restarted unexpectedly at a bad time use the correct values for >
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
    echo "bad governor. exiting"
    exit 0
@@ -114,7 +116,7 @@ do
     # Check if device is plugged into a power source.
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
     # Get cpu usage via top.
-    CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | cut -d "." -f1)
+    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 
     # if screen is off and device is not charging then device will be set into powersave
     if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
@@ -142,12 +144,13 @@ do
        # if screen or on or current governor is the same as default governor or cpu usage is higher than 40% set cpu cores to online. (all cases to not set cpu cores to offline accidentally)
        elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "40" ]; then
           online
-       # If device is powersave (which means device is sleeping) then set cpu cores to offline.
+       # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
           offline
        fi
     fi
 
+    # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
     if [ "$SCREEN_OLD" != "$SCREEN" ]; then
        echo $SCREEN > /var/lib/batman/screen
     fi
