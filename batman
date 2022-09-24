@@ -1,5 +1,34 @@
 #!/bin/bash
 
+# Basic help function
+help()
+{
+  cat <<EOF
+batman, a battery management program originally intended for droidian
+
+Usage: batman
+EOF
+  exit 0
+}
+
+
+# Bumped at every commit
+version()
+{
+   echo "0.29"
+   exit 0
+}
+
+# First check if user is asking for help or version is not move on.
+case "$1" in
+  -h|-\?|--help)
+    help
+    ;;
+  -v|--version)
+    version
+    ;;
+esac
+
 # CORE_FIRST will read cpuinfo and get the first cpu core number at boot. (we know its 0 but just in case to be 100% safe)
 # CORE_LAST will read cpuinfo and get the last cpu core number at boot.
 # UIDS will list users from /run/user to later use with wlr-randr.

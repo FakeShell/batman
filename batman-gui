@@ -14,33 +14,84 @@ function getvar() {
     SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
     CURRENT_CONFIG=$(cat /var/lib/batman/config)
+    BATMANSTAT=$(systemctl is-active batman)
+    PID=$(systemctl show --property MainPID --value batman)
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 }
 
 function showvar() {
+    echo "Batman is $BATMANSTAT"
+    echo
+    echo "Batman pid: $PID"
+    echo
     echo "First CPU core: " $CORE_FIRST
+    echo
     echo "Last CPU core: " $CORE_LAST
+    echo
     echo "UID: " $UIDS
+    echo
     echo "Default CPU governor: " $DEFAULT_GOVERNOR
+    echo
     echo "Number of available CPU policy groups: " $AVPOL
+    echo
     echo "First CPU policy group: " $FIRSTPOL
+    echo
     echo "First core of first CPU policy group: " $FIRSTPOLCORE
+    echo
     echo "Last core of first CPU policy group: " $LASTPOLCORE
+    echo
     echo "Default GPU governor: " $DEFAULT_GPU_GOVERNOR
+    echo
     echo "Current uptime in minutes: " $UPTIME
+    echo
     echo "Current screen status: " $SCREEN
+    echo
     echo "Current charging status: " $CHARGE
-    echo "Available configs: "
-    echo $CURRENT_CONFIG
+    echo
     echo "Current CPU usage: " $CPU_USAGE
 }
 
+function run() {
 (
-for (( ; ; ))
-do
-    getvar
-    echo -e '\f'
-    showvar
-    sleep 2s
-done
-) | yad --title batman --listen --auto-kill --monitor --text-info --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' --button="Offlining off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' --button="Offlining on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config' --button="restart batman":'pkexec systemctl restart batman'
+   for (( ; ; ))
+   do
+       getvar
+       echo -e '\f'
+       showvar
+       sleep 2s
+   done
+   ) | yad --title batman --listen --auto-close --auto-kill --monitor --text-info \
+   --button="Configurator":"batman-gui config" \
+   --button="Restart":'pkexec systemctl restart batman' \
+   --button="Stop":'pkexec systemctl stop batman' \
+   --button="Start":'pkexec systemctl start batman'
+}
+
+function config() {
+(
+   for (( ; ; ))
+   do
+       echo -e '\f'
+       CURRENT_CONFIG=$(cat /var/lib/batman/config)
+       echo "Current config: "
+       echo $CURRENT_CONFIG
+       sleep 2s
+   done
+   ) | yad --title "batman configurator" --listen --auto-close --auto-kill --monitor --text-info \
+   --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
+   --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
+   --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
+   --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config'
+}
+
+function usage() {
+   echo "Usage: batman-gui run to run the main window, batman config to launch the config window"
+}
+
+"$@"
+
+if [ "$#" -eq 0 ]
+then
+    usage
+    exit 0
+fi
