@@ -4,7 +4,7 @@
 help()
 {
   cat <<EOF
-batman, a battery management program originally intended for droidian
+batman, a battery management program originally intended for Droidian
 
 Usage: batman
 EOF
