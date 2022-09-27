@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# A function to get all the variables to show on top of our window.
 function getvar() {
     CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
     CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
@@ -19,18 +20,21 @@ function getvar() {
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 }
 
+# A function to show the values gathered by getvar.
 function showvar() {
     echo "Batman is $BATMANSTAT"
     echo
     echo "Batman pid: $PID"
     echo
+    echo "UID: " $UIDS
+    echo
     echo "First CPU core: " $CORE_FIRST
     echo
     echo "Last CPU core: " $CORE_LAST
     echo
-    echo "UID: " $UIDS
-    echo
     echo "Default CPU governor: " $DEFAULT_GOVERNOR
+    echo
+    echo "Default GPU governor: " $DEFAULT_GPU_GOVERNOR
     echo
     echo "Number of available CPU policy groups: " $AVPOL
     echo
@@ -39,8 +43,6 @@ function showvar() {
     echo "First core of first CPU policy group: " $FIRSTPOLCORE
     echo
     echo "Last core of first CPU policy group: " $LASTPOLCORE
-    echo
-    echo "Default GPU governor: " $DEFAULT_GPU_GOVERNOR
     echo
     echo "Current uptime in minutes: " $UPTIME
     echo
@@ -51,6 +53,7 @@ function showvar() {
     echo "Current CPU usage: " $CPU_USAGE
 }
 
+# Funtion that runs the main window.
 function run() {
 (
    for (( ; ; ))
@@ -60,24 +63,44 @@ function run() {
        showvar
        sleep 2s
    done
-   ) | yad --title batman --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title batman --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
    --button="Configurator":"batman-gui config" \
    --button="Restart":'pkexec systemctl restart batman' \
    --button="Stop":'pkexec systemctl stop batman' \
    --button="Start":'pkexec systemctl start batman'
 }
 
+# Function that runs configurator window.
 function config() {
 (
    for (( ; ; ))
    do
-       echo -e '\f'
        CURRENT_CONFIG=$(cat /var/lib/batman/config)
+       echo -e '\f'
+       echo "Powersave allows CPU and GPU go into powersaving."
+       echo "This only happens when  device is idling."
+       echo "This saves a lot of battery."
+       echo
+       echo "Offlining is the process of CPU cores shutting down."
+       echo "This only happens when device is idling."
+       echo "This also saves a lot of battery."
+       echo
+       echo "MAX_CPU_USAGE indicates the max CPU usage for device"
+       echo "that offline function comapres against."
+       echo "As an example if it is set to 40% batman will make"
+       echo "CPU cores offline if CPU usage is lower than 40%."
+       echo "This value can be tweaked as needed at different times."
+       echo "For example if user wants a YouTube video playing"
+       echo "in the background when device is sleeping,"
+       echo "increasing this value will make the video not stutter."
+       echo
+       echo "Make sure to restart the service if any changes have been done."
+       echo
        echo "Current config: "
        echo $CURRENT_CONFIG
        sleep 2s
    done
-   ) | yad --title "batman configurator" --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
    --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
@@ -88,8 +111,10 @@ function usage() {
    echo "Usage: batman-gui run to run the main window, batman config to launch the config window"
 }
 
+# Let user pass arguments
 "$@"
 
+# If no argument was passed show help
 if [ "$#" -eq 0 ]
 then
     usage
