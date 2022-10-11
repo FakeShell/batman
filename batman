@@ -15,7 +15,7 @@ EOF
 # Bumped at every commit
 version()
 {
-   echo "0.29"
+   echo "0.30"
    exit 0
 }
 
@@ -108,6 +108,11 @@ if [ -z "$MAX_OFFLINE_USAGE" ]; then
    MAX_OFFLINE_USAGE=40
 fi
 
+# Make sure that our CHARGESAVE variable is set from the config file if not use default value.
+if [ -z "$CHARGEGSAVE" ]; then
+   CHARGESAVE=false
+fi
+
 # Function that sets the cpu governor to powersave
 function powersave() {
     for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
@@ -165,6 +170,11 @@ do
     CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
     # Get cpu usage from /proc/stat
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
+
+    # if variable CHANGESAVE is set to true then set variable CHARGE to discharing to force governors to change to powersave even when device is charging.
+    if [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ] && [ "$CHARGESAVE" == "true" ]; then
+       CHARGE="discharging"
+    fi
 
     # Check if powersave should be enabled.
     if [ "$POWERSAVE" == "true" ]; then
