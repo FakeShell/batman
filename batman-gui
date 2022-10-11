@@ -22,35 +22,35 @@ function getvar() {
 
 # A function to show the values gathered by getvar.
 function showvar() {
-    echo "Batman is $BATMANSTAT"
+    echo "Batman is" $BATMANSTAT
     echo
-    echo "Batman pid: $PID"
+    echo "Batman pid:" $PID
     echo
-    echo "UID: " $UIDS
+    echo "UID:" $UIDS
     echo
-    echo "First CPU core: " $CORE_FIRST
+    echo "First CPU core:" $CORE_FIRST
     echo
-    echo "Last CPU core: " $CORE_LAST
+    echo "Last CPU core:" $CORE_LAST
     echo
-    echo "Default CPU governor: " $DEFAULT_GOVERNOR
+    echo "Default CPU governor:" $DEFAULT_GOVERNOR
     echo
-    echo "Default GPU governor: " $DEFAULT_GPU_GOVERNOR
+    echo "Default GPU governor:" $DEFAULT_GPU_GOVERNOR
     echo
-    echo "Number of available CPU policy groups: " $AVPOL
+    echo "available CPU policy groups:" $AVPOL
     echo
-    echo "First CPU policy group: " $FIRSTPOL
+    echo "First CPU policy group:" $FIRSTPOL
     echo
-    echo "First core of first CPU policy group: " $FIRSTPOLCORE
+    echo "First core $FIRSTPOL:" $FIRSTPOLCORE
     echo
-    echo "Last core of first CPU policy group: " $LASTPOLCORE
+    echo "Last core of $FIRSTPOL:" $LASTPOLCORE
     echo
-    echo "Current uptime in minutes: " $UPTIME
+    echo "Current uptime in minutes:" $UPTIME
     echo
-    echo "Current screen status: " $SCREEN
+    echo "Current screen status:" $SCREEN
     echo
-    echo "Current charging status: " $CHARGE
+    echo "Current charging status:" $CHARGE
     echo
-    echo "Current CPU usage: " $CPU_USAGE
+    echo "Current CPU usage:" $CPU_USAGE
 }
 
 # Funtion that runs the main window.
@@ -78,21 +78,16 @@ function config() {
        CURRENT_CONFIG=$(cat /var/lib/batman/config)
        echo -e '\f'
        echo "Powersave allows CPU and GPU go into powersaving."
-       echo "This only happens when  device is idling."
-       echo "This saves a lot of battery."
        echo
        echo "Offlining is the process of CPU cores shutting down."
-       echo "This only happens when device is idling."
-       echo "This also saves a lot of battery."
+       echo "These two only activate when device is idling."
+       echo "They also save a lot of battery."
        echo
        echo "MAX_CPU_USAGE indicates the max CPU usage for device"
-       echo "that offline function comapres against."
-       echo "As an example if it is set to 40% batman will make"
-       echo "CPU cores offline if CPU usage is lower than 40%."
-       echo "This value can be tweaked as needed at different times."
-       echo "For example if user wants a YouTube video playing"
-       echo "in the background when device is sleeping,"
-       echo "increasing this value will make the video not stutter."
+       echo "that offline function compares against."
+       echo
+       echo "ChargeSave indicates whether or not put device to"
+       echo "powersave when its charging up"
        echo
        echo "Make sure to restart the service if any changes have been done."
        echo
@@ -104,11 +99,13 @@ function config() {
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
    --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
-   --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config'
+   --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config' \
+   --button="ChargeSave off" 'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config' \
+   --button="ChargeSave on" 'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config'
 }
 
 function usage() {
-   echo "Usage: batman-gui run to run the main window, batman config to launch the config window"
+   echo "Usage: 'batman-gui run' to launch the main window and 'batman config' to launch the config window."
 }
 
 # Let user pass arguments
