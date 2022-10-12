@@ -4,6 +4,6 @@ batman-gui is based on yad so requires yad to be installed. if the deb package i
 Currently only tested with wlroots DEs or WMs. As an example Phosh or SXMO. but right now only phosh has been tested tho but i'm pretty sure plasma mobile won't work and i'm not a big fan of trying to make it work either it was not stable anyways. (atleast in my experience)
 It should be noted at this script has been tested on both pmOS (a mainline OS), Droidian. (a halium OS) and Manjaro ARM (another halium OS).
 upower should be in working condition and should return the correct battery and charging status. (which is the reason there is a special branch for Galaxy A5 because battery status reporting is broken, missing drivers in kernel.)
-It is currently only available as a deb package and PKGBUILD PRs are welcome for APKBUILD (Alpine Linux).
+It is currently available as a deb package, PKGBUILD and APKBUILD.
 Not tested on Ubuntu Touch that has deep sleep and suspends things by itself.
 
