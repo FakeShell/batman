@@ -1,5 +1,5 @@
 ## batman
-This program works on all devices but requires wlr-randr to be installed.
+This program should work on all devices. needs wlr-randr and yad to be installed.
 
 batman-gui is based on yad so requires yad to be installed. if the deb package is used then there is no need to install anything manuall. it will install the repo that gets batman updates and it will install all the dependencies itself.
 
