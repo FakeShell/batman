@@ -1,7 +1,7 @@
 # Contributor: Bardia Moshiri <fakeshell@bardia.tech>
 # Maintainer: Bardia Moshiri <fakeshell@bardia.tech>
 pkgname=batman
-pkgver=0.30
+pkgver=0.32
 pkgrel=0
 pkgdesc="A battery management service and program for linux phones"
 url="https://github.com/FakeShell/batman"
