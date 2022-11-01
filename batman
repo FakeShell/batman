@@ -38,18 +38,16 @@ esac
 # FIRSTPOL will get the first policy group. (this group stores LITTLE cores)
 # FIRSTPOLCORE will get the first cpu core of policy group one.
 # LASTPOLCORE will get the last cpu core of policy group one.
-# DEFAULT_GPU_GOVERNOR will get the default gpu governor.
 # UPTIME is just uptime of the system in minutes.
 CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
 CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
 UIDS=$(ls /run/user | head -1)
 DEFAULT_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 AVUSER=$(ls /run/user | wc -l)
-AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy |wc -l)
-FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy |head -1)
+AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | wc -l)
+FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
 FIRSTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
 LASTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | rev | cut -c1 -)
-DEFAULT_GPU_GOVERNOR=$(cat /sys/kernel/gpu/gpu_governor)
 UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
 # Make sure the required directory exists.
@@ -64,16 +62,43 @@ else
    echo "config file does not exist. using default values"
 fi
 
+# Check if there are any policies available.
+if [[ "$AVPOL" == "0" ]]; then
+   echo "no cpu policies available. exiting"
+fi
+
+# Check if powersave governor is available.
+if cat /sys/devices/system/cpu/cpufreq/$FIRSTPOLCORE/scaling_available_governors | grep powersave &> /dev/null; then
+   true
+else
+   echo "powersave is not a governor on this system. exiting"
+fi
+
+# DEFAULT_GPU_GOVERNOR will get the default gpu governor.
+# Check if gpu governor directory exists.
+if [ -d /sys/kernel/gpu/gpu_governor ]; then
+   GPUSAVE=true
+   DEFAULT_GPU_GOVERNOR=$(cat /sys/kernel/gpu/gpu_governor)
+else
+   GPUSAVE=false
+fi
+
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [[ "$UPTIME" -le "1" ]]; then
    echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
-   echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
+
+   if [ "$GPUSAVE" == "true" ]; then
+      echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
+   fi
+
 fi
 
 # if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
    DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
-   DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
+   if [ "$GPUSAVE" == "true" ]; then
+      DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
+   fi
 fi
 
 # Make sure wlr-randr is installed on the system.
@@ -130,7 +155,8 @@ if [ -z "$MAX_OFFLINE_USAGE" ]; then
 fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
-if [ -z "$CHARGEGSAVE" ]; then
+if [ -z "$CHARGEGSAVE" ]; the	# Check if gpu governor file exists if so add gpusave function to change the governor
+n
    CHARGESAVE=false
 fi
 
@@ -166,15 +192,37 @@ function online() {
     done
 }
 
-# Basic function that sets gpu to powersave mode.
-function gpusave() {
-    echo powersave > /sys/kernel/gpu/gpu_governor
-}
-
+# Check if gpu governor file exists if so add gpusave function to change the governor.
 # Basic function that sets gpu back to its default governor.
-function gpudefault() {
-    echo $DEFAULT_GPU_GOVERNOR > /sys/kernel/gpu/gpu_governor
-}
+if [ "$GPUSAVE" == "true" ]; then
+
+   function gpusave() {
+       echo $DEFAULT_GPU_GOVERNOR > /sys/kernel/gpu/gpu_governor
+   }
+
+else
+
+   function gpusave() {
+       true
+   }
+
+fi
+
+# Check if gpu governor file exists if so add gpudefault function to change the governor.
+# Basic function that sets gpu back to its default governor.
+if [ "$GPUSAVE" == "true" ]; then
+
+   function gpudefault() {
+       echo $DEFAULT_GPU_GOVERNOR > /sys/kernel/gpu/gpu_governor
+   }
+
+else
+
+   function gpudefault() {
+       true
+   }
+
+fi
 
 # This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
