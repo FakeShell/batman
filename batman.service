@@ -1,11 +1,8 @@
 [Unit]
-Description=Start battery management
-Requires=phosh.service
-After=phosh.service
+Description=battery management for Linux phones
+Requires=upower.service
+After=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/batman
-
-[Install]
-WantedBy=multi-user.target

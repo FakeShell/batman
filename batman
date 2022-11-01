@@ -11,11 +11,10 @@ EOF
   exit 0
 }
 
-
 # Bumped at every commit
 version()
 {
-   echo "0.33"
+   echo "0.34"
    exit 0
 }
 
@@ -65,40 +64,15 @@ fi
 # Check if there are any policies available.
 if [[ "$AVPOL" == "0" ]]; then
    echo "no cpu policies available. exiting"
+   exit 0
 fi
 
 # Check if powersave governor is available.
-if cat /sys/devices/system/cpu/cpufreq/$FIRSTPOLCORE/scaling_available_governors | grep powersave &> /dev/null; then
+if cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors | grep powersave &> /dev/null; then
    true
 else
    echo "powersave is not a governor on this system. exiting"
-fi
-
-# DEFAULT_GPU_GOVERNOR will get the default gpu governor.
-# Check if gpu governor directory exists.
-if [ -d /sys/kernel/gpu/gpu_governor ]; then
-   GPUSAVE=true
-   DEFAULT_GPU_GOVERNOR=$(cat /sys/kernel/gpu/gpu_governor)
-else
-   GPUSAVE=false
-fi
-
-# Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
-if [[ "$UPTIME" -le "1" ]]; then
-   echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
-
-   if [ "$GPUSAVE" == "true" ]; then
-      echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
-   fi
-
-fi
-
-# if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
-if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
-   if [ "$GPUSAVE" == "true" ]; then
-      DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
-   fi
+   exit 0
 fi
 
 # Make sure wlr-randr is installed on the system.
@@ -120,7 +94,7 @@ fi
 # Check if system is using KDE Plasma.
 if [[ $(which kscreen-doctor) ]]; then
 
-   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
+if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
       KDE=true
    else
       KDE=false
@@ -130,18 +104,27 @@ else
    KDE=false
 fi
 
+# if none of the supported methods are supported then exit.
+if [ "$KDE" == "false" ] && [ "$WLROOTS" == "false" ]; then
+   echo "Display server not supported. exiting"
+   exit 0
+fi
+
 # Use our AVUSER variable to make sure only one active user session exists.
 if [[ "$AVUSER" -gt "1" ]]; then
    echo "more than one user active."
    exit 0
 fi
 
+# Make sure that our OFFLINE variable is set from the config file if not use default value.
+if [ -z "$OFFLINE" ]; then
+   OFFLINE=true
+fi
+
 # Use our AVPOL variable to make sure our device has more than one policy groups.
-# If there was only one set a variable to not offline any cpu cores.
+# If there was only one set the variable to not offline any cpu cores.
 if [[ "$AVPOL" -eq "1" ]]; then
    OFFLINE=false
-elif [ -z "$OFFLINE" ]; then
-   OFFLINE=true
 fi
 
 # Make sure that our POWERSAVE variable is set from the config file if not use default value.
@@ -155,9 +138,41 @@ if [ -z "$MAX_OFFLINE_USAGE" ]; then
 fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
-if [ -z "$CHARGEGSAVE" ]; the	# Check if gpu governor file exists if so add gpusave function to change the governor
-n
+if [ -z "$CHARGESAVE" ]; then
    CHARGESAVE=false
+fi
+
+# Make sure that our GPUSAVE variable is set from the config file if not use default value.
+if [ -z "$GPUSAVE" ]; then
+   GPUSAVE=true
+fi
+
+# DEFAULT_GPU_GOVERNOR will get the default gpu governor.
+# Check if gpu governor directory exists.
+if [ ! -d /sys/kernel/gpu/gpu_governor ]; then
+   GPUSAVE=false
+elif [ "$GPUSAVE" == "true" ]; then
+   DEFAULT_GPU_GOVERNOR=$(cat /sys/kernel/gpu/gpu_governor)
+fi
+
+# Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
+if [[ "$UPTIME" -le "1" ]]; then
+   echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
+
+   if [ "$GPUSAVE" == "true" ]; then
+      echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
+   fi
+
+fi
+
+# if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
+if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
+   DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
+
+   if [ "$GPUSAVE" == "true" ]; then
+      DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
+   fi
+
 fi
 
 # Function that sets the cpu governor to powersave
@@ -227,6 +242,7 @@ fi
 # This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
 
+# Give ownership of /var/lib/batman to the user id available in /run/user.
 chown $UIDS:$UIDS /var/lib/batman -R
 
 while [[ true ]]
@@ -251,14 +267,15 @@ do
           SCREEN="no"
        fi
 
-    else
-       echo "Display environment is not supported. exiting"
-       exit 0
     fi
 
-    # if variable CHANGESAVE is set to true then set variable CHARGE to discharing to force governors to change to powersave even when device is charging.
-    if [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ] && [ "$CHARGESAVE" == "true" ]; then
-       CHARGE="discharging"
+    # if variable CHARGESAVE is set to true then set variable CHARGE to discharging to force governors to change to powersave even when device is charging.
+    if [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
+
+       if [ "$CHARGESAVE" == "true" ]; then
+          CHARGE="discharging"
+       fi
+
     fi
 
     # Check if powersave should be enabled.
@@ -277,6 +294,7 @@ do
           default
           gpudefault
        fi
+
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
@@ -295,6 +313,7 @@ do
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
           offline
        fi
+
     fi
 
     # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
