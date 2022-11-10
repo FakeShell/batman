@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# A function to get all the variables to show on top of our window.
+# A function to get all the variables to show on main window.
 function getvar() {
     CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
     CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
@@ -20,12 +20,8 @@ function getvar() {
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 }
 
-# A function to show the values gathered by getvar.
-function showvar() {
-    echo "Batman is" $BATMANSTAT
-    echo
-    echo "Batman pid:" $PID
-    echo
+# Function that shows values that do not change after the system is booted.
+function permvar() {
     echo "UID:" $UIDS
     echo
     echo "First CPU core:" $CORE_FIRST
@@ -43,6 +39,14 @@ function showvar() {
     echo "First core $FIRSTPOL:" $FIRSTPOLCORE
     echo
     echo "Last core of $FIRSTPOL:" $LASTPOLCORE
+}
+
+# Function that shows values that do change often and need to get updated.
+function tempvar() {
+    echo
+    echo "Batman is" $BATMANSTAT
+    echo
+    echo "Batman pid:" $PID
     echo
     echo "Current uptime in minutes:" $UPTIME
     echo
@@ -58,23 +62,24 @@ function showvar() {
 }
 
 # Funtion that runs the main window.
-function run() {
+function main() {
 (
-   for (( ; ; ))
+   while true;
    do
        getvar
        echo -e '\f'
-       showvar
-       sleep 2s
+       permvar
+       tempvar
+       sleep 1s
    done
-   ) | yad --title batman --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
+) | yad --title batman --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
    --button="Config page 1":"batman-gui config" \
    --button="Config page 2":"batman-gui config2" \
    --button="Restart":'pkexec systemctl restart batman' \
    --button="Stop":'pkexec systemctl stop batman'
 }
 
-# Function that runs configurator window.
+# Function for first configuration page.
 function config() {
 (
    while true;
@@ -109,16 +114,17 @@ function config() {
        done
 
    done
-   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
    --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
    --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config'
 }
 
+# Function for second configuration page.
 function config2() {
 (
-   for (( ; ; ))
+   while true;
    do
        CONFIG=$(cat /var/lib/batman/config)
        echo -e '\f'
@@ -136,15 +142,17 @@ function config2() {
 
        while true;
        do
+
            NEWCONFIG=$(cat /var/lib/batman/config)
            if [ "$CONFIG" == "$NEWCONFIG" ]; then
                sleep 0.5
            else
                break
            fi
+
        done
    done
-   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
    --button="GPUsave off":'sed -i "s/GPUSAVE.*/GPUSAVE=false/g" /var/lib/batman/config' \
    --button="GPUsave on":'sed -i "s/GPUSAVE.*/GPUSAVE=true/g" /var/lib/batman/config' \
    --button="Chargesave off":'sed -i "s/CHARGESAVE.*/CHARGESAVE=false/g" /var/lib/batman/config' \
@@ -152,7 +160,7 @@ function config2() {
 }
 
 function usage() {
-   echo "Usage: 'batman-gui run' to launch the main window and 'batman config' to launch the first config window and 'batman config2' to launch the second config window."
+   echo "Usage: 'batman-gui main' to launch the main window and 'batman config' to launch the first config window and 'batman config2' to launch the second config window."
 }
 
 # Let user pass arguments
