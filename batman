@@ -132,9 +132,9 @@ if [ -z "$POWERSAVE" ]; then
    POWERSAVE=true
 fi
 
-# Make sure that our MAX_OFFLINE_USAGE variable is set from the config file if not use default value.
-if [ -z "$MAX_OFFLINE_USAGE" ]; then
-   MAX_OFFLINE_USAGE=40
+# Make sure that our MAX_CPU_USAGE variable is set from the config file if not use default value.
+if [ -z "$MAX_CPU_USAGE" ]; then
+   MAX_CPU_USAGE=60
 fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
@@ -304,10 +304,10 @@ do
     if [ "$OFFLINE" == "true" ]; then
 
        # if device is not plugged into a power source and screen is off and cpu usage is less than 40% (as an example user is not listening to some youtube video) then set cpu to offline.
-       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_OFFLINE_USAGE" ]; then
+       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_CPU_USAGE" ]; then
           offline
        # if screen or on or current governor is the same as default governor or cpu usage is higher than 40% set cpu cores to online. (all cases to not set cpu cores to offline accidentally)
-       elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "$MAX_OFFLINE_USAGE" ]; then
+       elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "$MAX_CPU_USAGE" ]; then
           online
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then

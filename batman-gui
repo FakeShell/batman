@@ -51,6 +51,10 @@ function showvar() {
     echo "Current charging status:" $CHARGE
     echo
     echo "Current CPU usage:" $CPU_USAGE
+    echo
+    echo "Current config: "
+    echo
+    while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
 }
 
 # Funtion that runs the main window.
@@ -64,20 +68,20 @@ function run() {
        sleep 2s
    done
    ) | yad --title batman --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
-   --button="Configurator":"batman-gui config" \
+   --button="Config page 1":"batman-gui config" \
+   --button="Config page 2":"batman-gui config2" \
    --button="Restart":'pkexec systemctl restart batman' \
-   --button="Stop":'pkexec systemctl stop batman' \
-   --button="Start":'pkexec systemctl start batman'
+   --button="Stop":'pkexec systemctl stop batman'
 }
 
 # Function that runs configurator window.
 function config() {
 (
-   for (( ; ; ))
+   while true;
    do
-       CURRENT_CONFIG=$(cat /var/lib/batman/config)
+       CONFIG=$(cat /var/lib/batman/config)
        echo -e '\f'
-       echo "Powersave allows CPU and GPU go into powersaving."
+       echo "Powersave allows CPU go into powersaving."
        echo
        echo "Offlining is the process of CPU cores shutting down."
        echo "These two only activate when device is idling."
@@ -86,26 +90,69 @@ function config() {
        echo "MAX_CPU_USAGE indicates the max CPU usage for device"
        echo "that offline function compares against."
        echo
-       echo "ChargeSave indicates whether or not put device to"
-       echo "powersave when its charging up"
-       echo
-       echo "Make sure to restart the service if any changes have been done."
+       echo "Make sure to restart the service on changes."
        echo
        echo "Current config: "
-       echo $CURRENT_CONFIG
-       sleep 2s
+       echo
+       while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
+
+       while true;
+       do
+
+           NEWCONFIG=$(cat /var/lib/batman/config)
+           if [ "$CONFIG" == "$NEWCONFIG" ]; then
+               sleep 0.5
+           else
+               break
+           fi
+
+       done
+
    done
    ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
    --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
-   --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config' \
-   --button="ChargeSave off" 'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config' \
-   --button="ChargeSave on" 'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config'
+   --button="Offline on":'sed -i "s/OFFLINE.*/OFFLINE=true/g" /var/lib/batman/config'
+}
+
+function config2() {
+(
+   for (( ; ; ))
+   do
+       CONFIG=$(cat /var/lib/batman/config)
+       echo -e '\f'
+       echo "GPUsave allows GPU go into powersaving."
+       echo "This feature is still experimental."
+       echo
+       echo "Chargesave indicates whether or not put device to"
+       echo "powersave when its charging up."
+       echo
+       echo "Make sure to restart the service on changes."
+       echo
+       echo "Current config: "
+       echo
+       while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
+
+       while true;
+       do
+           NEWCONFIG=$(cat /var/lib/batman/config)
+           if [ "$CONFIG" == "$NEWCONFIG" ]; then
+               sleep 0.5
+           else
+               break
+           fi
+       done
+   done
+   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=true --listen --auto-close --auto-kill --monitor --text-info \
+   --button="GPUsave off":'sed -i "s/GPUSAVE.*/GPUSAVE=false/g" /var/lib/batman/config' \
+   --button="GPUsave on":'sed -i "s/GPUSAVE.*/GPUSAVE=true/g" /var/lib/batman/config' \
+   --button="Chargesave off":'sed -i "s/CHARGESAVE.*/CHARGESAVE=false/g" /var/lib/batman/config' \
+   --button="Chargesave on":'sed -i "s/CHARGESAVE.*/CHARGESAVE=true/g" /var/lib/batman/config'
 }
 
 function usage() {
-   echo "Usage: 'batman-gui run' to launch the main window and 'batman config' to launch the config window."
+   echo "Usage: 'batman-gui run' to launch the main window and 'batman config' to launch the first config window and 'batman config2' to launch the second config window."
 }
 
 # Let user pass arguments
