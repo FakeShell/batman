@@ -61,6 +61,20 @@ function tempvar() {
     while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
 }
 
+# Function that inputs a number from user as MAX_CPU_USAGE.
+function maxusage() {
+    USERINPUT=$(yad --title "MAX_CPU_USAGE" --form --field="Input a value between 0 and 100" --info --text="MAX_CPU_USAGE checks until what CPU usage it should keep cpu cores in offline state. Increasing this number will smoothen out audio or background playback when screen is locked and device is idling. increasing it will also higher battery usage.")
+    USERNUM=$(echo "$USERINPUT" | rev | cut -c 2- | rev)
+
+    if [[ $USERNUM =~ [A-Za-z] ]]; then
+       exit
+    fi
+
+    if (($USERNUM >= 0 && $USERNUM <= 100)); then
+        sed -i "s/MAX_CPU_USAGE.*/MAX_CPU_USAGE=$USERNUM/g" /var/lib/batman/config
+    fi
+}
+
 # Funtion that runs the main window.
 function main() {
 (
@@ -72,11 +86,13 @@ function main() {
        tempvar
        sleep 1s
    done
-) | yad --title batman --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
+) | yad --title batman --hscroll-policy=never --vscroll-policy=never --listen \
+   --auto-close --auto-kill --monitor --text-info --window-icon=battery \
+   --button="Restart":'pkexec systemctl restart batman' \
+   --button="Stop":'pkexec systemctl stop batman' \
    --button="Config page 1":"batman-gui config" \
    --button="Config page 2":"batman-gui config2" \
-   --button="Restart":'pkexec systemctl restart batman' \
-   --button="Stop":'pkexec systemctl stop batman'
+   --button="Max usage":"batman-gui maxusage"
 }
 
 # Function for first configuration page.
@@ -91,9 +107,6 @@ function config() {
        echo "Offlining is the process of CPU cores shutting down."
        echo "These two only activate when device is idling."
        echo "They also save a lot of battery."
-       echo
-       echo "MAX_CPU_USAGE indicates the max CPU usage for device"
-       echo "that offline function compares against."
        echo
        echo "Make sure to restart the service on changes."
        echo
@@ -114,7 +127,8 @@ function config() {
        done
 
    done
-   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title "batman config page 1" --hscroll-policy=never --vscroll-policy=never --listen \
+   --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
    --button="Offline off":'sed -i "s/OFFLINE.*/OFFLINE=false/g" /var/lib/batman/config' \
@@ -151,14 +165,17 @@ function config2() {
            fi
 
        done
+
    done
-   ) | yad --title "batman configurator" --hscroll-policy=never --vscroll-policy=never --listen --auto-close --auto-kill --monitor --text-info \
+   ) | yad --title "batman config page 2" --hscroll-policy=never --vscroll-policy=never --listen \
+   --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="GPUsave off":'sed -i "s/GPUSAVE.*/GPUSAVE=false/g" /var/lib/batman/config' \
    --button="GPUsave on":'sed -i "s/GPUSAVE.*/GPUSAVE=true/g" /var/lib/batman/config' \
    --button="Chargesave off":'sed -i "s/CHARGESAVE.*/CHARGESAVE=false/g" /var/lib/batman/config' \
    --button="Chargesave on":'sed -i "s/CHARGESAVE.*/CHARGESAVE=true/g" /var/lib/batman/config'
 }
 
+# Function displayed when user passes no arguments.
 function usage() {
    echo "Usage: 'batman-gui main' to launch the main window and 'batman config' to launch the first config window and 'batman config2' to launch the second config window."
 }
@@ -167,8 +184,7 @@ function usage() {
 "$@"
 
 # If no argument was passed show help
-if [ "$#" -eq 0 ]
-then
+if [ "$#" -eq 0 ]; then
     usage
     exit 0
 fi

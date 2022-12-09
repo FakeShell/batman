@@ -148,7 +148,7 @@ if [ -z "$GPUSAVE" ]; then
 fi
 
 # DEFAULT_GPU_GOVERNOR will get the default gpu governor.
-# Check if gpu governor directory exists.
+# Check if gpu governor file exists.
 if [ ! -d /sys/kernel/gpu/gpu_governor ]; then
    GPUSAVE=false
 elif [ "$GPUSAVE" == "true" ]; then

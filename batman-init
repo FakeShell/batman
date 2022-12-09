@@ -5,13 +5,13 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Battery management
-# Description:       Battery management program for linux phones
+# Description:       Battery management program for Linux phones
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 NAME=batman
 DAEMON=/usr/bin/$NAME
-DESC="Battery management program for linux phones"
+DESC="Battery management program for Linux phones"
 
 
 [ -x "$DAEMON" ] || exit 0
