@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
-CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
+CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
+CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
 
 function governor() {
@@ -15,7 +15,9 @@ while [[ true ]];
 do
     clear
     XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-
-    cat /sys/kernel/gpu/gpu_governor
+    if [ -f /sys/kernel/gpu/gpu_governor ]; then
+       cat /sys/kernel/gpu/gpu_governor
+    fi
     governor
     sleep 0.5
 done

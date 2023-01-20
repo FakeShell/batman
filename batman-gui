@@ -3,14 +3,18 @@
 # A function to get all the variables to show on main window.
 function getvar() {
     CORE_FIRST=$(awk '/^processor/ {print $3; exit}' /proc/cpuinfo)
-    CORE_LAST=$(awk 'END {print $3} /^processor/ {print $3}' /proc/cpuinfo)
+    CORE_LAST=$(grep -o '^processor.*' /proc/cpuinfo | tail -1 | awk '{print $3}')
     UIDS=$(head -1 <(ls /run/user))
     DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
     AVPOL=$(ls /sys/devices/system/cpu/cpufreq | wc -l)
     FIRSTPOL=$(head -1 <(ls /sys/devices/system/cpu/cpufreq))
     FIRSTPOLCORE=$(head -c1 < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
     LASTPOLCORE=$(head -c1 <(rev /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus))
-#    DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
+    if [ ! -d $(cat /var/lib/batman/default_gpu_governor) ]; then
+       DEFAULT_GPU_GOVERNOR="unknown"
+    else
+       DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
+    fi
     UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f1 -d.)
     SCREEN=$(XDG_RUNTIME_DIR="/run/user/$UIDS" wlr-randr | awk '/Enabled/ {print $2}')
     CHARGE=$(upower -d | awk '/state/ {print $2}' | head -1)
@@ -83,7 +87,7 @@ function main() {
        tempvar
        sleep 1s
    done
-) | yad --title batman --listen \
+) | yad --title batman --listen --no-markup --plug=1 \
    --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="Restart":'pkexec systemctl restart batman' \
    --button="Stop":'pkexec systemctl stop batman' \

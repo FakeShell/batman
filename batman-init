@@ -2,7 +2,7 @@
 
 ### BEGIN INIT INFO
 # Provides:          batman
-# Default-Start:     2 3 4 5
+# Default-Start:     4 5
 # Default-Stop:      0 1 6
 # Short-Description: Battery management
 # Description:       Battery management program for Linux phones
