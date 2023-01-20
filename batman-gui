@@ -2,22 +2,22 @@
 
 # A function to get all the variables to show on main window.
 function getvar() {
-    CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
-    CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
-    UIDS=$(ls /run/user | head -1)
-    DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
+    CORE_FIRST=$(awk '/^processor/ {print $3; exit}' /proc/cpuinfo)
+    CORE_LAST=$(awk 'END {print $3} /^processor/ {print $3}' /proc/cpuinfo)
+    UIDS=$(head -1 <(ls /run/user))
+    DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
     AVPOL=$(ls /sys/devices/system/cpu/cpufreq | wc -l)
-    FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | head -1)
-    FIRSTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
-    LASTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | rev | cut -c1 -)
-    DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
-    UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
-    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
-    CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
-    CURRENT_CONFIG=$(cat /var/lib/batman/config)
+    FIRSTPOL=$(head -1 <(ls /sys/devices/system/cpu/cpufreq))
+    FIRSTPOLCORE=$(head -c1 < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+    LASTPOLCORE=$(head -c1 <(rev /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus))
+#    DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
+    UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f1 -d.)
+    SCREEN=$(XDG_RUNTIME_DIR="/run/user/$UIDS" wlr-randr | awk '/Enabled/ {print $2}')
+    CHARGE=$(upower -d | awk '/state/ {print $2}' | head -1)
+    CURRENT_CONFIG=$(</var/lib/batman/config)
     BATMANSTAT=$(systemctl is-active batman)
     PID=$(systemctl show --property MainPID --value batman)
-    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
+    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5; grep 'cpu ' /proc/stat) | cut -d "." -f1)
 }
 
 # Function that shows values that do not change after the system is booted.
@@ -61,17 +61,14 @@ function tempvar() {
     while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
 }
 
-# Function that inputs a number from user as MAX_CPU_USAGE.
 function maxusage() {
     USERINPUT=$(yad --title "MAX_CPU_USAGE" --form --field="Input a value between 0 and 100" --info --text="MAX_CPU_USAGE checks until what CPU usage it should keep cpu cores in offline state. Increasing this number will smoothen out audio or background playback when screen is locked and device is idling. increasing it will also higher battery usage.")
     USERNUM=$(echo "$USERINPUT" | rev | cut -c 2- | rev)
-
-    if [[ $USERNUM =~ [A-Za-z] ]]; then
-       exit
-    fi
-
-    if (($USERNUM >= 0 && $USERNUM <= 100)); then
+    if [ "$USERNUM" -ge 0 ] && [ "$USERNUM" -le 100 ]; then
         sed -i "s/MAX_CPU_USAGE.*/MAX_CPU_USAGE=$USERNUM/g" /var/lib/batman/config
+    else
+        yad --title "Wrong Input" --text "Invalid input. Input must be a number between 0 and 100" --warning
+        maxusage
     fi
 }
 
@@ -86,7 +83,7 @@ function main() {
        tempvar
        sleep 1s
    done
-) | yad --title batman --hscroll-policy=never --vscroll-policy=never --listen \
+) | yad --title batman --listen \
    --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="Restart":'pkexec systemctl restart batman' \
    --button="Stop":'pkexec systemctl stop batman' \
@@ -127,7 +124,7 @@ function config() {
        done
 
    done
-   ) | yad --title "batman config page 1" --hscroll-policy=never --vscroll-policy=never --listen \
+   ) | yad --title "batman config page 1" --listen \
    --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="Powersave off":'sed -i "s/POWERSAVE.*/POWERSAVE=false/g" /var/lib/batman/config' \
    --button="Powersave on":'sed -i "s/POWERSAVE.*/POWERSAVE=true/g" /var/lib/batman/config' \
@@ -167,7 +164,7 @@ function config2() {
        done
 
    done
-   ) | yad --title "batman config page 2" --hscroll-policy=never --vscroll-policy=never --listen \
+   ) | yad --title "batman config page 2" --listen \
    --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="GPUsave off":'sed -i "s/GPUSAVE.*/GPUSAVE=false/g" /var/lib/batman/config' \
    --button="GPUsave on":'sed -i "s/GPUSAVE.*/GPUSAVE=true/g" /var/lib/batman/config' \

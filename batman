@@ -38,12 +38,12 @@ esac
 # FIRSTPOLCORE will get the first cpu core of policy group one.
 # LASTPOLCORE will get the last cpu core of policy group one.
 # UPTIME is just uptime of the system in minutes.
-CORE_FIRST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | sed -n 1p)
-CORE_LAST=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | tail -1)
+CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
+CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
 DEFAULT_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 AVUSER=$(ls /run/user | wc -l)
-AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | wc -l)
+AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
 FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
 FIRSTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
 LASTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | rev | cut -c1 -)
@@ -94,7 +94,7 @@ fi
 # Check if system is using KDE Plasma.
 if [[ $(which kscreen-doctor) ]]; then
 
-if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
+   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
       KDE=true
    else
       KDE=false
@@ -157,7 +157,12 @@ fi
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [[ "$UPTIME" -le "1" ]]; then
-   echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
+
+   if [ "$DEFAULT_GOVERNOR" == "powersave" ]; then
+      echo "bad starting governor. exiting"
+   else
+      echo $DEFAULT_GOVERNOR > /var/lib/batman/default_cpu_governor
+   fi
 
    if [ "$GPUSAVE" == "true" ]; then
       echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
@@ -250,9 +255,9 @@ do
     # Save screen status off the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
     SCREEN_OLD=$(cat /var/lib/batman/screen)
     # Check if device is plugged into a power source.
-    CHARGE=$(upower -d | grep state | awk '!seen[$0]++' | cut -c 26- | sed -n 1p)
+    CHARGE=$(upower -d | awk '/state/ { if (!seen[$0]) { seen[$0]=1; print substr($0,26) } }' | head -1)
     # Get cpu usage from /proc/stat
-    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5;grep 'cpu ' /proc/stat) | cut -d "." -f1)
+    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2;grep 'cpu ' /proc/stat) | cut -d "." -f1)
 
     # Run the correct command to get screen status
     # Save screen status to a variable so that we can use it later in our checks.
@@ -320,6 +325,5 @@ do
     if [ "$SCREEN_OLD" != "$SCREEN" ]; then
        echo $SCREEN > /var/lib/batman/screen
     fi
-
-    sleep 0.5
+    sleep 0.3
 done
