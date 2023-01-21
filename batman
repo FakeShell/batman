@@ -235,7 +235,7 @@ if [ "$GPUSAVE" == "true" ]; then
    function gpudefault() {
        echo $DEFAULT_GPU_GOVERNOR > /sys/kernel/gpu/gpu_governor
    }
-ssh fakeshell@172.16.42.1
+
 else
 
    function gpudefault() {
