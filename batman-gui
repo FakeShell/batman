@@ -3,22 +3,23 @@
 # A function to get all the variables to show on main window.
 function getvar() {
     CORE_FIRST=$(awk '/^processor/ {print $3; exit}' /proc/cpuinfo)
-    CORE_LAST=$(grep -o '^processor.*' /proc/cpuinfo | tail -1 | awk '{print $3}')
-    UIDS=$(head -1 <(ls /run/user))
+    CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
+    UIDS=$(ls /run/user | head -1)
     DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
-    AVPOL=$(ls /sys/devices/system/cpu/cpufreq | wc -l)
-    FIRSTPOL=$(head -1 <(ls /sys/devices/system/cpu/cpufreq))
-    FIRSTPOLCORE=$(head -c1 < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
-    LASTPOLCORE=$(head -c1 <(rev /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus))
-    if [ ! -d $(cat /var/lib/batman/default_gpu_governor) ]; then
+    AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
+    FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
+    FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+    LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
+    if [ -f "/var/lib/batman/default_gpu_governor" ] && [ ! -d $(cat /var/lib/batman/default_gpu_governor) ]; then
+       DEFAULT_GPU_GOVERNOR="unknown"
+    elif [ ! -f "/var/lib/batman/default_gpu_governor" ]; then
        DEFAULT_GPU_GOVERNOR="unknown"
     else
        DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
     fi
-    UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f1 -d.)
-    SCREEN=$(XDG_RUNTIME_DIR="/run/user/$UIDS" wlr-randr | awk '/Enabled/ {print $2}')
-    CHARGE=$(upower -d | awk '/state/ {print $2}' | head -1)
-    CURRENT_CONFIG=$(</var/lib/batman/config)
+    UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f1 -d .)
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p')
+    CHARGE=$(upower -d | awk '{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}')
     BATMANSTAT=$(systemctl is-active batman)
     PID=$(systemctl show --property MainPID --value batman)
     CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.5; grep 'cpu ' /proc/stat) | cut -d "." -f1)
@@ -65,6 +66,7 @@ function tempvar() {
     while IFS= read -r line; do echo $line && echo; done < /var/lib/batman/config
 }
 
+# Function that inputs a number from user as MAX_CPU_USAGE.
 function maxusage() {
     USERINPUT=$(yad --title "MAX_CPU_USAGE" --form --field="Input a value between 0 and 100" --info --text="MAX_CPU_USAGE checks until what CPU usage it should keep cpu cores in offline state. Increasing this number will smoothen out audio or background playback when screen is locked and device is idling. increasing it will also higher battery usage.")
     USERNUM=$(echo "$USERINPUT" | rev | cut -c 2- | rev)
@@ -87,7 +89,7 @@ function main() {
        tempvar
        sleep 1s
    done
-) | yad --title batman --listen --no-markup --plug=1 \
+) | yad --title batman --listen  --no-markup \
    --auto-close --auto-kill --monitor --text-info --window-icon=battery \
    --button="Restart":'pkexec systemctl restart batman' \
    --button="Stop":'pkexec systemctl stop batman' \
@@ -101,7 +103,7 @@ function config() {
 (
    while true;
    do
-       CONFIG=$(cat /var/lib/batman/config)
+       CONFIG=$(</var/lib/batman/config)
        echo -e '\f'
        echo "Powersave allows CPU go into powersaving."
        echo
@@ -118,7 +120,7 @@ function config() {
        while true;
        do
 
-           NEWCONFIG=$(cat /var/lib/batman/config)
+           NEWCONFIG=$(</var/lib/batman/config)
            if [ "$CONFIG" == "$NEWCONFIG" ]; then
                sleep 0.5
            else
@@ -141,7 +143,7 @@ function config2() {
 (
    while true;
    do
-       CONFIG=$(cat /var/lib/batman/config)
+       CONFIG=$(</var/lib/batman/config)
        echo -e '\f'
        echo "GPUsave allows GPU go into powersaving."
        echo "This feature is still experimental."
@@ -158,7 +160,7 @@ function config2() {
        while true;
        do
 
-           NEWCONFIG=$(cat /var/lib/batman/config)
+           NEWCONFIG=$(</var/lib/batman/config)
            if [ "$CONFIG" == "$NEWCONFIG" ]; then
                sleep 0.5
            else
@@ -181,10 +183,10 @@ function usage() {
    echo "Usage: 'batman-gui main' to launch the main window and 'batman config' to launch the first config window and 'batman config2' to launch the second config window."
 }
 
-# Let user pass arguments
+# Let user pass arguments.
 "$@"
 
-# If no argument was passed show help
+# If no argument was passed show help.
 if [ "$#" -eq 0 ]; then
     usage
     exit 0

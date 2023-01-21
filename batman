@@ -14,11 +14,11 @@ EOF
 # Bumped at every commit
 version()
 {
-   echo "0.35"
+   echo "0.36"
    exit 0
 }
 
-# First check if user is asking for help or version is not move on.
+# First check if user is asking for help or version if not move on.
 case "$1" in
   -h|-\?|--help)
     help
@@ -41,17 +41,17 @@ esac
 CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
 CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
-DEFAULT_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 AVUSER=$(ls /run/user | wc -l)
 AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
 FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
-FIRSTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
-LASTPOLCORE=$(cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | rev | cut -c1 -)
+FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
 UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
 # Make sure the required directory exists.
 if [ ! -d /var/lib/batman/ ]; then
-   mkdir -p /var/lib/batman
+   mkdir -p /var/lib/batman/
 fi
 
 # Parse our config file.
@@ -68,7 +68,7 @@ if [[ "$AVPOL" == "0" ]]; then
 fi
 
 # Check if powersave governor is available.
-if cat /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors | grep powersave &> /dev/null; then
+if grep powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors &> /dev/null; then
    true
 else
    echo "powersave is not a governor on this system. exiting"
@@ -80,7 +80,7 @@ fi
 if [[ $(which wlr-randr) ]]; then
    XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr &> /var/lib/batman/wlr-randr
 
-   if cat /var/lib/batman/wlr-randr | grep "compositor doesn't support" &> /dev/null; then
+   if grep "compositor doesn't support" /var/lib/batman/wlr-randr &> /dev/null; then
       WLROOTS=false
    else
       WLROOTS=true
@@ -152,7 +152,7 @@ fi
 if [ ! -d /sys/kernel/gpu/gpu_governor ]; then
    GPUSAVE=false
 elif [ "$GPUSAVE" == "true" ]; then
-   DEFAULT_GPU_GOVERNOR=$(cat /sys/kernel/gpu/gpu_governor)
+   DEFAULT_GPU_GOVERNOR=$(</sys/kernel/gpu/gpu_governor)
 fi
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
@@ -172,10 +172,10 @@ fi
 
 # if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   DEFAULT_GOVERNOR=$(cat /var/lib/batman/default_cpu_governor)
+   DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
 
    if [ "$GPUSAVE" == "true" ]; then
-      DEFAULT_GPU_GOVERNOR=$(cat /var/lib/batman/default_gpu_governor)
+      DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
    fi
 
 fi
@@ -235,7 +235,7 @@ if [ "$GPUSAVE" == "true" ]; then
    function gpudefault() {
        echo $DEFAULT_GPU_GOVERNOR > /sys/kernel/gpu/gpu_governor
    }
-
+ssh fakeshell@172.16.42.1
 else
 
    function gpudefault() {
@@ -252,19 +252,17 @@ chown $UIDS:$UIDS /var/lib/batman -R
 
 while [[ true ]]
 do
-    # Save screen status off the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
-    SCREEN_OLD=$(cat /var/lib/batman/screen)
-    # Check if device is plugged into a power source.
-    CHARGE=$(upower -d | awk '/state/ { if (!seen[$0]) { seen[$0]=1; print substr($0,26) } }' | head -1)
+    # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
+    SCREEN_OLD=$(</var/lib/batman/screen)
     # Get cpu usage from /proc/stat
-    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2;grep 'cpu ' /proc/stat) | cut -d "." -f1)
+    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d "." -f1)
 
     # Run the correct command to get screen status
     # Save screen status to a variable so that we can use it later in our checks.
     if [ "$WLROOTS" == "true" ]; then
-       SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | grep Enabled | cut -c 12-)
+       SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p')
     elif [ "$KDE" == "true" ]; then
-       DISPSTAT=$(XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS kscreen-doctor -j | grep enabled | cut -c24- | rev | cut -c2- | rev)
+       DISPSTAT=$(XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse($0), 3, length($0)-24)}')
 
        if [ "$DISPSTAT" == "true" ]; then
           SCREEN="yes"
@@ -274,13 +272,12 @@ do
 
     fi
 
-    # if variable CHARGESAVE is set to true then set variable CHARGE to discharging to force governors to change to powersave even when device is charging.
-    if [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
-
-       if [ "$CHARGESAVE" == "true" ]; then
-          CHARGE="discharging"
-       fi
-
+    # if variable FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+    if [ "$CHARGESAVE" == "true" ]; then
+        CHARGE="discharging"
+    else
+        # Check if device is plugged into a power source.
+        CHARGE=$(upower -d | awk '{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}')
     fi
 
     # Check if powersave should be enabled.
@@ -303,7 +300,7 @@ do
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
-    CUR_GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    CUR_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
 
     # Use our OFFLINE variable to see if this process should even be started.
     if [ "$OFFLINE" == "true" ]; then
@@ -325,5 +322,7 @@ do
     if [ "$SCREEN_OLD" != "$SCREEN" ]; then
        echo $SCREEN > /var/lib/batman/screen
     fi
+
     sleep 0.3
+
 done
