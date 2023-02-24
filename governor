@@ -4,10 +4,17 @@ CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
 CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
 
+# x86 cpus have scaling_cur_freq instead of cpuinfo_cur_freq
+if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+   CPUFREQ="scaling_cur_freq"
+else
+   CPUFREQ="cpuinfo_cur_freq"
+fi
+
 function governor() {
    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
    do
-       cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_cur_freq /sys/devices/system/cpu/cpu$i/online
+       cat /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor /sys/devices/system/cpu/cpu$i/cpufreq/$CPUFREQ /sys/devices/system/cpu/cpu$i/online
    done
 }
 
