@@ -129,7 +129,7 @@ if [ "$WLROOTS" == "true" ]; then
 fi
 
 # Check if system is using KDE Plasma.
-if [[ $(which kscreen-doctor) ]]; then
+if [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
 
    if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
       KDE=true
@@ -266,6 +266,16 @@ if [ "$BUSSAVE" == "true" ] && [ -d /sys/class/devfreq/ ]; then
       DEFAULT_MINCPUBW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,mincpubw/governor)
    fi
 
+   if [ -d /sys/class/devfreq/soc:qcom,l3-cpu0/ ]; then
+      L3CPU0=true
+      DEFAULT_L3CPU0_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3cpu0/governor)
+   fi
+
+   if [ -d /sys/class/devfreq/soc:qcom,l3-cpu6/ ]; then
+      L3CPU6=true
+      DEFAULT_L3CPU6_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3cpu6/governor)
+   fi
+
 fi
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
@@ -300,6 +310,14 @@ if [[ "$UPTIME" -le "1" ]]; then
 
    if [ "$MINCPUBW" == "true" ]; then
       echo $DEFAULT_MINCPUBW_GOVERNOR > /var/lib/batman/default_mincpubw_governor
+   fi
+
+   if [ "$L3CPU0" == "true" ]; then
+      echo $DEFAULT_L3CPU0_GOVERNOR > /var/lib/batman/default_l3cpu0_governor
+   fi
+
+   if [ "$L3CPU6" == "true" ]; then
+      echo $DEFAULT_L3CPU6_GOVERNOR > /var/lib/batman/default_l3cpu6_governor
    fi
 
 fi
@@ -382,6 +400,27 @@ if [ "$MINICPUBW" == "true" ] && [ "$DEFAULT_MINICPUBW_GOVERNOR" == "powersave" 
 
 fi
 
+if [ "$L3CPU0" == "true" ] && [ "$DEFAULT_L3CPU0_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_l3cpu0_governor)  == "powersave" ]]; then
+      echo "bad l3cpu0 governor. disabling l3cpu0 powersave"
+      L3CPU0=false
+   else
+      DEFAULT_L3CPU0_GOVERNOR=$(</var/lib/batman/default_l3cpu0_governor)
+   fi
+
+fi
+
+if [ "$L3CPU6" == "true" ] && [ "$DEFAULT_L3CPU6_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_l3cpu6_governor)  == "powersave" ]]; then
+      echo "bad l3cpu6 governor. disabling l3cpu6 powersave"
+      L3CPU6=false
+   else
+      DEFAULT_L3CPU6_GOVERNOR=$(</var/lib/batman/default_l3cpu6_governor)
+   fi
+
+fi
 
 # Function that sets the cpu governor to powersave.
 function powersave() {
@@ -461,6 +500,14 @@ if [ "$BUSSAVE" == "true" ]; then
        if [ "$MINCPUBW" == "true" ]; then
           echo powersave > /sys/class/devfreq/soc:qcom,mincpubw/governor
        fi
+
+       if [ "$L3CPU0" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,l3cpu0/governor
+       fi
+
+       if [ "$L3CPU6" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,l3cpu6/governor
+       fi
    }
 
    function busdefault() {
@@ -482,6 +529,14 @@ if [ "$BUSSAVE" == "true" ]; then
 
        if [ "$MINCPUBW" == "true" ]; then
           echo $DEFAULT_MINCPUBW_GOVERNOR > /sys/class/devfreq/soc:qcom,mincpubw/governor
+       fi
+
+       if [ "$L3CPU0" == "true" ]; then
+          echo $DEFAULT_L3CPU0_GOVERNOR > /sys/class/devfreq/soc:qcom,l3cpu0/governor
+       fi
+
+       if [ "$L3CPU6" == "true" ]; then
+          echo $DEFAULT_L3CPU6_GOVERNOR > /sys/class/devfreq/soc:qcom,l3cpu6/governor
        fi
    }
 

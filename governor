@@ -53,6 +53,14 @@ if [ -d /sys/class/devfreq/soc:qcom,mincpubw/ ]; then
    MINCPUBW=true
 fi
 
+if [ -d /sys/class/devfreq/soc:qcom,l3cpu0/ ]; then
+   L3CPU0=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,l3cpu6/ ]; then
+   L3CPU6=true
+fi
+
 if [ ! -z $GPU_GOVERNOR_PATH ]; then
 
    function gpugovernor() {
@@ -92,6 +100,16 @@ function busgovernor() {
     if [ "$MINCPUBW" == "true" ]; then
        echo "mincpubw governor"
        cat /sys/class/devfreq/soc:qcom,mincpubw/governor
+    fi
+
+    if [ "$L3CPU0" == "true" ]; then
+       echo "l3cpu0 governor"
+       cat /sys/class/devfreq/soc:qcom,l3cpu0/governor
+    fi
+
+    if [ "$L3CPU6" == "true" ]; then
+       echo "l3cpu6 governor"
+       cat /sys/class/devfreq/soc:qcom,l3cpu6/governor
     fi
 }
 
