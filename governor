@@ -15,22 +15,28 @@ if [ -d /sys/class/devfreq/ ]; then
    DEVFREQ_GPU_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
 fi
 
-if [ -f /sys/class/kgsl/kgsl-3d0/devfreq/governor ]; then
-   GPU_GOVERNOR_PATH="/sys/class/kgsl/kgsl-3d0/devfreq/governor"
-elif [ -f /sys/class/kgsl/kgsl-3d0/governor ]; then
-   GPU_GOVERNOR_PATH="/sys/class/kgsl/kgsl-3d0/governor"
-elif [ -f /sys/class/devfreq/1c00000.qcom,kgsl-3d0/governor ]; then
-   GPU_GOVERNOR_PATH="/sys/class/devfreq/1c00000.qcom,kgsl-3d0/governor"
-elif [ -f /sys/class/devfreq/ddr_devfreq/governor ]; then
-   GPU_GOVERNOR_PATH="/sys/class/devfreq/ddr_devfreq/governor"
-elif [ -f /sys/class/devfreq/graphics/governor ]; then
-   GPU_GOVERNOR_PATH="/sys/class/devfreq/graphics/governor"
-elif [ -f /sys/kernel/gpu/gpu_governor ]; then
-   GPU_GOVERNOR_PATH="/sys/kernel/gpu/gpu_governor"
-elif [ -f $DEVFREQ_GPU_PATH/governor ]; then
-   GPU_GOVERNOR_PATH="$DEVFREQ_GPU_PATH/governor"
-else
-   unset GPU_GOVERNOR_PATH
+gpu_governor_paths=(
+  "/sys/class/kgsl/kgsl-3d0/devfreq/governor"
+  "/sys/class/kgsl/kgsl-3d0/governor"
+  "/sys/class/devfreq/1c00000.qcom,kgsl-3d0/governor"
+  "/sys/class/devfreq/5000000.qcom,kgsl-3d0/governor"
+  "/sys/class/devfreq/ddr_devfreq/governor"
+  "/sys/class/devfreq/graphics/governor"
+  "/sys/kernel/gpu/gpu_governor"
+  "$DEVFREQ_GPU_PATH/governor"
+)
+
+# Check each path for the GPU governor file
+for path in "${gpu_governor_paths[@]}"; do
+  if [ -f "$path" ]; then
+    GPU_GOVERNOR_PATH="$path"
+    break
+  fi
+done
+
+# If no GPU governor file was found, unset the variable
+if [ -z "$GPU_GOVERNOR_PATH" ]; then
+  unset GPU_GOVERNOR_PATH
 fi
 
 if [ -d /sys/class/devfreq/soc:qcom,cci/ ]; then
@@ -53,12 +59,48 @@ if [ -d /sys/class/devfreq/soc:qcom,mincpubw/ ]; then
    MINCPUBW=true
 fi
 
-if [ -d /sys/class/devfreq/soc:qcom,l3cpu0/ ]; then
+if [ -d /sys/class/devfreq/soc:qcom,l3-cpu0/ ]; then
    L3CPU0=true
 fi
 
-if [ -d /sys/class/devfreq/soc:qcom,l3cpu6/ ]; then
+if [ -d /sys/class/devfreq/soc:qcom,l3-cpu6/ ]; then
    L3CPU6=true
+fi
+
+if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/ ]; then
+   ARM9_BUS_DDR=true
+fi
+
+if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/ ]; then
+   BUS_CNOC=true
+fi
+
+if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/ ]; then
+   VENUS_BUS_DDR=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,l3-cdsp/ ]; then
+   L3CDSP=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,snoc_cnoc_keepalive/ ]; then
+   SNOC_CNOC_KEEPALIVE=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu0/ ]; then
+   MEMLAT_CPU0=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu6/ ]; then
+   MEMLAT_CPU6=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,mincpu0bw/ ]; then
+   MINCPU0BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,mincpu6bw/ ]; then
+   MINCPU6BW=true
 fi
 
 if [ ! -z $GPU_GOVERNOR_PATH ]; then
@@ -104,12 +146,57 @@ function busgovernor() {
 
     if [ "$L3CPU0" == "true" ]; then
        echo "l3cpu0 governor"
-       cat /sys/class/devfreq/soc:qcom,l3cpu0/governor
+       cat /sys/class/devfreq/soc:qcom,l3-cpu0/governor
     fi
 
     if [ "$L3CPU6" == "true" ]; then
        echo "l3cpu6 governor"
-       cat /sys/class/devfreq/soc:qcom,l3cpu6/governor
+       cat /sys/class/devfreq/soc:qcom,l3-cpu6/governor
+    fi
+
+    if [ "$ARM9_BUS_DDR" == "true" ]; then
+       echo "arm9_bus_ddr governor"
+       cat /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+    fi
+
+    if [ "$BUS_CNOC" == "true" ]; then
+       echo "bus_cnoc governor"
+       cat /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+    fi
+
+    if [ "$VENUS_BUS_DDR" == "true" ]; then
+       echo "venus_bus_ddr governor"
+       cat /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
+    fi
+
+    if [ "$L3CDSP" == "true" ]; then
+       echo "l3cdsp governor"
+       cat /sys/class/devfreq/soc:qcom,l3-cdsp/governor
+    fi
+
+    if [ "$SNOC_CNOC_KEEPALIVE" == "true" ]; then
+       echo "snoc_cnoc_keepalive governor"
+       cat /sys/class/devfreq/soc:qcom,snoc_cnoc_keepalive/governor
+    fi
+
+    if [ "$MEMLAT_CPU0" == "true" ]; then
+       echo "memlat_cpu0 governor"
+       cat /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
+    fi
+
+    if [ "$MEMLAT_CPU6" == "true" ]; then
+       echo "memlat_cpu6 governor"
+       cat /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
+    fi
+
+    if [ "$MINCPU0BW" == "true" ]; then
+       echo "mincpu0bw governor"
+       cat /sys/class/devfreq/soc:qcom,mincpu0bw/governor
+    fi
+
+    if [ "$MINCPU6BW" == "true" ]; then
+       echo "mincpu6bw governor"
+       cat /sys/class/devfreq/soc:qcom,mincpu6bw/governor
     fi
 }
 
