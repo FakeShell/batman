@@ -11,13 +11,97 @@ function governor() {
    done
 }
 
+if [ -d /sys/class/devfreq/ ]; then
+   DEVFREQ_GPU_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
+fi
+
+if [ -f /sys/class/kgsl/kgsl-3d0/devfreq/governor ]; then
+   GPU_GOVERNOR_PATH="/sys/class/kgsl/kgsl-3d0/devfreq/governor"
+elif [ -f /sys/class/kgsl/kgsl-3d0/governor ]; then
+   GPU_GOVERNOR_PATH="/sys/class/kgsl/kgsl-3d0/governor"
+elif [ -f /sys/class/devfreq/1c00000.qcom,kgsl-3d0/governor ]; then
+   GPU_GOVERNOR_PATH="/sys/class/devfreq/1c00000.qcom,kgsl-3d0/governor"
+elif [ -f /sys/class/devfreq/ddr_devfreq/governor ]; then
+   GPU_GOVERNOR_PATH="/sys/class/devfreq/ddr_devfreq/governor"
+elif [ -f /sys/class/devfreq/graphics/governor ]; then
+   GPU_GOVERNOR_PATH="/sys/class/devfreq/graphics/governor"
+elif [ -f /sys/kernel/gpu/gpu_governor ]; then
+   GPU_GOVERNOR_PATH="/sys/kernel/gpu/gpu_governor"
+elif [ -f $DEVFREQ_GPU_PATH/governor ]; then
+   GPU_GOVERNOR_PATH="$DEVFREQ_GPU_PATH/governor"
+else
+   unset GPU_GOVERNOR_PATH
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cci/ ]; then
+   CCI=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpubw/ ]; then
+   CPUBW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,gpubw/ ]; then
+   GPUBW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,kgsl-busmon/ ]; then
+   KGSL_BUSMON=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,mincpubw/ ]; then
+   MINCPUBW=true
+fi
+
+if [ ! -z $GPU_GOVERNOR_PATH ]; then
+
+   function gpugovernor() {
+       echo "gpu governor"
+       cat $GPU_GOVERNOR_PATH
+   }
+
+else
+
+   function gpugovernor() {
+       true
+   }
+
+fi
+
+function busgovernor() {
+    if [ "$CCI" == "true" ]; then
+       echo "cci governor"
+       cat /sys/class/devfreq/soc:qcom,cci/governor
+    fi
+
+    if [ "$CPUBW" == "true" ]; then
+       echo "cpubw governor"
+       cat /sys/class/devfreq/soc:qcom,cpubw/governor
+    fi
+
+    if [ "$GPUBW" == "true" ]; then
+       echo "gpubw governor"
+       cat /sys/class/devfreq/soc:qcom,gpubw/governor
+    fi
+
+    if [ "$KGSL_BUSMON" == "true" ]; then
+       echo "kgsl-busmon governor"
+       cat /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+    fi
+
+    if [ "$MINCPUBW" == "true" ]; then
+       echo "mincpubw governor"
+       cat /sys/class/devfreq/soc:qcom,mincpubw/governor
+    fi
+}
+
+
 while [[ true ]];
 do
     clear
     XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'
-    if [ -f /sys/kernel/gpu/gpu_governor ]; then
-       cat /sys/kernel/gpu/gpu_governor
-    fi
     governor
+    gpugovernor
+    busgovernor
     sleep 0.5
 done

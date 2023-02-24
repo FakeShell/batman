@@ -14,7 +14,7 @@ EOF
 # Bumped at every commit
 version()
 {
-   echo "0.36"
+   echo "0.37"
    exit 0
 }
 
@@ -53,7 +53,7 @@ if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
    fi
 
 else
-      DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor)
+   DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor)
 fi
 
 AVUSER=$(ls /run/user | wc -l)
@@ -89,8 +89,14 @@ else
    exit 0
 fi
 
+# We depend on upower for charging status.
+if ! [[ $(which upower) ]]; then
+   echo "upower is not available. exiting"
+   exit 0
+fi
+
 # Make sure wlr-randr is installed on the system.
-# if it was check if system is using a wlroots based desktop environment.
+# If it was check if system is using a wlroots based desktop environment.
 if [[ $(which wlr-randr) ]]; then
    XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr &> /var/lib/batman/wlr-randr
 
@@ -118,6 +124,7 @@ if [ "$WLROOTS" == "true" ]; then
          # If the exit status is not 0, wait for some time and try again
          sleep 1
       fi
+
    done
 fi
 
@@ -134,7 +141,7 @@ else
    KDE=false
 fi
 
-# if none of the supported methods are supported then exit.
+# If none of the supported compositors are used then exit.
 if [ "$KDE" == "false" ] && [ "$WLROOTS" == "false" ]; then
    echo "Display server not supported. exiting"
    exit 0
@@ -142,7 +149,7 @@ fi
 
 # Use our AVUSER variable to make sure only one active user session exists.
 if [[ "$AVUSER" -gt "1" ]]; then
-   echo "more than one user active."
+   echo "more than one user active. exiting"
    exit 0
 fi
 
@@ -177,9 +184,14 @@ if [ -z "$GPUSAVE" ]; then
    GPUSAVE=true
 fi
 
+# Make sure that our BUSSAVE variable is set from the config file if not use default value.
+if [ -z "$BUSSAVE" ]; then
+   BUSSAVE=true
+fi
+
 # Check if we can find any GPU profile in devfreq.
-if [ -d /sys/class/devfreq ]; then
-   DEVFREQ_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
+if [ -d /sys/class/devfreq/ ]; then
+   DEVFREQ_GPU_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
 fi
 
 # Check if GPU governor file exists in different paths if not give up and disable GPU powersaving.
@@ -203,24 +215,55 @@ elif [ -f /sys/class/devfreq/graphics/governor ]; then
    GPUSAVE=true
    DEFAULT_GPU_GOVERNOR=$(</sys/class/devfreq/graphics/governor)
    GPU_GOVERNOR_PATH="/sys/class/devfreq/graphics/governor"
-elif [ -f $DEVFREQ/governor ]; then
-   GPUSAVE=true
-   DEFAULT_GPU_GOVERNOR=$(<$DEVFREQ/governor)
-   GPU_GOVERNOR_PATH="$DEVFREQ/governor"
 elif [ -f /sys/kernel/gpu/gpu_governor ]; then
    GPUSAVE=true
    DEFAULT_GPU_GOVERNOR=$(</sys/kernel/gpu/gpu_governor)
    GPU_GOVERNOR_PATH="/sys/kernel/gpu/gpu_governor"
+elif [ -f $DEVFREQ_GPU_PATH/governor ]; then
+   GPUSAVE=true
+   DEFAULT_GPU_GOVERNOR=$(<$DEVFREQ_GPU_PATH/governor)
+   GPU_GOVERNOR_PATH="$DEVFREQ_GPU_PATH/governor"
 else
    GPUSAVE=false
 fi
 
+# If powersave is not a governor in the GPU profile then disable this feature.
 if [ $GPUSAVE == "true" ]; then
 
    if grep "powersave" $GPU_GOVERNOR_PATH &> /dev/null; then
       true
    else
       GPUSAVE=false
+   fi
+
+fi
+
+# Check for bus governor nodes, if available then we'll powersave them too!
+if [ "$BUSSAVE" == "true" ] && [ -d /sys/class/devfreq/ ]; then
+
+   if [ -d /sys/class/devfreq/soc:qcom,cci/ ]; then
+      CCI=true
+      DEFAULT_CCI_GOVERNOR=$(</sys/class/devfreq/soc:qcom,cci/governor)
+   fi
+
+   if [ -d /sys/class/devfreq/soc:qcom,cpubw/ ]; then
+      CPUBW=true
+      DEFAULT_CPUBW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,cpubw/governor)
+   fi
+
+   if [ -d /sys/class/devfreq/soc:qcom,gpubw/ ]; then
+      GPUBW=true
+      DEFAULT_GPUBW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,gpubw/governor)
+   fi
+
+   if [ -d /sys/class/devfreq/soc:qcom,kgsl-busmon/ ]; then
+      KGSL_BUSMON=true
+      DEFAULT_KGSL_BUSMON_GOVERNOR=$(</sys/class/devfreq/soc:qcom,kgsl-busmon/governor)
+   fi
+
+   if [ -d /sys/class/devfreq/soc:qcom,mincpubw/ ]; then
+      MINCPUBW=true
+      DEFAULT_MINCPUBW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,mincpubw/governor)
    fi
 
 fi
@@ -239,19 +282,108 @@ if [[ "$UPTIME" -le "1" ]]; then
       echo $DEFAULT_GPU_GOVERNOR > /var/lib/batman/default_gpu_governor
    fi
 
+   if [ "$CCI" == "true" ]; then
+      echo $DEFAULT_CCI_GOVERNOR > /var/lib/batman/default_cci_governor
+   fi
+
+   if [ "$CPUBW" == "true" ]; then
+      echo $DEFAULT_CPUBW_GOVERNOR > /var/lib/batman/default_cpubw_governor
+   fi
+
+   if [ "$GPUBW" == "true" ]; then
+      echo $DEFAULT_GPUBW_GOVERNOR > /var/lib/batman/default_gpubw_governor
+   fi
+
+   if [ "$KGSL_BUSMON" == "true" ]; then
+      echo $DEFAULT_KGSL_BUSMON_GOVERNOR > /var/lib/batman/default_kgsl_busmon_governor
+   fi
+
+   if [ "$MINCPUBW" == "true" ]; then
+      echo $DEFAULT_MINCPUBW_GOVERNOR > /var/lib/batman/default_mincpubw_governor
+   fi
+
 fi
 
-# if for some reason the service got restarted unexpectedly at a bad time use the correct values for governors.
+# In case of bad governor values choose the right value or exit if it fails to do so.
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
 
-   if [ "$GPUSAVE" == "true" ]; then
+   if [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
+      echo "bad starting governor. exiting"
+      exit 0
+   else
+      DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
+   fi
+
+fi
+
+if [ "$GPUSAVE" == "true" ] && [ "$DEFAULT_GPU_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_gpu_governor)  == "powersave" ]]; then
+      echo "bad GPU governor. disabling GPU powersave"
+      GPUSAVE=false
+   else
       DEFAULT_GPU_GOVERNOR=$(</var/lib/batman/default_gpu_governor)
    fi
 
 fi
 
-# Function that sets the cpu governor to powersave
+if [ "$CCI" == "true" ] && [ "$DEFAULT_CCI_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_cci_governor)  == "powersave" ]]; then
+      echo "bad cci governor. disabling cci powersave"
+      CCI=false
+   else
+      DEFAULT_CCI_GOVERNOR=$(</var/lib/batman/default_cci_governor)
+   fi
+
+fi
+
+if [ "$CPUBW" == "true" ] && [ "$DEFAULT_CPUBW_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_cpubw_governor)  == "powersave" ]]; then
+      echo "bad cpubw governor. disabling cpubw powersave"
+      CPUBW=false
+   else
+      DEFAULT_cpubw_GOVERNOR=$(</var/lib/batman/default_cpubw_governor)
+   fi
+
+fi
+
+if [ "$GPUBW" == "true" ] && [ "$DEFAULT_GPUBW_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_gpubw_governor)  == "powersave" ]]; then
+      echo "bad gpubw governor. disabling gpubw powersave"
+      GPUBW=false
+   else
+      DEFAULT_GPUBW_GOVERNOR=$(</var/lib/batman/default_gpubw_governor)
+   fi
+
+fi
+
+if [ "$KGSL_BUSMON" == "true" ] && [ "$DEFAULT_KGSL_BUSMON_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_kgsl_busmon_governor)  == "powersave" ]]; then
+      echo "bad kgsl-busmon governor. disabling kgsl-busmon powersave"
+      KGSL_BUSMON=false
+   else
+      DEFAULT_KGSL_BUSMON_GOVERNOR=$(</var/lib/batman/default_kgsl_busmon_governor)
+   fi
+
+fi
+
+if [ "$MINICPUBW" == "true" ] && [ "$DEFAULT_MINICPUBW_GOVERNOR" == "powersave" ]; then
+
+   if [[ $(</var/lib/batman/default_minicpubw_governor)  == "powersave" ]]; then
+      echo "bad minicpubw governor. disabling minicpubw powersave"
+      MINICPUBW=false
+   else
+      DEFAULT_MINICPUBW_GOVERNOR=$(</var/lib/batman/default_minicpubw_governor)
+   fi
+
+fi
+
+
+# Function that sets the cpu governor to powersave.
 function powersave() {
     for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
     do
@@ -259,7 +391,7 @@ function powersave() {
     done
 }
 
-# Function that sets the cpu governor to the default value. (schedutil as an example)
+# Function that sets the cpu governor to the default value.
 function default() {
     for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
     do
@@ -275,7 +407,7 @@ function offline() {
     done
 }
 
-# This function sets cpu cores in policy group one to offine
+# This function sets cpu cores in policy group one to online.
 function online() {
     for ((i=$FIRSTPOLCORE;i<=$LASTPOLCORE; i++))
     do
@@ -283,12 +415,15 @@ function online() {
     done
 }
 
-# Check if GPU governor file exists if so add gpusave function to change the governor.
-# Basic function that sets gpu back to its default governor.
+# Check if GPUSAVE is enabled, if so enable use the right functions.
 if [ "$GPUSAVE" == "true" ]; then
 
    function gpusave() {
-       echo $DEFAULT_GPU_GOVERNOR > $GPU_GOVERNOR_PATH
+       echo "powersave" > $GPU_GOVERNOR_PATH
+   }
+
+   function gpudefault() {
+       echo "$DEFAULT_GPU_GOVERNOR" > $GPU_GOVERNOR_PATH
    }
 
 else
@@ -297,19 +432,66 @@ else
        true
    }
 
+   function gpudefault() {
+       true
+   }
+
 fi
 
-# Check if GPU governor file exists if so add gpudefault function to change the governor.
-# Basic function that sets gpu back to its default governor.
-if [ "$GPUSAVE" == "true" ]; then
+# Check if BUSSAVE is enabled, if so enable use the right functions.
+if [ "$BUSSAVE" == "true" ]; then
 
-   function gpudefault() {
-       echo $DEFAULT_GPU_GOVERNOR > $GPU_GOVERNOR_PATH
+   function bussave() {
+       if [ "$CCI" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,cci/governor
+       fi
+
+       if [ "$CPUBW" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,cpubw/governor
+       fi
+
+       if [ "$GPUBW" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,gpubw/governor
+       fi
+
+       if [ "$KGSL_BUSMON" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+       fi
+
+       if [ "$MINCPUBW" == "true" ]; then
+          echo powersave > /sys/class/devfreq/soc:qcom,mincpubw/governor
+       fi
+   }
+
+   function busdefault() {
+       if [ "$CCI" == "true" ]; then
+          echo $DEFAULT_CCI_GOVERNOR > /sys/class/devfreq/soc:qcom,cci/governor
+       fi
+
+       if [ "$CPUBW" == "true" ]; then
+          echo $DEFAULT_CPUBW_GOVERNOR > /sys/class/devfreq/soc:qcom,cpubw/governor
+       fi
+
+       if [ "$GPUBW" == "true" ]; then
+          echo $DEFAULT_GPUBW_GOVERNOR > /sys/class/devfreq/soc:qcom,gpubw/governor
+       fi
+
+       if [ "$KGSL_BUSMON" == "true" ]; then
+          echo $DEFAULT_KGSL_BUSMON_GOVERNOR > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+       fi
+
+       if [ "$MINCPUBW" == "true" ]; then
+          echo $DEFAULT_MINCPUBW_GOVERNOR > /sys/class/devfreq/soc:qcom,mincpubw/governor
+       fi
    }
 
 else
 
-   function gpudefault() {
+   function bussave() {
+       true
+   }
+
+   function busdefault() {
        true
    }
 
@@ -358,14 +540,17 @@ do
        if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
           powersave
           gpusave
+          bussave
        # if device is charging or fully charged and still plugged into the wall then set everything back to default.
        elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
           default
           gpudefault
+          busdefault
        # if screen is on (user using the device) set everything back to default.
        elif [ "$SCREEN" == "yes" ]; then
           default
           gpudefault
+          busdefault
        fi
 
     fi
