@@ -90,10 +90,6 @@ if [ -d /sys/class/devfreq/soc:qcom,l3-cdsp/ ]; then
    L3CDSP=true
 fi
 
-if [ -d /sys/class/devfreq/soc:qcom,snoc_cnoc_keepalive/ ]; then
-   SNOC_CNOC_KEEPALIVE=true
-fi
-
 if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu0/ ]; then
    MEMLAT_CPU0=true
 fi
@@ -108,6 +104,58 @@ fi
 
 if [ -d /sys/class/devfreq/soc:qcom,mincpu6bw/ ]; then
    MINCPU6BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/ ]; then
+   CDSP_CDSP_L3_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/ ]; then
+   CPU0_CPU_DDR_LATFLOOR=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/ ]; then
+   CPU0_CPU_L3_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/ ]; then
+   CPU0_CPU_LLCC_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/ ]; then
+   CPU0_LLCC_DDR_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/ ]; then
+   CPU6_CPU_DDR_LATFLOOR=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/ ]; then
+   CPU6_CPU_L3_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/ ]; then
+   CPU6_CPU_LLCC_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/ ]; then
+   CPU6_LLCC_DDR_LAT=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/ ]; then
+   CPU_CPU_LLCC_BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/ ]; then
+   CPU_LLCC_DDR_BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/ ]; then
+   NPUDSP_NPU_DDR_BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/ ]; then
+   NPU_NPU_DDR_BW=true
 fi
 
 if [ ! -z $GPU_GOVERNOR_PATH ]; then
@@ -181,11 +229,6 @@ function busgovernor() {
        cat /sys/class/devfreq/soc:qcom,l3-cdsp/governor
     fi
 
-    if [ "$SNOC_CNOC_KEEPALIVE" == "true" ]; then
-       echo "snoc_cnoc_keepalive governor"
-       cat /sys/class/devfreq/soc:qcom,snoc_cnoc_keepalive/governor
-    fi
-
     if [ "$MEMLAT_CPU0" == "true" ]; then
        echo "memlat_cpu0 governor"
        cat /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
@@ -205,12 +248,79 @@ function busgovernor() {
        echo "mincpu6bw governor"
        cat /sys/class/devfreq/soc:qcom,mincpu6bw/governor
     fi
+
+    if [ "CDSP_CDSP_L3_LAT" == "true" ]; then
+         echo "cdsp-cdsp-l3-lat governor"
+         cat /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
+    fi
+
+    if [ "CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
+       echo "cpu0-cpu-ddr-latfloor governor"
+       cat /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
+    fi
+
+    if [ "CPU0_CPU_L3_LAT" == "true" ]; then
+       echo "cpu0-cpu-l3-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
+    fi
+
+    if [ "CPU0_CPU_LLCC_LAT" == "true" ]; then
+       echo "cpu0-cpu-llcc-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
+    fi
+
+    if [ "CPU0_LLCC_DDR_LAT" == "true" ]; then
+       echo "cpu0-llcc-ddr-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
+    fi
+
+    if [ "CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
+       echo "cpu6-cpu-ddr-latfloor governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
+    fi
+
+    if [ "CPU6_CPU_L3_LAT" == "true" ]; then
+       echo "cpu6-cpu-l3-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
+    fi
+
+    if [ "CPU6_CPU_LLCC_LAT" == "true" ]; then
+       echo "cpu6-cpu-llcc-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
+    fi
+
+    if [ "CPU6_LLCC_DDR_LAT" == "true" ]; then
+       echo "cpu6-llcc-ddr-lat governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
+    fi
+
+    if [ "CPU_CPU_LLCC_BW" == "true" ]; then
+       echo "cpu-llcc-ddr-bw governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
+    fi
+
+    if [ "CPU_LLCC_DDR_BW" == "true" ]; then
+       echo "cpu-llcc-ddr-bw governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
+    fi
+
+    if [ "NPUDSP_NPU_DDR_BW" == "true" ]; then
+       echo "npudsp-npu-ddr-bw governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
+    fi
+
+    if [ "NPU_NPU_DDR_BW" == "npudsp-npu-ddr-bwtrue" ]; then
+       echo "npu-npu-ddr-bw governor"
+       echo powersave > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+    fi
 }
 
 
 while [[ true ]];
 do
     clear
+    clear
+    echo -n "screen status [enabled]: "
     XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'
     governor
     gpugovernor
