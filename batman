@@ -189,11 +189,28 @@ if [ -z "$BUSSAVE" ]; then
    BUSSAVE=true
 fi
 
+# Make sure MAX_CPU_USAGE is a number betweem 0 and 100
+if [[ "$MAX_CPU_USAGE" =~ ^[0-9]+$ ]] && [[ "$MAX_CPU_USAGE" -ge 0 ]] && [[ "$MAX_CPU_USAGE" -le 100 ]]; then
+    true
+else
+    echo "bad MAX_CPU_USAGE value. defaulting to 60"
+    MAX_CPU_USAGE=60
+fi
+
+VARS=(CHARGESAVE BUSSAVE GPUSAVE POWERSAVE OFFLINE)
+
+# Loop through array and check/set each variable
+for var in "${VARS[@]}"; do
+    if [[ "${!var}" != "true" ]] && [[ "${!var}" != "false" ]]; then
+        declare "$var=true"
+    fi
+    echo "bad $var value. defaulting to ${!var}"
+done
+
 # Check if we can find any GPU profile in devfreq.
 if [ -d /sys/class/devfreq/ ]; then
    DEVFREQ_GPU_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
 fi
-
 
 # Set up an array with the GPU governor file paths to check
 gpu_governor_paths=(
@@ -698,7 +715,7 @@ if [ "$BUSSAVE" == "true" ]; then
        if [ "$MEMLAT_CPU0" == "true" ]; then
           echo "$DEFAULT_MEMLAT_CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
        fi
-       
+
        if [ "$MEMLAT_CPU4" == "true" ]; then
           echo "$DEFAULT_MEMLAT_CPU4_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
        fi

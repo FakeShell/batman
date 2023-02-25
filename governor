@@ -94,6 +94,10 @@ if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu0/ ]; then
    MEMLAT_CPU0=true
 fi
 
+if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu4/ ]; then
+   MEMLAT_CPU4=true
+fi
+
 if [ -d /sys/class/devfreq/soc:qcom,memlat-cpu6/ ]; then
    MEMLAT_CPU6=true
 fi
@@ -104,6 +108,10 @@ fi
 
 if [ -d /sys/class/devfreq/soc:qcom,mincpu6bw/ ]; then
    MINCPU6BW=true
+fi
+
+if [ -d /sys/class/devfreq/soc:devfreq_spdm_cpu/ ]; then
+   DEVFREQ_SPDM_CPU=true
 fi
 
 if [ -d /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/ ]; then
@@ -234,6 +242,11 @@ function busgovernor() {
        cat /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
     fi
 
+    if [ "$MEMLAT_CPU4" == "true" ]; then
+       echo "memlat_cpu4 governor"
+       cat /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
+    fi
+
     if [ "$MEMLAT_CPU6" == "true" ]; then
        echo "memlat_cpu6 governor"
        cat /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
@@ -249,9 +262,14 @@ function busgovernor() {
        cat /sys/class/devfreq/soc:qcom,mincpu6bw/governor
     fi
 
+    if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
+       echo "devfreq_spdm_cpu governor"
+       cat /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
+    fi
+
     if [ "CDSP_CDSP_L3_LAT" == "true" ]; then
-         echo "cdsp-cdsp-l3-lat governor"
-         cat /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
+       echo "cdsp-cdsp-l3-lat governor"
+       cat /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
     fi
 
     if [ "CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
