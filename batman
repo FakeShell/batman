@@ -176,7 +176,7 @@ fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
 if [ -z "$CHARGESAVE" ]; then
-   CHARGESAVE=false
+   CHARGESAVE=true
 fi
 
 # Make sure that our GPUSAVE variable is set from the config file if not use default value.
@@ -195,21 +195,6 @@ if [[ "$MAX_CPU_USAGE" =~ ^[0-9]+$ ]] && [[ "$MAX_CPU_USAGE" -ge 0 ]] && [[ "$MA
 else
     echo "bad MAX_CPU_USAGE value. defaulting to 60"
     MAX_CPU_USAGE=60
-fi
-
-VARS=(CHARGESAVE BUSSAVE GPUSAVE POWERSAVE OFFLINE)
-
-# Loop through array and check/set each variable
-for var in "${VARS[@]}"; do
-    if [[ "${!var}" != "true" ]] && [[ "${!var}" != "false" ]]; then
-        declare "$var=true"
-    fi
-    echo "bad $var value. defaulting to ${!var}"
-done
-
-# Check if we can find any GPU profile in devfreq.
-if [ -d /sys/class/devfreq/ ]; then
-   DEVFREQ_GPU_PATH=$(find /sys/class/devfreq -name "*.gpu" -print -quit)
 fi
 
 # Set up an array with the GPU governor file paths to check
