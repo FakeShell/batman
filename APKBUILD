@@ -1,7 +1,8 @@
 # Contributor: Bardia Moshiri <fakeshell@bardia.tech>
 # Maintainer: Bardia Moshiri <fakeshell@bardia.tech>
+
 pkgname=batman
-pkgver=0.35
+pkgver=0.37
 pkgrel=0
 pkgdesc="A battery management service and program for Linux phones"
 url="https://github.com/FakeShell/batman"
@@ -23,5 +24,5 @@ package() {
 }
 
 sha512sums="
-b749970b4f3c830ead30a81ee3c12790a59d8175da53554d510b913dec0d572269ef4b42ca8eeebffaf41e49c0ebd8c5d3d9cdfcf1276112a046bce89f2469a8  batman.tar.gz
+d6d79f1299c9e29e5376946b93860fc7caea50ff48522230b62019c5af297f4c283edd89a3df27f5795ac95adea027515a01280bd00b8adf8dd6bde30eaf0441 batman.tar.gz
 "
