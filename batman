@@ -44,14 +44,12 @@ UIDS=$(ls /run/user | head -1)
 
 # x86 cpus have powersave and performance governors, check architecture and set the governor accordingly.
 if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
-
    if grep "performance" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_available_governors &> /dev/null; then
       DEFAULT_GOVERNOR="performance"
    else
       echo "can't find the right governor. exiting"
       exit 0
    fi
-
 else
    DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor)
 fi
@@ -105,7 +103,6 @@ if [[ $(which wlr-randr) ]]; then
    else
       WLROOTS=true
    fi
-
 else
    echo "wlr-randr does not exist."
    exit 0
@@ -116,7 +113,6 @@ if [ "$WLROOTS" == "true" ]; then
    while [[ true ]]
    do
       XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr &> /dev/null
-
       if [ $? -eq 0 ]; then
          # If the exit status is 0, break out of the loop
          break
@@ -124,19 +120,16 @@ if [ "$WLROOTS" == "true" ]; then
          # If the exit status is not 0, wait for some time and try again
          sleep 1
       fi
-
    done
 fi
 
 # Check if system is using KDE Plasma.
 if [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
-
    if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
       KDE=true
    else
       KDE=false
    fi
-
 else
    KDE=false
 fi
@@ -211,14 +204,12 @@ gpu_governor_paths=(
 
 # Loop through the GPU governor file paths and check if each file exists
 for gpu_governor_path in "${gpu_governor_paths[@]}"; do
-
-  if [ -f "$gpu_governor_path" ]; then
-    GPUSAVE=true
-    DEFAULT_GPU_GOVERNOR=$(<"$gpu_governor_path")
-    GPU_GOVERNOR_PATH="$gpu_governor_path"
-    break
-  fi
-
+    if [ -f "$gpu_governor_path" ]; then
+       GPUSAVE=true
+       DEFAULT_GPU_GOVERNOR=$(<"$gpu_governor_path")
+       GPU_GOVERNOR_PATH="$gpu_governor_path"
+       break
+    fi
 done
 
 # If none of the GPU governor files were found, set GPUSAVE to false
@@ -228,18 +219,15 @@ fi
 
 # If powersave is not a governor in the GPU profile then disable this feature.
 if [ $GPUSAVE == "true" ]; then
-
    if grep "powersave" $GPU_GOVERNOR_PATH &> /dev/null; then
       true
    else
       GPUSAVE=false
    fi
-
 fi
 
 # Check for bus governor nodes, if available then we'll powersave them too!
 if [ "$BUSSAVE" == "true" ] && [ -d /sys/class/devfreq/ ]; then
-
    if [ -d /sys/class/devfreq/soc:qcom,cci/ ]; then
       CCI=true
       DEFAULT_CCI_GOVERNOR=$(</sys/class/devfreq/soc:qcom,cci/governor)
@@ -389,7 +377,6 @@ if [ "$BUSSAVE" == "true" ] && [ -d /sys/class/devfreq/ ]; then
       NPU_NPU_DDR_BW=true
       DEFAULT_NPU_NPU_DDR_BW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor)
    fi
-
 fi
 
 # Declare an array with the configuration values
@@ -428,8 +415,7 @@ declare -A governors=(
 )
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
-if [[ "$UPTIME" -le "1" ]]; then
-
+if [ ! -f /var/lib/batman/saved ]; then
    if [ "$DEFAULT_GOVERNOR" == "powersave" ]; then
       echo "bad starting governor. exiting"
       exit 0
@@ -438,26 +424,23 @@ if [[ "$UPTIME" -le "1" ]]; then
    fi
 
    for gov in "${!governors[@]}"; do
-
-     if [ "${!gov}" == "true" ]; then
-       lowercase=$(echo "${gov,,}") # convert to lowercase
-       echo "${governors[$gov]}" > "/var/lib/batman/default_${lowercase}_governor"
-     fi
-
+      if [ "${!gov}" == "true" ]; then
+        lowercase=$(echo "${gov,,}") # convert to lowercase
+        echo "${governors[$gov]}" > "/var/lib/batman/default_${lowercase}_governor"
+      fi
    done
 
+   touch > /var/lib/batman/saved
 fi
 
 # In case of bad governor values choose the right value or exit if it fails to do so.
 if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-
    if [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
       echo "bad starting governor. exiting"
       exit 0
    else
       DEFAULT_GOVERNOR=$(</var/lib/batman/default_cpu_governor)
    fi
-
 fi
 
 # Loop over the array and check each variable
@@ -506,7 +489,6 @@ function online() {
 
 # Check if GPUSAVE is enabled, if so enable use the right functions.
 if [ "$GPUSAVE" == "true" ]; then
-
    function gpusave() {
        echo "powersave" > $GPU_GOVERNOR_PATH
    }
@@ -514,9 +496,7 @@ if [ "$GPUSAVE" == "true" ]; then
    function gpudefault() {
        echo "$DEFAULT_GPU_GOVERNOR" > $GPU_GOVERNOR_PATH
    }
-
 else
-
    function gpusave() {
        true
    }
@@ -524,12 +504,10 @@ else
    function gpudefault() {
        true
    }
-
 fi
 
 # Check if BUSSAVE is enabled, if so enable use the right functions.
 if [ "$BUSSAVE" == "true" ]; then
-
    function bussave() {
        if [ "$CCI" == "true" ]; then
           echo "powersave" > /sys/class/devfreq/soc:qcom,cci/governor
@@ -775,7 +753,6 @@ if [ "$BUSSAVE" == "true" ]; then
    }
 
 else
-
    function bussave() {
        true
    }
@@ -783,7 +760,6 @@ else
    function busdefault() {
        true
    }
-
 fi
 
 # This clears the screen status whether or not it is off.
@@ -811,7 +787,6 @@ do
        else
           SCREEN="no"
        fi
-
     fi
 
     # if variable FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
@@ -824,7 +799,6 @@ do
 
     # Check if powersave should be enabled.
     if [ "$POWERSAVE" == "true" ]; then
-
        # if screen is off and device is not charging then device will be set into powersave
        if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
           powersave
@@ -841,7 +815,6 @@ do
           gpudefault
           busdefault
        fi
-
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
@@ -849,7 +822,6 @@ do
 
     # Use our OFFLINE variable to see if this process should even be started.
     if [ "$OFFLINE" == "true" ]; then
-
        # if device is not plugged into a power source and screen is off and cpu usage is less than 40% (as an example user is not listening to some youtube video) then set cpu to offline.
        if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_CPU_USAGE" ]; then
           offline
@@ -860,7 +832,6 @@ do
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
           offline
        fi
-
     fi
 
     # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
@@ -869,5 +840,4 @@ do
     fi
 
     sleep 0.3
-
 done
