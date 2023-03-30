@@ -56,9 +56,6 @@ fi
 
 AVUSER=$(ls /run/user | wc -l)
 AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
-FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
-FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
-LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
 UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
 # Make sure the required directory exists.
@@ -74,17 +71,44 @@ else
 fi
 
 # Check if there are any policies available.
-if [[ "$AVPOL" == "0" ]]; then
+if [[ "$AVPOL" != "0" ]]; then
+   FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
+   FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+   LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
+# Support for older arm devices such as MSM8996.
+elif [[ "$AVPOL" == "0" ]] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_state" ]; then
+   LEGACY=true
+   STATE=$(grep "cpu" /sys/devices/system/cpu/cpufreq/all_time_in_state | wc -w)
+
+   # Just a bit of info for debugging. can be used later on.
+   for ((i=2;i<=$STATE; i++))
+   do
+      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$(($i-2))
+   done
+
+   # Offlining is broken for now on older arm devices it will make sysfs nodes go crazy.
+   FIRSTPOLCORE="$CORE_FIRST"
+   LASTPOLCORE=$(($CORE_LAST/2))
+else
    echo "no cpu policies available. exiting"
    exit 0
 fi
 
 # Check if powersave governor is available.
-if grep powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors &> /dev/null; then
-   true
+if [ "$LEGACY" == "true" ]; then
+   if grep powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors &> /dev/null; then
+      true
+   else
+      echo "powersave is not a governor on this system. exiting"
+      exit 0
+   fi
 else
-   echo "powersave is not a governor on this system. exiting"
-   exit 0
+   if grep powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors &> /dev/null; then
+      true
+   else
+      echo "powersave is not a governor on this system. exiting"
+      exit 0
+   fi
 fi
 
 # We depend on upower for charging status.
@@ -153,7 +177,7 @@ fi
 
 # Use our AVPOL variable to make sure our device has more than one policy groups.
 # If there was only one set the variable to not offline any cpu cores.
-if [[ "$AVPOL" -eq "1" ]] || [[ "$(uname -m)" = "x86_64" ]] || [[ "$(uname -m)" = "i686" ]]; then
+if [[ "$AVPOL" -eq "1" ]] || [[ "$(uname -m)" = "x86_64" ]] || [[ "$(uname -m)" = "i686" ]] || [[ "$LEGACY"  = "true" ]]; then
    OFFLINE=false
 fi
 
