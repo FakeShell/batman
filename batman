@@ -86,7 +86,6 @@ elif [[ "$AVPOL" == "0" ]] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_
       awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$(($i-2))
    done
 
-   # Offlining is broken for now on older arm devices it will make sysfs nodes go crazy.
    FIRSTPOLCORE="$CORE_FIRST"
    LASTPOLCORE=$(($CORE_LAST/2))
 else
@@ -177,7 +176,7 @@ fi
 
 # Use our AVPOL variable to make sure our device has more than one policy groups.
 # If there was only one set the variable to not offline any cpu cores.
-if [[ "$AVPOL" -eq "1" ]] || [[ "$(uname -m)" = "x86_64" ]] || [[ "$(uname -m)" = "i686" ]] || [[ "$LEGACY"  = "true" ]]; then
+if [[ "$AVPOL" -eq "1" ]] || [[ "$(uname -m)" = "x86_64" ]] || [[ "$(uname -m)" = "i686" ]]; then # || [[ "$LEGACY"  = "true" ]]; then
    OFFLINE=false
 fi
 
