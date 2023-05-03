@@ -14,7 +14,7 @@ EOF
 # Bumped at every commit
 version()
 {
-   echo "0.37"
+   echo "0.38"
    exit 0
 }
 
@@ -155,6 +155,22 @@ if [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
    fi
 else
    KDE=false
+fi
+
+if [[ $(which batman-helper) ]]; then
+   echo "using batman-helper"
+   GET_CPU_USAGE="batman-helper cpu"
+   touch /var/lib/batman/using-batman-helper
+else
+   GET_CPU_USAGE="awk '{u=\$2+\$4; t=\$2+\$4+\$5; if (NR==1){u1=u; t1=t;} else print (\$2+\$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d '.' -f1"
+   rm /var/lib/batman/using-batman-helper -f
+fi
+
+# Run the correct command to get screen status
+if [ "$WLROOTS" == "true" ]; then
+   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
+elif [ "$KDE" == "true" ]; then
+   GET_SCREEN="XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/\$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse(\$0), 3, length(\$0)-24)}'"
 fi
 
 # If none of the supported compositors are used then exit.
@@ -795,24 +811,21 @@ while [[ true ]]
 do
     # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
     SCREEN_OLD=$(</var/lib/batman/screen)
+
     # Get cpu usage from /proc/stat
-    CPU_USAGE=$(awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d "." -f1)
+    CPU_USAGE=$(eval "$GET_CPU_USAGE")
 
-    # Run the correct command to get screen status
     # Save screen status to a variable so that we can use it later in our checks.
-    if [ "$WLROOTS" == "true" ]; then
-       SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p')
-    elif [ "$KDE" == "true" ]; then
-       DISPSTAT=$(XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse($0), 3, length($0)-24)}')
+    SCREEN=$(eval "$GET_SCREEN")
 
-       if [ "$DISPSTAT" == "true" ]; then
-          SCREEN="yes"
-       else
-          SCREEN="no"
-       fi
+    if [ "$KDE" == "true" ]; then
+        if [ "$SCREEN" == "true" ]; then
+           SCREEN="yes"
+        else
+           SCREEN="no"
+        fi
     fi
 
-    # if variable FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
     if [ "$CHARGESAVE" == "true" ]; then
         CHARGE="discharging"
     else
@@ -862,5 +875,14 @@ do
        echo "$SCREEN" > /var/lib/batman/screen
     fi
 
-    sleep 0.3
+    # To not do as many useless iterations wait here for some time when the screen is on or when user is using the device.
+    if [ "$SCREEN" == "yes" ]; then
+       if [ "$SCREEN_OLD" == "no" ]; then
+          sleep 0.3
+       else
+          sleep 10
+       fi
+    else
+       sleep 0.3
+    fi
 done
