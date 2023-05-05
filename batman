@@ -99,10 +99,6 @@ else
    exit 0
 fi
 
-echo $FIRSTPOL
-echo $FIRSTPOLCORE
-echo $LASTPOLCORE
-
 # Check if powersave governor is available.
 if [ "$LEGACY" == "true" ]; then
    if grep powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors &> /dev/null; then
@@ -816,7 +812,7 @@ echo "" > /var/lib/batman/screen
 
 # Give ownership of /var/lib/batman to the user id available in /run/user.
 chown $UIDS:$UIDS /var/lib/batman -R
-echo $OFFLINE
+
 while [[ true ]]
 do
     # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
