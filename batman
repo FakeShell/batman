@@ -72,18 +72,24 @@ fi
 
 # Check if there are any policies available.
 if [[ "$AVPOL" != "0" ]]; then
-   FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
-   FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
-   LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
+   if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+      FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
+      FIRSTPOLCORE=1
+      LASTPOLCORE="$CORE_LAST"
+   else
+      FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
+      FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
+      LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
+   fi
 # Support for older arm devices such as MSM8996.
 elif [[ "$AVPOL" == "0" ]] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_state" ]; then
    LEGACY=true
    STATE=$(grep "cpu" /sys/devices/system/cpu/cpufreq/all_time_in_state | wc -w)
 
    # Just a bit of info for debugging. can be used later on.
-   for ((i=2;i<=$STATE; i++))
+   for ((i=2; i<=$STATE; i++))
    do
-      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$(($i-2))
+      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$(($i - 2))
    done
 
    FIRSTPOLCORE="$CORE_FIRST"
@@ -92,6 +98,10 @@ else
    echo "no cpu policies available. exiting"
    exit 0
 fi
+
+echo $FIRSTPOL
+echo $FIRSTPOLCORE
+echo $LASTPOLCORE
 
 # Check if powersave governor is available.
 if [ "$LEGACY" == "true" ]; then
@@ -192,7 +202,7 @@ fi
 
 # Use our AVPOL variable to make sure our device has more than one policy groups.
 # If there was only one set the variable to not offline any cpu cores.
-if [[ "$AVPOL" -eq "1" ]] || [[ "$(uname -m)" = "x86_64" ]] || [[ "$(uname -m)" = "i686" ]]; then # || [[ "$LEGACY"  = "true" ]]; then
+if [[ "$AVPOL" -eq "1" ]]; then
    OFFLINE=false
 fi
 
@@ -469,7 +479,7 @@ if [ ! -f /var/lib/batman/saved ]; then
       fi
    done
 
-   touch > /var/lib/batman/saved
+   touch /var/lib/batman/saved
 fi
 
 # In case of bad governor values choose the right value or exit if it fails to do so.
@@ -496,7 +506,7 @@ done
 
 # Function that sets the cpu governor to powersave.
 function powersave() {
-    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
+    for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
     do
         echo "powersave" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
     done
@@ -504,7 +514,7 @@ function powersave() {
 
 # Function that sets the cpu governor to the default value.
 function default() {
-    for ((i=$CORE_FIRST;i<=$CORE_LAST; i++))
+    for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
     do
          echo "$DEFAULT_GOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
     done
@@ -512,7 +522,7 @@ function default() {
 
 # This function sets cpu cores in policy group one to offline.
 function offline() {
-    for ((i=$FIRSTPOLCORE;i<=$LASTPOLCORE; i++))
+    for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
     do
          echo "0" > /sys/devices/system/cpu/cpu$i/online
     done
@@ -520,7 +530,7 @@ function offline() {
 
 # This function sets cpu cores in policy group one to online.
 function online() {
-    for ((i=$FIRSTPOLCORE;i<=$LASTPOLCORE; i++))
+    for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
     do
          echo "1" > /sys/devices/system/cpu/cpu$i/online
     done
@@ -806,7 +816,7 @@ echo "" > /var/lib/batman/screen
 
 # Give ownership of /var/lib/batman to the user id available in /run/user.
 chown $UIDS:$UIDS /var/lib/batman -R
-
+echo $OFFLINE
 while [[ true ]]
 do
     # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
