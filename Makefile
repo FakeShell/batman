@@ -1,0 +1,38 @@
+CC = gcc
+CFLAGS = -DWITH_UPOWER `pkg-config --cflags upower-glib`
+LDFLAGS = `pkg-config --libs upower-glib`
+TARGET = batman-helper
+SRC = batman-helper.c
+DESTDIR = /usr/bin
+LIBDIR = /var/lib/batman
+SYSTEMD_DIR = /usr/lib/systemd
+APT_DIR = /etc/apt/sources.list.d
+KEYRING_DIR = /usr/share/keyrings
+
+.PHONY: all
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o $(TARGET)
+
+.PHONY: install
+install: $(TARGET)
+	cp batman $(DESTDIR)
+	cp governor $(DESTDIR)
+	mkdir -p $(LIBDIR)
+	cp config $(LIBDIR)
+	cp $(TARGET) $(DESTDIR)
+	chmod +x $(DESTDIR)/batman $(DESTDIR)/governor $(DESTDIR)/$(TARGET)
+
+ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
+	cp batman.service $(SYSTEMD_DIR)
+endif
+
+ifeq ($(shell test -x /usr/bin/apt-get && echo 1),1)
+	cp batman.list $(APT_DIR)
+	cp fakeshell.gpg $(KEYRING_DIR)/batman.gpg
+endif
+
+.PHONY: clean
+clean:
+	rm -f $(TARGET)
