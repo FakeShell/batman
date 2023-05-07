@@ -4,6 +4,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
+#ifdef WITH_UPOWER
+#include <upower.h>
+#endif
 
 #define MEMINFO "/proc/meminfo"
 
@@ -14,6 +18,65 @@ struct meminfo {
     long long int cached;
     long long int sreclaimable;
 };
+
+#ifdef WITH_UPOWER
+UpDevice *findBattery(UpClient *upower)
+{
+    UpDevice *device = NULL;
+
+    GPtrArray *devices = up_client_get_devices2(upower);
+
+    for (int i = 0; i < devices->len; i++) {
+        UpDevice *this_dev = g_ptr_array_index(devices, i);
+
+        gboolean power_supply;
+        UpDeviceKind kind;
+
+        g_object_get(this_dev, "power-supply", &power_supply, "kind", &kind, NULL);
+
+        if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY)
+            device = this_dev;
+    }
+
+    if (device != NULL)
+        g_object_ref(device);
+
+    g_ptr_array_unref(devices);
+
+    if (device == NULL) {
+        g_print("no battery\n");
+        return NULL;
+    }
+
+    UpDeviceState state;
+
+    g_object_get(device, "state", &state, NULL);
+
+    const gchar *statelabel;
+
+    switch (state) {
+    case UP_DEVICE_STATE_CHARGING:
+        statelabel = "charging";
+        break;
+    case UP_DEVICE_STATE_DISCHARGING:
+        statelabel = "discharging";
+        break;
+    case UP_DEVICE_STATE_FULLY_CHARGED:
+        statelabel = "fully-charged";
+        break;
+    default:
+        statelabel = NULL;
+    }
+
+    if (statelabel != NULL) {
+        g_print("%s\n", statelabel);
+    }
+
+    g_object_unref(device);
+
+    return device;
+}
+#endif
 
 int readMemInfo(struct meminfo *mem) {
     if (mem == NULL) {
@@ -131,7 +194,7 @@ int memUsage() {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s [cpu|mem]\n", argv[0]);
+        printf("Usage: %s [cpu|mem|battery]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -139,8 +202,26 @@ int main(int argc, char *argv[]) {
         return cpuUsage();
     } else if (strcmp(argv[1], "mem") == 0) {
         return memUsage();
+    } else if (strcmp(argv[1], "battery") == 0) {
+        #ifdef WITH_UPOWER
+        UpClient *upower = up_client_new();
+
+        if (upower == NULL) {
+            g_print("Could not connect to upower");
+            return 2;
+        }
+
+        UpDevice *battery = findBattery(upower);
+
+        g_object_unref(upower);
+
+        return 0;
+        #else
+        printf("Upower support is not enabled. Recompile with -DWITH_UPOWER to enable it.\n");
+        return EXIT_FAILURE;
+        #endif
     } else {
-        printf("Invalid option. Usage: %s [cpu|mem]\n", argv[0]);
+        printf("Invalid option. Usage: %s [cpu|mem|battery]\n", argv[0]);
         return EXIT_FAILURE;
     }
 }
