@@ -117,8 +117,15 @@ else
 fi
 
 # We depend on upower for charging status.
-if ! [[ $(which upower) ]]; then
-   echo "upower is not available. exiting"
+if [[ $(which batman-helper) ]]; then
+   echo "using batman-helper for charging status"
+   GET_CHARGE="batman-helper battery"
+   touch /var/lib/batman/using-batman-helper-for-charge
+elif [[ $(which upower) ]]; then
+   GET_CHARGE='upower -d | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
+   rm /var/lib/batman/using-batman-helper-for-charge -f
+else
+   echo "neither batman-helper nor upower is not available. exiting"
    exit 0
 fi
 
@@ -164,12 +171,12 @@ else
 fi
 
 if [[ $(which batman-helper) ]]; then
-   echo "using batman-helper"
+   echo "using batman-helper for CPU usage"
    GET_CPU_USAGE="batman-helper cpu"
-   touch /var/lib/batman/using-batman-helper
+   touch /var/lib/batman/using-batman-helper-for-cpu
 else
    GET_CPU_USAGE="awk '{u=\$2+\$4; t=\$2+\$4+\$5; if (NR==1){u1=u; t1=t;} else print (\$2+\$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d '.' -f1"
-   rm /var/lib/batman/using-batman-helper -f
+   rm /var/lib/batman/using-batman-helper-for-cpu -f
 fi
 
 # Run the correct command to get screen status
@@ -836,7 +843,7 @@ do
         CHARGE="discharging"
     else
         # Check if device is plugged into a power source.
-        CHARGE=$(upower -d | awk '{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}')
+        CHARGE=$(eval "$GET_CHARGE")
     fi
 
     # Check if powersave should be enabled.
