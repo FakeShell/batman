@@ -5,8 +5,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
+
 #ifdef WITH_UPOWER
 #include <upower.h>
+#endif
+
+#ifdef WITH_WLRDISPLAY
+#include "wlrdisplay.h"
 #endif
 
 #define MEMINFO "/proc/meminfo"
@@ -194,7 +199,7 @@ int memUsage() {
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s [cpu|mem|battery]\n", argv[0]);
+        printf("Usage: %s [cpu|mem|wlrdisplay|battery]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -202,6 +207,13 @@ int main(int argc, char *argv[]) {
         return cpuUsage();
     } else if (strcmp(argv[1], "mem") == 0) {
         return memUsage();
+    } else if (strcmp(argv[1], "wlrdisplay") == 0) {
+        #ifdef WITH_WLRDISPLAY
+        return wlrdisplay(argc, argv);
+        #else
+        printf("wlrdisplay support is not enabled. Recompile with -DWITH_WLRDISPLAY to enable it.\n");
+        return EXIT_FAILURE;
+        #endif
     } else if (strcmp(argv[1], "battery") == 0) {
         #ifdef WITH_UPOWER
         UpClient *upower = up_client_new();
