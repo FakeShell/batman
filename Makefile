@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -DWITH_UPOWER `pkg-config --cflags upower-glib`
-LDFLAGS = `pkg-config --libs upower-glib`
+CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY `pkg-config --cflags upower-glib`
+LDFLAGS = -lwayland-client `pkg-config --libs upower-glib`
 TARGET = batman-helper
-SRC = batman-helper.c
+SRC = batman-helper.c wlrdisplay.c
 DESTDIR = /usr/bin
 LIBDIR = /var/lib/batman
 SYSTEMD_DIR = /usr/lib/systemd

@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
         #endif
     } else {
-        printf("Invalid option. Usage: %s [cpu|mem|battery]\n", argv[0]);
+        printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery]\n", argv[0]);
         return EXIT_FAILURE;
     }
 }

@@ -333,13 +333,18 @@ function busgovernor() {
     fi
 }
 
+if [[ $(which batman-helper) ]] && [[ $(eval $(which batman-helper) wlrdisplay &> /dev/null) ]]; then
+   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr batman-helper wlrdisplay"
+elif [[ $(which wlr-randr) ]]; then
+   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
+fi
 
 while [[ true ]];
 do
     clear
     clear
     echo -n "screen status [enabled]: "
-    XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'
+    eval "$GET_SCREEN"
     governor
     gpugovernor
     busgovernor

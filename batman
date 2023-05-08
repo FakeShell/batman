@@ -30,7 +30,7 @@ esac
 
 # CORE_FIRST will read cpuinfo and get the first cpu core number at boot. (we know its 0 but just in case to be 100% safe)
 # CORE_LAST will read cpuinfo and get the last cpu core number at boot.
-# UIDS will list users from /run/user to later use with wlr-randr.
+# UIDS will list users from /run/user to later use with wlrdisplay or wlr-randr
 # DEFAULT_GOVERNOR stores the default cpu governor used by the device.
 # AVUSER will get the number of active user sessions. It's used later on to make sure there is only one active user with a session.
 # AVPOL will check for the amount of cpu policy groups. It's used later on to disable offlining on devices with a single group.
@@ -116,58 +116,74 @@ else
    fi
 fi
 
-# We depend on upower for charging status.
+# Use either upower client or our own upower wrapper
 if [[ $(which batman-helper) ]]; then
-   echo "using batman-helper for charging status"
-   GET_CHARGE="batman-helper battery"
-   touch /var/lib/batman/using-batman-helper-for-charge
+   eval $(which batman-helper) battery &> /dev/null
+   if [[ $? -eq 0 ]]; then
+      echo "using batman-helper for charging status"
+      GET_CHARGE="batman-helper battery"
+      touch /var/lib/batman/using-batman-helper-for-charge
+   fi
 elif [[ $(which upower) ]]; then
    GET_CHARGE='upower -d | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
    rm /var/lib/batman/using-batman-helper-for-charge -f
 else
-   echo "neither batman-helper nor upower is not available. exiting"
+   echo "neither batman-helper nor upower is available. exiting"
    exit 0
 fi
 
-# Make sure wlr-randr is installed on the system.
-# If it was check if system is using a wlroots based desktop environment.
-if [[ $(which wlr-randr) ]]; then
-   XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr &> /var/lib/batman/wlr-randr
+# Use either wlrdisplay or wlr-randr
+if [[ $(which batman-helper) ]]; then
+   eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /dev/null
+   if [[ $? -eq 0 ]]; then
+      echo "using batman-helper for screen status"
+      GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
+      touch /var/lib/batman/using-batman-helper-for-screen
+      WLRTOOL=true
+   fi
+elif [[ $(which wlr-randr) ]]; then
+   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
+   rm /var/lib/batman/using-batman-helper-for-screen -f
+   WLRTOOL=true
+else
+   WLRTOOL=false
+fi
 
-   if grep "compositor doesn't support" /var/lib/batman/wlr-randr &> /dev/null; then
+# Check if system is using a wlroots based desktop environment.
+if [ "$WLRTOOL" == "true" ]; then
+   eval "$GET_SCREEN" &> /var/lib/batman/wlrcheck
+
+   if grep "compositor doesn't support" /var/lib/batman/wlrcheck &> /dev/null; then
+      WLROOTS=false
+   elif grep "wl_display_dispatch failed" /var/lib/batman/wlrcheck &> /dev/null; then
       WLROOTS=false
    else
       WLROOTS=true
    fi
-else
-   echo "wlr-randr does not exist."
-   exit 0
 fi
 
-# Check if Phosh/sxmo has started. if not wait a bit and retry.
+# Check if wlroots based environment has started. if not wait a bit and retry.
 if [ "$WLROOTS" == "true" ]; then
    while [[ true ]]
    do
-      XDG_RUNTIME_DIR=/run/user/$UIDS/ wlr-randr &> /dev/null
+      eval "$GET_SCREEN" &> /dev/null
+
       if [ $? -eq 0 ]; then
          # If the exit status is 0, break out of the loop
          break
       else
          # If the exit status is not 0, wait for some time and try again
-         sleep 1
+         sleep 10
       fi
    done
-fi
-
 # Check if system is using KDE Plasma.
-if [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
+elif [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
    if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
+      GET_SCREEN="XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/\$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse(\$0), 3, length(\$0)-24)}'"
       KDE=true
    else
       KDE=false
    fi
-else
-   KDE=false
 fi
 
 if [[ $(which batman-helper) ]]; then
@@ -177,13 +193,6 @@ if [[ $(which batman-helper) ]]; then
 else
    GET_CPU_USAGE="awk '{u=\$2+\$4; t=\$2+\$4+\$5; if (NR==1){u1=u; t1=t;} else print (\$2+\$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d '.' -f1"
    rm /var/lib/batman/using-batman-helper-for-cpu -f
-fi
-
-# Run the correct command to get screen status
-if [ "$WLROOTS" == "true" ]; then
-   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
-elif [ "$KDE" == "true" ]; then
-   GET_SCREEN="XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/\$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse(\$0), 3, length(\$0)-24)}'"
 fi
 
 # If none of the supported compositors are used then exit.
@@ -846,14 +855,14 @@ do
         CHARGE=$(eval "$GET_CHARGE")
     fi
 
-    # Check if powersave should be enabled.
+    # Check if powersave should be set.
     if [ "$POWERSAVE" == "true" ]; then
-       # if screen is off and device is not charging then device will be set into powersave
+       # if screen is off and device is not charging then device will be set into powersave.
        if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
           powersave
           gpusave
           bussave
-       # if device is charging or fully charged and still plugged into the wall then set everything back to default.
+       # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
        elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
           default
           gpudefault
@@ -871,10 +880,10 @@ do
 
     # Use our OFFLINE variable to see if this process should even be started.
     if [ "$OFFLINE" == "true" ]; then
-       # if device is not plugged into a power source and screen is off and cpu usage is less than 40% (as an example user is not listening to some youtube video) then set cpu to offline.
+       # if device is not plugged into a power source and screen is off and cpu usage is less than MAX_CPU_USAGE (default is 60) then set cpu to offline.
        if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_CPU_USAGE" ]; then
           offline
-       # if screen or on or current governor is the same as default governor or cpu usage is higher than 40% set cpu cores to online. (all cases to not set cpu cores to offline accidentally)
+       # if screen or on or current governor is the same as default governor or cpu usage is higher than MAX_CPU_USAGE (default is 60) set cpu cores to online.
        elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "$MAX_CPU_USAGE" ]; then
           online
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
