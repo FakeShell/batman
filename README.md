@@ -32,16 +32,16 @@ The following packages have to be installed to compile with upower support
 
 For Debian based systems:
 
-`sudo apt install libupower-glib-dev pkg-config`
+`sudo apt install libupower-glib-dev pkg-config libwayland-dev`
 
 For Fedora based systems:
 
-`sudo dnf install upower-devel pkg-config`
+`sudo dnf install upower-devel pkg-config wayland-devel`
 
 For Arch based systems:
 
-`sudo pacman -S upower pkgconf`
+`sudo pacman -S upower pkgconf wayland`
 
 For Alpine based systems:
 
-`sudo apk add upower-dev pkgconfig`
+`sudo apk add upower-dev pkgconfig wayland-dev`
