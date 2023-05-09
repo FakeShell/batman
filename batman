@@ -134,12 +134,22 @@ fi
 
 # Use either wlrdisplay or wlr-randr
 if [[ $(which batman-helper) ]]; then
-   eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /dev/null
+   eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /var/lib/batman/wlrfirstcheck
    if [[ $? -eq 0 ]]; then
       echo "using batman-helper for screen status"
       GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
       touch /var/lib/batman/using-batman-helper-for-screen
       WLRTOOL=true
+   elif [[ $? -eq 1 ]]; then
+      if grep "wlrdisplay support is not enabled." /var/lib/batman/wlrfirstcheck &> /dev/null; then
+         if [[ $(which wlr-randr) ]]; then
+            GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
+            rm /var/lib/batman/using-batman-helper-for-screen -f
+            WLRTOOL=true
+         fi
+      else
+         WLRTOOL=false
+      fi
    fi
 elif [[ $(which wlr-randr) ]]; then
    GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
@@ -160,6 +170,8 @@ if [ "$WLRTOOL" == "true" ]; then
    else
       WLROOTS=true
    fi
+else
+   WLROOTS=false
 fi
 
 # Check if wlroots based environment has started. if not wait a bit and retry.
@@ -178,8 +190,9 @@ if [ "$WLROOTS" == "true" ]; then
    done
 # Check if system is using KDE Plasma.
 elif [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
-   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o | grep Output &> /dev/null; then
-      GET_SCREEN="XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/\$UIDS kscreen-doctor -j | awk '/enabled/{print substr(reverse(\$0), 3, length(\$0)-24)}'"
+   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o 2>/dev/null | grep Output >/dev/null 2>&1; then
+      USERNAME=$(id -un $UIDS)
+      GET_SCREEN="sudo -u $USERNAME DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/$UIDS/bus' qdbus org.kde.screensaver /ScreenSaver org.freedesktop.ScreenSaver.GetActive"
       KDE=true
    else
       KDE=false
@@ -203,8 +216,17 @@ fi
 
 # Use our AVUSER variable to make sure only one active user session exists.
 if [[ "$AVUSER" -gt "1" ]]; then
-   echo "more than one user active. exiting"
-   exit 0
+   echo "more than one user active. waiting for the other user profile to disappear"
+   while true
+   do
+      AVUSER=$(ls /run/user | wc -l)
+      if [[ "$AVUSER" -gt "1" ]]; then
+         sleep 10
+      else
+         echo "other user disappeared. starting"
+         break
+      fi
+   done
 fi
 
 # Make sure that our OFFLINE variable is set from the config file if not use default value.
@@ -842,9 +864,9 @@ do
 
     if [ "$KDE" == "true" ]; then
         if [ "$SCREEN" == "true" ]; then
-           SCREEN="yes"
-        else
            SCREEN="no"
+        else
+           SCREEN="yes"
         fi
     fi
 
