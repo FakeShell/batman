@@ -35,7 +35,7 @@ endif
 
 ifeq ($(shell test -x /usr/bin/apt-get && echo 1),1)
 	cp batman.list $(APT_DIR)
-	cp fakeshell.gpg $(KEYRING_DIR)/batman.gpg
+	cp batman.gpg $(KEYRING_DIR)/batman.gpg
 endif
 
 .PHONY: clean
