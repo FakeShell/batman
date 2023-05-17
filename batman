@@ -44,8 +44,12 @@ UIDS=$(ls /run/user | head -1)
 
 # x86 cpus have powersave and performance governors, check architecture and set the governor accordingly.
 if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
-   if grep "performance" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_available_governors &> /dev/null; then
-      DEFAULT_GOVERNOR="performance"
+   if grep -q "performance" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_available_governors; then
+      if grep -q "powersave" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor; then
+         DEFAULT_GOVERNOR="powersave"
+      else
+         DEFAULT_GOVERNOR="performance"
+      fi
    else
       echo "can't find the right governor. exiting"
       exit 0
@@ -101,14 +105,14 @@ fi
 
 # Check if powersave governor is available.
 if [ "$LEGACY" == "true" ]; then
-   if grep powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors &> /dev/null; then
+   if grep -q powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
       true
    else
       echo "powersave is not a governor on this system. exiting"
       exit 0
    fi
 else
-   if grep powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors &> /dev/null; then
+   if grep -q powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
       true
    else
       echo "powersave is not a governor on this system. exiting"
@@ -163,9 +167,9 @@ fi
 if [ "$WLRTOOL" == "true" ]; then
    eval "$GET_SCREEN" &> /var/lib/batman/wlrcheck
 
-   if grep "compositor doesn't support" /var/lib/batman/wlrcheck &> /dev/null; then
+   if grep -q "compositor doesn't support" /var/lib/batman/wlrcheck; then
       WLROOTS=false
-   elif grep "wl_display_dispatch failed" /var/lib/batman/wlrcheck &> /dev/null; then
+   elif grep -q "wl_display_dispatch failed" /var/lib/batman/wlrcheck; then
       WLROOTS=false
    else
       WLROOTS=true
@@ -500,8 +504,12 @@ declare -A governors=(
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [ ! -f /var/lib/batman/saved ]; then
    if [ "$DEFAULT_GOVERNOR" == "powersave" ]; then
-      echo "bad starting governor. exiting"
-      exit 0
+      if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+         echo "$DEFAULT_GOVERNOR" > /var/lib/batman/default_cpu_governor
+      else
+         echo "bad starting governor. exiting"
+         exit 0
+      fi
    else
       echo "$DEFAULT_GOVERNOR" > /var/lib/batman/default_cpu_governor
    fi
@@ -514,11 +522,11 @@ if [ ! -f /var/lib/batman/saved ]; then
    done
 
    touch /var/lib/batman/saved
-fi
-
 # In case of bad governor values choose the right value or exit if it fails to do so.
-if [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   if [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
+elif [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
+   if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+      true
+   elif [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
       echo "bad starting governor. exiting"
       exit 0
    else
