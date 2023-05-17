@@ -41,9 +41,10 @@ esac
 CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
 CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
+ARCH=$(uname -m)
 
 # x86 cpus have powersave and performance governors, check architecture and set the governor accordingly.
-if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
    if grep -q "performance" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_available_governors; then
       if grep -q "powersave" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor; then
          DEFAULT_GOVERNOR="powersave"
@@ -76,7 +77,7 @@ fi
 
 # Check if there are any policies available.
 if [[ "$AVPOL" != "0" ]]; then
-   if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+   if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
       FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
       FIRSTPOLCORE=1
       LASTPOLCORE="$CORE_LAST"
@@ -231,6 +232,11 @@ if [[ "$AVUSER" -gt "1" ]]; then
          break
       fi
    done
+fi
+
+if [ -z "$(eval $GET_CHARGE)" ]; then
+   echo "No battery found in this device. exiting"
+   exit 0
 fi
 
 # Make sure that our OFFLINE variable is set from the config file if not use default value.
@@ -504,7 +510,7 @@ declare -A governors=(
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [ ! -f /var/lib/batman/saved ]; then
    if [ "$DEFAULT_GOVERNOR" == "powersave" ]; then
-      if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+      if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
          echo "$DEFAULT_GOVERNOR" > /var/lib/batman/default_cpu_governor
       else
          echo "bad starting governor. exiting"
@@ -524,7 +530,7 @@ if [ ! -f /var/lib/batman/saved ]; then
    touch /var/lib/batman/saved
 # In case of bad governor values choose the right value or exit if it fails to do so.
 elif [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "i686" ]; then
+   if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
       true
    elif [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
       echo "bad starting governor. exiting"
@@ -885,6 +891,16 @@ do
         CHARGE=$(eval "$GET_CHARGE")
     fi
 
+    # on x86 devices mostly operate in powersave anyways so we should check
+    # if device is plugged into a power source then set the governor to performance
+    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+       if [ "$CHARGE" = "charging" ] || [ "$CHARGE" = "fully-charged" ]; then
+          DEFAULT_GOVERNOR="performance"
+       else
+          DEFAULT_GOVERNOR="powersave"
+       fi
+    fi
+
     # Check if powersave should be set.
     if [ "$POWERSAVE" == "true" ]; then
        # if screen is off and device is not charging then device will be set into powersave.
@@ -907,6 +923,15 @@ do
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
     CUR_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+
+    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+       if [ "$SCREEN" = "no" ]; then
+          SCREEN_OLD=yes
+       fi
+
+       DEFAULT_GOVERNOR="performance"
+       CHARGE='discharging'
+    fi
 
     # Use our OFFLINE variable to see if this process should even be started.
     if [ "$OFFLINE" == "true" ]; then
