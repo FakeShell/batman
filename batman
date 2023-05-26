@@ -14,7 +14,7 @@ EOF
 # Bumped at every commit
 version()
 {
-   echo "0.38"
+   echo "1.38"
    exit 0
 }
 

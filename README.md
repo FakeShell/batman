@@ -14,16 +14,52 @@ It is currently available as a deb package, PKGBUILD and APKBUILD.
 
 Not tested on Ubuntu Touch that has deep sleep and suspends things by itself.
 
+The following packages have to be installed as dependencies
+
+For Debian based systems:
+
+`sudo apt install gcc make libupower-glib-dev pkg-config libwayland-dev`
+
+For Fedora based systems:
+
+`sudo dnf install upower-devel pkg-config wayland-devel 'Development Tools'`
+
+For Arch based systems:
+
+`sudo pacman -S upower pkgconf wayland gcc make`
+
+For Alpine based systems:
+
+`sudo apk add upower-dev pkgconfig wayland-dev gcc make`
+
+Everything can be compiled using the Makefile:
+
+```
+make
+```
+
+And to install everything onto the system
+
+```
+sudo make install
+```
+
+To enable the service
+
+```
+sudo systemctl enable --now batman
+```
+
 To compile batman-helper manually you can use gcc:
 
 ```
-gcc -DWITH_UPOWER -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o test -lwayland-client `pkg-config --cflags --libs upower-glib`
+gcc -DWITH_UPOWER -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
 ```
 
 If you don't want the upower support and want the script to use the old upower implementation use:
 
 ```
-gcc -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o test -lwayland-client `pkg-config --cflags --libs upower-glib`
+gcc -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
 ```
 
 If you don't want the wlr display status support and want the script to use the old wlr-randr implementation use:
@@ -33,22 +69,3 @@ gcc -DWITH_UPOWER batman-helper.c wlrdisplay.c -o batman-helper -lwayland-client
 ```
 
 older wlr-randr and upower implementations are slower so it is recommended to compile batman-helper with upower and wlrdisplay support
-
-The following packages have to be installed to compile with upower support
-
-For Debian based systems:
-
-`sudo apt install libupower-glib-dev pkg-config libwayland-dev`
-
-For Fedora based systems:
-
-`sudo dnf install upower-devel pkg-config wayland-devel`
-
-For Arch based systems:
-
-`sudo pacman -S upower pkgconf wayland`
-
-For Alpine based systems:
-
-`sudo apk add upower-dev pkgconfig wayland-dev`
-

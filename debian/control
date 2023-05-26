@@ -1,0 +1,17 @@
+Source: batman
+Maintainer: Bardia Moshiri
+Section: metapackages
+Priority: optional
+Build-Depends: debhelper (>= 10), gcc, make, libupower-glib-dev, pkg-config, libwayland-dev
+Standards-Version: 4.5.0.3
+Vcs-Browser: https://github.com/FakeShell/batman
+Vcs-Git: https://github.com/FakeShell/batman.git
+
+Package: batman
+Architecture: any
+Depends: ${misc:Depends},
+         bash,
+         yad,
+Suggests: wlr-randr
+Description: batman
+ A battery managementservice for Linux phones
