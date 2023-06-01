@@ -52,6 +52,7 @@ void update_config_value(const char* config_key, const char* config_value) {
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
+    int found = 0; // To check if key has been found
 
     src = fopen(CONFIG_FILE, "r");
     if (src == NULL) {
@@ -70,10 +71,16 @@ void update_config_value(const char* config_key, const char* config_value) {
         if (strstr(line, config_key) == line) {
             // This is the line to replace
             fprintf(dst, "%s=%s\n", config_key, config_value);
+            found = 1; // Set flag to indicate key has been found
         } else {
             // This line remains unchanged
             fprintf(dst, "%s", line);
         }
+    }
+
+    // If key not found, add it
+    if (!found) {
+        fprintf(dst, "%s=%s\n", config_key, config_value);
     }
 
     free(line);
@@ -146,21 +153,45 @@ int get_max_cpu_usage() {
 void set_max_cpu_usage(GtkSpinButton *spin_button, gpointer user_data) {
     int max_cpu_usage = gtk_spin_button_get_value_as_int(spin_button);
 
-    FILE *file = fopen(CONFIG_FILE, "r+");
+    if (max_cpu_usage < 0 || max_cpu_usage > 100) {
+        fprintf(stderr, "CPU usage must be between 0 and 100\n");
+        max_cpu_usage = 0;  // Set default value
+    }
+
+    FILE *file = fopen(CONFIG_FILE, "r");
     if (file == NULL) {
         perror("Unable to open config file");
         exit(1);
     }
 
     char line[256];
+    char config_data[1024] = "";  // Assuming config file is less than 1024 characters
+    bool found = false;
 
     while (fgets(line, sizeof(line), file)) {
         if (strncmp(line, "MAX_CPU_USAGE=", 14) == 0) {
-            fseek(file, -strlen(line), SEEK_CUR);
-            fprintf(file, "MAX_CPU_USAGE=%d\n", max_cpu_usage);
-            break;
+            sprintf(line, "MAX_CPU_USAGE=%d\n", max_cpu_usage);
+            found = true;
         }
+        strcat(config_data, line);
     }
+
+    // If MAX_CPU_USAGE is not found in the file, add it.
+    if (!found) {
+        sprintf(line, "MAX_CPU_USAGE=%d\n", max_cpu_usage);
+        strcat(config_data, line);
+    }
+
+    fclose(file);
+
+    // Now write the modified config data back to the file
+    file = fopen(CONFIG_FILE, "w");
+    if (file == NULL) {
+        perror("Unable to open config file");
+        exit(1);
+    }
+
+    fprintf(file, "%s", config_data);
 
     fclose(file);
 }
