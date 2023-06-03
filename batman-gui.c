@@ -209,53 +209,50 @@ GString* display_info() {
 
     file = fopen("/proc/cpuinfo", "r");
     if (file == NULL) {
-        printf("Could not open file /proc/cpuinfo");
-        return NULL;
-    }
-
-    int first_core = -1, last_core = -1, core;
-    while ((read = getline(&line, &len, file)) != -1) {
-        if (sscanf(line, "processor : %d", &core) == 1) {
-            if (first_core == -1) first_core = core;
-            last_core = core;
+        append_to_gstring(string, "CPU Information: unknown\n");
+    } else {
+        int first_core = -1, last_core = -1, core;
+        while ((read = getline(&line, &len, file)) != -1) {
+            if (sscanf(line, "processor : %d", &core) == 1) {
+                if (first_core == -1) first_core = core;
+                last_core = core;
+            }
         }
-    }
-    fclose(file);
-    free(line);
-    line = NULL;
+        fclose(file);
+        free(line);
+        line = NULL;
 
-    append_to_gstring(string, "First CPU core: %d\n", first_core);
-    append_to_gstring(string, "Last CPU core: %d\n", last_core);
+        append_to_gstring(string, "First CPU core: %d\n", first_core);
+        append_to_gstring(string, "Last CPU core: %d\n", last_core);
+    }
 
     file = fopen(FILE_PATH_CPU, "r");
     if (file == NULL) {
-        printf("Could not open file %s", FILE_PATH_CPU);
-        return NULL;
+        append_to_gstring(string, "Default CPU Governor: unknown\n");
+    } else {
+        if (getline(&line, &len, file) != -1) {
+            append_to_gstring(string, "Default CPU Governor: %s", line);
+        }
+        fclose(file);
+        free(line);
+        line = NULL;
     }
-
-    if (getline(&line, &len, file) != -1) {
-        append_to_gstring(string, "Default CPU Governor: %s", line);
-    }
-    fclose(file);
-    free(line);
-    line = NULL;
 
     file = fopen(FILE_PATH_GPU, "r");
     if (file == NULL) {
-        printf("Could not open file %s", FILE_PATH_GPU);
-        return NULL;
+        append_to_gstring(string, "Default GPU Governor: unknown\n");
+    } else {
+        if (getline(&line, &len, file) != -1) {
+            append_to_gstring(string, "Default GPU Governor: %s", line);
+        }
+        fclose(file);
+        free(line);
+        line = NULL;
     }
-
-    if (getline(&line, &len, file) != -1) {
-        append_to_gstring(string, "Default GPU Governor: %s", line);
-    }
-    fclose(file);
-    free(line);
-    line = NULL;
 
     glob_t glob_result;
 
-    if (glob("/sys/devices/system/cpu/cpufreq/*policy*", GLOB_TILDE, NULL, &glob_result) == 0) {
+    if (glob("/sys/devices/system/cpu/cpufreq/policy*", GLOB_TILDE, NULL, &glob_result) == 0) {
         num_files = glob_result.gl_pathc;
         globfree(&glob_result);
     } else {
@@ -266,7 +263,7 @@ GString* display_info() {
 
     char *first_pol = NULL;
 
-    glob("/sys/devices/system/cpu/cpufreq/*policy*", GLOB_TILDE, NULL, &glob_result);
+    glob("/sys/devices/system/cpu/cpufreq/policy*", GLOB_TILDE, NULL, &glob_result);
     if (glob_result.gl_pathc > 0) {
         first_pol = strdup(basename(glob_result.gl_pathv[0]));  // duplicate the string
         append_to_gstring(string, "First CPU policy group: %s\n", first_pol);
@@ -279,58 +276,54 @@ GString* display_info() {
 
         file = fopen(related_cpus_path, "r");
         if (file == NULL) {
-            printf("Could not open file %s", related_cpus_path);
-            free(first_pol);
-            return NULL;
-        }
-
-        char ch;
-        // get the first character
-        if (fscanf(file, "%c", &ch) == 1) {
-            append_to_gstring(string, "First core of %s: %c\n", first_pol, ch);
-        }
-
-        // find the last character
-        char last_char;
-        while (fscanf(file, "%c", &ch) == 1) {
-            // ignore newline characters
-            if (ch != '\n') {
-                last_char = ch;
+            append_to_gstring(string, "CPU policy related CPUs: unknown\n");
+        } else {
+            char ch;
+            // get the first character
+            if (fscanf(file, "%c", &ch) == 1) {
+                append_to_gstring(string, "First core of %s: %c\n", first_pol, ch);
             }
+
+            // find the last character
+            char last_char;
+            while (fscanf(file, "%c", &ch) == 1) {
+                // ignore newline characters
+                if (ch != '\n') {
+                    last_char = ch;
+                }
+            }
+
+            append_to_gstring(string, "Last core of %s: %c\n", first_pol, last_char);
+
+            fclose(file);
         }
 
-        append_to_gstring(string, "Last core of %s: %c\n", first_pol, last_char);
-
-        fclose(file);
+        free(first_pol);
     }
 
-    // free the duplicated string
-    free(first_pol);
-
-    append_to_gstring(string, "", line);
     file = popen("systemctl is-active batman", "r");
     if (file == NULL) {
-        printf("Could not get the status of batman");
-        return NULL;
+        append_to_gstring(string, "\nbatman status: unknown\n");
+    } else {
+        if ((read = getline(&line, &len, file)) != -1) {
+            append_to_gstring(string, "\nbatman is %s", line);
+        }
+        pclose(file);
+        free(line);
+        line = NULL;
     }
-    if ((read = getline(&line, &len, file)) != -1) {
-        append_to_gstring(string, "batman is %s", line);
-    }
-    pclose(file);
-    free(line);
-    line = NULL;
 
     file = popen("systemctl show --property MainPID --value batman", "r");
     if (file == NULL) {
-        printf("Could not get the status of batman");
-        return NULL;
+        append_to_gstring(string, "PID of batman: unknown\n");
+    } else {
+        if ((read = getline(&line, &len, file)) != -1) {
+            append_to_gstring(string, "PID of batman: %s", line);
+        }
+        pclose(file);
+        free(line);
+        line = NULL;
     }
-    if ((read = getline(&line, &len, file)) != -1) {
-        append_to_gstring(string, "PID of batman: %s", line);
-    }
-    pclose(file);
-    free(line);
-    line = NULL;
 
     // Get uptime
     struct sysinfo sys_info;
@@ -343,47 +336,36 @@ GString* display_info() {
     // Get screen status
     file = popen("batman-helper wlrdisplay", "r");
     if (file == NULL) {
-        printf("Could not run batman-helper wlrdisplay");
-        return NULL;
+        append_to_gstring(string, "Screen status: unknown\n");
+    } else {
+        if ((read = getline(&line, &len, file)) != -1) {
+            append_to_gstring(string, "Screen status: %s", line);
+        }
+        pclose(file);
+        free(line);
+        line = NULL;
     }
-    if ((read = getline(&line, &len, file)) != -1) {
-        append_to_gstring(string, "Screen status: %s", line);
-    }
-    pclose(file);
-    free(line);
-    line = NULL;
 
     // Get charging status
     file = popen("batman-helper battery", "r");
     if (file == NULL) {
-        printf("Could not run batman-helper battery");
-        return NULL;
+        append_to_gstring(string, "Charging status: unknown\n");
+    } else {
+        if ((read = getline(&line, &len, file)) != -1) {
+            append_to_gstring(string, "Charging status: %s", line);
+        }
+        pclose(file);
+        free(line);
+        line = NULL;
     }
-    if ((read = getline(&line, &len, file)) != -1) {
-        append_to_gstring(string, "Charging status: %s", line);
-    }
-    pclose(file);
-    free(line);
-    line = NULL;
 
     // CPU Usage
     file = popen("batman-helper cpu", "r");
     if (file == NULL) {
-        printf("Could not run batman-helper cpu");
-        return NULL;
-    }
-    if ((read = getline(&line, &len, file)) != -1) {
-        append_to_gstring(string, "CPU usage: %s", line);
-    }
-    pclose(file);
-    free(line);
-    line = NULL;
-
-    file = popen("systemctl is-active batman", "r");
-    if (file != NULL) {
+        append_to_gstring(string, "CPU usage: unknown\n");
+    } else {
         if ((read = getline(&line, &len, file)) != -1) {
-            line[strcspn(line, "\n")] = 0;
-            append_to_gstring(string, "Batman is: %s", line);
+            append_to_gstring(string, "CPU usage: %s", line);
         }
         pclose(file);
         free(line);
@@ -392,23 +374,15 @@ GString* display_info() {
 
     // Get Batman configuration
     file = fopen(CONFIG_FILE, "r");
-    if (file == NULL) {
-        printf("Could not open file batmans configuration file");
-        return NULL;
-    }
+    if (file != NULL) {
+        char config_line[1024] = {0};
 
-    append_to_gstring(string, "\nBatman Configuration: \n");
-
-    char batman_config_line[256];
-    while(fgets(batman_config_line, sizeof(batman_config_line), file)) {
-        append_to_gstring(string, "%s", batman_config_line);
-    }
-    fclose(file);
-
-    for (int i = 0; i < 2; i++) {
-        if (string->len > 0 && string->str[string->len - 1] == '\n') {
-            g_string_truncate(string, string->len - 1);
+        while (fgets(config_line, sizeof(config_line), file)) {
+            // Remove the newline character
+            config_line[strcspn(config_line, "\n")] = 0;
+            append_to_gstring(string, "%s\n", config_line);
         }
+        fclose(file);
     }
 
     return string;
