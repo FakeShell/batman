@@ -5,6 +5,8 @@
 
 override_dh_auto_build:
 	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc batman-gui.c -o batman-gui `pkg-config --cflags --libs gtk4`
+	gcc governor.c -o governor
 
 override_dh_auto_install:
 	install -D -m 0755 batman debian/batman/usr/bin/batman

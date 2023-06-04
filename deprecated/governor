@@ -279,57 +279,57 @@ function busgovernor() {
 
     if [ "CPU0_CPU_L3_LAT" == "true" ]; then
        echo "cpu0-cpu-l3-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
     fi
 
     if [ "CPU0_CPU_LLCC_LAT" == "true" ]; then
        echo "cpu0-cpu-llcc-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
     fi
 
     if [ "CPU0_LLCC_DDR_LAT" == "true" ]; then
        echo "cpu0-llcc-ddr-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
     fi
 
     if [ "CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
        echo "cpu6-cpu-ddr-latfloor governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
+       cat /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
     fi
 
     if [ "CPU6_CPU_L3_LAT" == "true" ]; then
        echo "cpu6-cpu-l3-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
     fi
 
     if [ "CPU6_CPU_LLCC_LAT" == "true" ]; then
        echo "cpu6-cpu-llcc-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
     fi
 
     if [ "CPU6_LLCC_DDR_LAT" == "true" ]; then
        echo "cpu6-llcc-ddr-lat governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
+       cat /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
     fi
 
     if [ "CPU_CPU_LLCC_BW" == "true" ]; then
        echo "cpu-llcc-ddr-bw governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
+       cat /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
     fi
 
     if [ "CPU_LLCC_DDR_BW" == "true" ]; then
        echo "cpu-llcc-ddr-bw governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
+       cat /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
     fi
 
     if [ "NPUDSP_NPU_DDR_BW" == "true" ]; then
        echo "npudsp-npu-ddr-bw governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
+       cat /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
     fi
 
     if [ "NPU_NPU_DDR_BW" == "npudsp-npu-ddr-bwtrue" ]; then
        echo "npu-npu-ddr-bw governor"
-       echo powersave > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+       cat /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
     fi
 }
 
