@@ -123,15 +123,28 @@ fi
 
 # Use either upower client or our own upower wrapper
 if [[ $(which batman-helper) ]]; then
-   eval $(which batman-helper) battery &> /dev/null
-   if [[ $? -eq 0 ]]; then
+   BATMAN_OUTPUT=$(batman-helper battery)
+   if [[ $? -eq 0 ]] && [ ! -z "$BATMAN_OUTPUT" ]; then
+      echo $BATMAN_OUTPUT
       echo "using batman-helper for charging status"
       GET_CHARGE="batman-helper battery"
       touch /var/lib/batman/using-batman-helper-for-charge
    fi
-elif [[ $(which upower) ]]; then
+fi
+
+if [ -z "$GET_CHARGE" ] && [[ $(which upower) ]]; then
    GET_CHARGE='upower -d | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
-   rm /var/lib/batman/using-batman-helper-for-charge -f
+   GET_CHARGE_FALLBACK='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
+
+   CHARGE_STATUS=$(eval $GET_CHARGE)
+   CHARGE_STATUS_FALLBACK=$(eval $GET_CHARGE_FALLBACK)
+   if [ "$CHARGE_STATUS" == "discharging" ] || [ "$CHARGE_STATUS" == "fully-charged" ] || [ "$CHARGE_STATUS" == "charging" ]; then
+      rm /var/lib/batman/using-batman-helper-for-charge -f
+   elif [ "$CHARGE_STATUS_FALLBACK" == "discharging" ] || [ "$CHARGE_STATUS_FALLBACK" == "fully-charged" ] || [ "$CHARGE_STATUS_FALLBACK" == "charging" ]; then
+      rm /var/lib/batman/using-batman-helper-for-charge -f
+      echo "Falling back to /org/freedesktop/UPower/devices/battery_battery"
+      GET_CHARGE='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
+   fi
 else
    echo "neither batman-helper nor upower is available. exiting"
    exit 0
