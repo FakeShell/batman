@@ -70,7 +70,7 @@ fi
 
 # Parse our config file.
 if [ -f /var/lib/batman/config ]; then
-   . /var/lib/batman/config
+   sed '1d' /var/lib/batman/config | . /dev/stdin
 else
    echo "config file does not exist. using default values"
 fi
@@ -125,7 +125,6 @@ fi
 if [[ $(which batman-helper) ]]; then
    BATMAN_OUTPUT=$(batman-helper battery)
    if [[ $? -eq 0 ]] && [ ! -z "$BATMAN_OUTPUT" ]; then
-      echo $BATMAN_OUTPUT
       echo "using batman-helper for charging status"
       GET_CHARGE="batman-helper battery"
       touch /var/lib/batman/using-batman-helper-for-charge

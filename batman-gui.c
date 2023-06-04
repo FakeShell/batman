@@ -333,10 +333,10 @@ GString* display_info() {
 
     file = popen("systemctl is-active batman", "r");
     if (file == NULL) {
-        append_to_gstring(string, "\nbatman status: unknown\n");
+        append_to_gstring(string, "batman status: unknown\n");
     } else {
         if ((read = getline(&line, &len, file)) != -1) {
-            append_to_gstring(string, "\nbatman is %s", line);
+            append_to_gstring(string, "batman is %s", line);
         }
         pclose(file);
         free(line);
