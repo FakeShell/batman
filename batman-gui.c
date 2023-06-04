@@ -464,6 +464,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     // Create the text_view here so it's accessible later
     GtkWidget *text_view = gtk_text_view_new();
     gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+    gtk_widget_set_focusable(text_view, FALSE);
 
     // Set the initial text in the text_view
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
