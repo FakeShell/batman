@@ -14,6 +14,15 @@
 #define CONFIG_FILE "/var/lib/batman/config"
 #define TEMP_FILE "/var/lib/batman/config.tmp"
 
+typedef struct {
+    gboolean offline;
+    gboolean powersave;
+    int max_cpu_usage;
+    gboolean chargesave;
+    gboolean bussave;
+    gboolean gpusave;
+} Config;
+
 void button_restart_clicked(GtkWidget *widget, gpointer data) {
     system("pkexec systemctl restart batman");
 }
@@ -45,6 +54,27 @@ void switch_page(GtkWidget *widget, gpointer data) {
     } else if (strcmp(label, "Configuration") == 0) {
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "config_page");
     }
+}
+
+Config read_config() {
+    Config config;
+    GKeyFile *keyfile = g_key_file_new();
+    GError *error = NULL;
+
+    if (!g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
+        g_error("Error loading config file: %s\n", error->message);
+    } else {
+        config.offline = g_key_file_get_boolean(keyfile, "Settings", "OFFLINE", NULL);
+        config.powersave = g_key_file_get_boolean(keyfile, "Settings", "POWERSAVE", NULL);
+        config.max_cpu_usage = g_key_file_get_integer(keyfile, "Settngs", "MAX_CPU_USAGE", NULL);
+        config.chargesave = g_key_file_get_boolean(keyfile, "Settings", "CHARGESAVE", NULL);
+        config.bussave = g_key_file_get_boolean(keyfile, "Settings", "BUSSAVE", NULL);
+        config.gpusave = g_key_file_get_boolean(keyfile, "Settings", "GPUSAVE", NULL);
+    }
+
+    g_key_file_free(keyfile);
+
+    return config;
 }
 
 void update_config_value(const char* config_key, const char* config_value) {
@@ -388,7 +418,21 @@ GString* display_info() {
     return string;
 }
 
+static void on_stack_switch_page(GObject *gobject, GParamSpec *pspec, gpointer user_data) {
+    GtkStack *stack = GTK_STACK(gobject);
+    GtkWidget *text_view = GTK_WIDGET(user_data);
+    const gchar *name = gtk_stack_get_visible_child_name(stack);
+
+    if (g_strcmp0(name, "main_page") == 0 || g_strcmp0(name, "config_page") == 0) {
+        GString* info_string = display_info();
+        GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+        gtk_text_buffer_set_text(buffer, info_string->str, -1);
+        g_string_free(info_string, TRUE);
+    }
+}
+
 void activate(GtkApplication* app, gpointer user_data) {
+    Config config = read_config();
     GString* info_string = display_info();
 
     GtkWidget *window = gtk_application_window_new(app);
@@ -416,6 +460,17 @@ void activate(GtkApplication* app, gpointer user_data) {
     // Main page
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_stack_add_named(GTK_STACK(stack), vbox, "main_page");
+
+    // Create the text_view here so it's accessible later
+    GtkWidget *text_view = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+
+    // Set the initial text in the text_view
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    gtk_text_buffer_set_text(buffer, info_string->str, -1);
+
+    // Connect your stack switch page handler here
+    g_signal_connect(stack, "notify::visible-child-name", G_CALLBACK(on_stack_switch_page), text_view);
 
     // Add the buttons to the main page
     GtkWidget *button_restart = gtk_button_new_with_label("Restart");
@@ -449,63 +504,66 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_box_append(GTK_BOX(config_page), back_button);
 
     // Add configuration buttons
-    GtkWidget *powersave_off_button = gtk_button_new_with_label("Powersave off");
-    g_signal_connect(powersave_off_button, "clicked", G_CALLBACK(powersave_off), NULL);
-    gtk_box_append(GTK_BOX(config_page), powersave_off_button);
+    if(config.powersave) {
+        GtkWidget *powersave_off_button = gtk_button_new_with_label("Powersave off");
+        g_signal_connect(powersave_off_button, "clicked", G_CALLBACK(powersave_off), NULL);
+        gtk_box_append(GTK_BOX(config_page), powersave_off_button);
+    } else {
+        GtkWidget *powersave_on_button = gtk_button_new_with_label("Powersave on");
+        g_signal_connect(powersave_on_button, "clicked", G_CALLBACK(powersave_on), NULL);
+        gtk_box_append(GTK_BOX(config_page), powersave_on_button);
+    }
 
-    GtkWidget *powersave_on_button = gtk_button_new_with_label("Powersave on");
-    g_signal_connect(powersave_on_button, "clicked", G_CALLBACK(powersave_on), NULL);
-    gtk_box_append(GTK_BOX(config_page), powersave_on_button);
+    if(config.offline) {
+        GtkWidget *offline_off_button = gtk_button_new_with_label("Offline off");
+        g_signal_connect(offline_off_button, "clicked", G_CALLBACK(offline_off), NULL);
+        gtk_box_append(GTK_BOX(config_page), offline_off_button);
+    } else {
+        GtkWidget *offline_on_button = gtk_button_new_with_label("Offline on");
+        g_signal_connect(offline_on_button, "clicked", G_CALLBACK(offline_on), NULL);
+        gtk_box_append(GTK_BOX(config_page), offline_on_button);
+    }
 
-    GtkWidget *offline_off_button = gtk_button_new_with_label("Offline off");
-    g_signal_connect(offline_off_button, "clicked", G_CALLBACK(offline_off), NULL);
-    gtk_box_append(GTK_BOX(config_page), offline_off_button);
+    if(config.gpusave) {
+        GtkWidget *gpusave_off_button = gtk_button_new_with_label("GPUsave off");
+        g_signal_connect(gpusave_off_button, "clicked", G_CALLBACK(gpusave_off), NULL);
+        gtk_box_append(GTK_BOX(config_page), gpusave_off_button);
+    } else {
+        GtkWidget *gpusave_on_button = gtk_button_new_with_label("GPUsave on");
+        g_signal_connect(gpusave_on_button, "clicked", G_CALLBACK(gpusave_on), NULL);
+        gtk_box_append(GTK_BOX(config_page), gpusave_on_button);
+    }
 
-    GtkWidget *offline_on_button = gtk_button_new_with_label("Offline on");
-    g_signal_connect(offline_on_button, "clicked", G_CALLBACK(offline_on), NULL);
-    gtk_box_append(GTK_BOX(config_page), offline_on_button);
+    if(config.chargesave) {
+        GtkWidget *chargesave_off_button = gtk_button_new_with_label("Chargesave off");
+        g_signal_connect(chargesave_off_button, "clicked", G_CALLBACK(chargesave_off), NULL);
+        gtk_box_append(GTK_BOX(config_page), chargesave_off_button);
+    } else {
+        GtkWidget *chargesave_on_button = gtk_button_new_with_label("Chargesave on");
+        g_signal_connect(chargesave_on_button, "clicked", G_CALLBACK(chargesave_on), NULL);
+        gtk_box_append(GTK_BOX(config_page), chargesave_on_button);
+    }
 
-    GtkWidget *gpusave_off_button = gtk_button_new_with_label("GPUsave off");
-    g_signal_connect(gpusave_off_button, "clicked", G_CALLBACK(gpusave_off), NULL);
-    gtk_box_append(GTK_BOX(config_page), gpusave_off_button);
-
-    GtkWidget *gpusave_on_button = gtk_button_new_with_label("GPUsave on");
-    g_signal_connect(gpusave_on_button, "clicked", G_CALLBACK(gpusave_on), NULL);
-    gtk_box_append(GTK_BOX(config_page), gpusave_on_button);
-
-    GtkWidget *chargesave_off_button = gtk_button_new_with_label("Chargesave off");
-    g_signal_connect(chargesave_off_button, "clicked", G_CALLBACK(chargesave_off), NULL);
-    gtk_box_append(GTK_BOX(config_page), chargesave_off_button);
-
-    GtkWidget *chargesave_on_button = gtk_button_new_with_label("Chargesave on");
-    g_signal_connect(chargesave_on_button, "clicked", G_CALLBACK(chargesave_on), NULL);
-    gtk_box_append(GTK_BOX(config_page), chargesave_on_button);
-
-    GtkWidget *bussave_off_button = gtk_button_new_with_label("Bussave off");
-    g_signal_connect(bussave_off_button, "clicked", G_CALLBACK(bussave_off), NULL);
-    gtk_box_append(GTK_BOX(config_page), bussave_off_button);
-
-    GtkWidget *bussave_on_button = gtk_button_new_with_label("Bussave on");
-    g_signal_connect(bussave_on_button, "clicked", G_CALLBACK(bussave_on), NULL);
-    gtk_box_append(GTK_BOX(config_page), bussave_on_button);
+    if(config.bussave) {
+        GtkWidget *bussave_off_button = gtk_button_new_with_label("Bussave off");
+        g_signal_connect(bussave_off_button, "clicked", G_CALLBACK(bussave_off), NULL);
+        gtk_box_append(GTK_BOX(config_page), bussave_off_button);
+    } else {
+        GtkWidget *bussave_on_button = gtk_button_new_with_label("Bussave on");
+        g_signal_connect(bussave_on_button, "clicked", G_CALLBACK(bussave_on), NULL);
+        gtk_box_append(GTK_BOX(config_page), bussave_on_button);
+    }
 
     // MAX_CPU_USAGE Entry
     GtkWidget *max_cpu_usage_label = gtk_label_new("MAX_CPU_USAGE: ");
     gtk_box_append(GTK_BOX(config_page), max_cpu_usage_label);
 
     GtkWidget *max_cpu_usage_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(max_cpu_usage_spin), get_max_cpu_usage());
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(max_cpu_usage_spin), config.max_cpu_usage);
     g_signal_connect(max_cpu_usage_spin, "value-changed", G_CALLBACK(set_max_cpu_usage), NULL);
     gtk_box_append(GTK_BOX(config_page), max_cpu_usage_spin);
 
-    // Add the display_info() text view below the buttons
     GtkWidget *scrollable = gtk_scrolled_window_new();
-    GtkWidget *text_view = gtk_text_view_new();
-
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
-
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    gtk_text_buffer_set_text(buffer, info_string->str, -1);
 
     gtk_window_set_title(GTK_WINDOW(window), "Batman GUI");
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
