@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/utsname.h>
 
 volatile sig_atomic_t keep_going = 1;
 
@@ -65,25 +66,18 @@ char *get_node_name(const char *path) {
     return "unknown";
 }
 
-const char *arch_x86[] = {"x86", "i386"};
+const char *arch_x86[] = {"i686", "x86_64"};
 
 int is_arch_x86() {
-    FILE *file;
-    char arch[256];
+    struct utsname buffer;
 
-    file = fopen("/proc/cpuinfo", "r");
-    if (file == NULL) {
-        printf("Failed to open /proc/cpuinfo\n");
+    if (uname(&buffer) != 0) {
+        fprintf(stderr, "uname() failed\n");
         return -1;
     }
 
-    while(fscanf(file, "architecture : %s", arch) != 1)
-        fseek(file, 1, SEEK_CUR); // skip one character
-
-    fclose(file);
-
     for(int i = 0; i < sizeof(arch_x86) / sizeof(arch_x86[0]); ++i) {
-        if(strcmp(arch, arch_x86[i]) == 0) {
+        if(strcmp(buffer.machine, arch_x86[i]) == 0) {
             return 1;
         }
     }
@@ -149,13 +143,13 @@ void get_system_info() {
     }
 
     int x86 = is_arch_x86();
-    char *CPUFREQ;
+    const char *CPUFREQ;
     if (x86 == 1) {
         CPUFREQ = "scaling_cur_freq";
     } else if (x86 == 0) {
         CPUFREQ = "cpuinfo_cur_freq";
     } else {
-        return; // Failed to get architecture
+        CPUFREQ= "unknown"; // Failed to get architecture
     }
 
     for(int i = first_core; i <= last_core; ++i) {
