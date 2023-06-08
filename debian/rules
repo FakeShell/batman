@@ -12,7 +12,7 @@ override_dh_auto_install:
 	install -D -m 0755 src/batman debian/batman/usr/bin/batman
 	install -D -m 0755 batman-helper debian/batman/usr/bin/batman-helper
 	install -D -m 0755 governor debian/batman/usr/bin/governor
-	install -D -m 0755 data/batman-gui debian/batman/usr/bin/batman-gui
+	install -D -m 0755 batman-gui debian/batman/usr/bin/batman-gui
 	install -D -m 0644 data/batman.gpg debian/batman/usr/share/keyrings/batman.gpg
 	install -D -m 0644 data/batman.list debian/batman/etc/apt/sources.list.d/batman.list
 	install -D -m 0644 data/config debian/batman/var/lib/batman/config
