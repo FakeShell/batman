@@ -1,14 +1,15 @@
 CC = gcc
 CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY `pkg-config --cflags upower-glib gtk4`
 LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4`
-TARGET = batman-helper
+TARGET = batman
+TARGET_HELPER = batman-helper
 TARGET_GUI = batman-gui
 TARGET_GOVERNOR = governor
-SRC = batman-helper.c wlrdisplay.c
-SRC_GUI = batman-gui.c
-SRC_GOVERNOR = governor.c
+SRC_HELPER = src/batman-helper.c src/wlrdisplay.c
+SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
+SRC_GOVERNOR = src/governor.c
 BINDIR = /usr/bin
-LIBDIR = /var/lib/batman
+CONFIGDIR = /var/lib/batman
 SYSTEMD_DIR = /usr/lib/systemd/system
 OPENRC_DIR = /etc/init.d
 APT_DIR = /etc/apt/sources.list.d
@@ -20,37 +21,37 @@ ICON_DIR = /usr/share/icons
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) -o $(TARGET)
+	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
 	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
 	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
 
 .PHONY: install
 install: $(TARGET)
-	cp batman $(BINDIR)
-	cp batman-gui $(BINDIR)
-	cp governor $(BINDIR)
-	cp batman-gui.desktop $(DESKTOP_DIR)
-	cp batman.png $(ICON_DIR)
-	mkdir -p $(LIBDIR)
-	cp config $(LIBDIR)
-	cp $(TARGET) $(BINDIR)
-	chmod +x $(BINDIR)/batman $(BINDIR)/governor $(BINDIR)/batman-gui $(BINDIR)/$(TARGET)
+	cp src/$(TARGET) $(BINDIR)
+	cp $(TARGET_HELPER) $(BINDIR)
+	cp $(TARGET_GUI) $(BINDIR)
+	cp $(TARGET_GOVERNOR) $(BINDIR)
+	cp data/batman-gui.desktop $(DESKTOP_DIR)
+	cp data/batman.png $(ICON_DIR)
+	mkdir -p $(CONFIGDIR)
+	cp data/config $(CONFIGDIR)
+	chmod +x $(BINDIR)/$(TARGET) $(BINDIR)/$(TARGET_HELPER) $(BINDIR)/$(TARGET_GUI) $(BINDIR)/$(TARGET_GOVERNOR)
 
 ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
-	cp batman.service $(SYSTEMD_DIR)
+	cp data/batman.service $(SYSTEMD_DIR)
 else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
-	cp batman.rc $(OPENRC_DIR)/batman
+	cp data/batman.rc $(OPENRC_DIR)/batman
 else
-	cp batman-init $(OPENRC_DIR)/batman
+	cp data/batman-init $(OPENRC_DIR)/batman
 endif
 
 ifeq ($(shell test -x /usr/bin/apt-get && echo 1),1)
-	cp batman.list $(APT_DIR)
-	cp batman.gpg $(KEYRING_DIR)/batman.gpg
+	cp data/batman.list $(APT_DIR)
+	cp data/batman.gpg $(KEYRING_DIR)/batman.gpg
 endif
 
 .PHONY: clean
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET_HELPER)
 	rm -f $(TARGET_GUI)
 	rm -f $(TARGET_GOVERNOR)

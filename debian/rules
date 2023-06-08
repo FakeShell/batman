@@ -4,20 +4,24 @@
 	dh $@ --without=makefile
 
 override_dh_auto_build:
-	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY batman-helper.c wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
-	gcc batman-gui.c -o batman-gui `pkg-config --cflags --libs gtk4`
-	gcc governor.c -o governor
+	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4`
+	gcc src/governor.c -o governor
 
 override_dh_auto_install:
-	install -D -m 0755 batman debian/batman/usr/bin/batman
+	install -D -m 0755 src/batman debian/batman/usr/bin/batman
 	install -D -m 0755 batman-helper debian/batman/usr/bin/batman-helper
 	install -D -m 0755 governor debian/batman/usr/bin/governor
-	install -D -m 0755 batman-gui debian/batman/usr/bin/batman-gui
-	install -D -m 0644 batman.gpg debian/batman/usr/share/keyrings/batman.gpg
-	install -D -m 0644 batman.list debian/batman/etc/apt/sources.list.d/batman.list
-	install -D -m 0644 config debian/batman/var/lib/batman/config
-	install -D -m 0644 batman-gui.desktop debian/batman/usr/share/applications/batman-gui.desktop
-	install -D -m 0644 batman.png debian/batman/usr/share/icons/batman.png
+	install -D -m 0755 data/batman-gui debian/batman/usr/bin/batman-gui
+	install -D -m 0644 data/batman.gpg debian/batman/usr/share/keyrings/batman.gpg
+	install -D -m 0644 data/batman.list debian/batman/etc/apt/sources.list.d/batman.list
+	install -D -m 0644 data/config debian/batman/var/lib/batman/config
+	install -D -m 0644 data/batman-gui.desktop debian/batman/usr/share/applications/batman-gui.desktop
+	install -D -m 0644 data/batman.png debian/batman/usr/share/icons/batman.png
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service --no-start
+
+override_dh_dwz:
+override_dh_strip:
+override_dh_makeshlibs:
