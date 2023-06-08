@@ -21,24 +21,32 @@ The following packages have to be installed as dependencies to build batman:
 
 For Debian based systems:
 
-`sudo apt install gcc make libupower-glib-dev pkg-config libwayland-dev libgtk-4-dev debhelper fakeroot`
+```
+sudo apt install gcc make libupower-glib-dev pkg-config libwayland-dev libgtk-4-dev debhelper fakeroot
+```
 
 For Fedora based systems:
 
-`sudo dnf install upower-devel pkg-config wayland-devel gtk4-devel 'Development Tools'`
+```
+sudo dnf install upower-devel pkg-config wayland-devel gtk4-devel 'Development Tools'
+```
 
 For Arch based systems:
 
-`sudo pacman -S upower pkgconf wayland gcc make gtk4`
+```
+sudo pacman -S upower pkgconf wayland gcc make gtk4
+```
 
 For Alpine based systems:
 
-`sudo apk add upower-dev pkgconfig wayland-dev gcc make gtk4.0-dev`
+```
+sudo apk add upower-dev pkgconfig wayland-dev gcc make gtk4.0-dev
+```
 
 Everything can be compiled using the Makefile:
 
 
-### Building
+# Building
 
 ```
 make
@@ -63,7 +71,7 @@ sudo systemctl enable --now batman
 ```
 
 
-### Manual compilation
+# Manual compilation
 
 To compile batman-helper manually you can use gcc:
 
@@ -98,7 +106,7 @@ To compile governor manually:
 gcc src/governor.c -o governor
 ```
 
-### Configuration
+# Configuration
 
 `POWERSAVE`
 Powersave allows CPU go into powersaving.
