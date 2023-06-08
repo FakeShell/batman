@@ -1,14 +1,14 @@
 ## Battery Management
 
-This program should work on all devices. needs wlr-randr and yad to be installed.
+Batman is a battery management service which tweaks different nodes and pieces of hardware in real time.
 
-batman-gui is based on yad so requires yad to be installed. if the apt repo is used then there is no need to install any dependencies manually as it will install all the dependencies itself.
+batman-gui is based on GTK4 and batman itself uses the included wlrdisplay sources and can also use wlr-randr as a fallback. if the apt repo is used then there is no need to install any dependencies manually as it will install all the dependencies itself.
 
 Tested with Phosh, sxmo and Plasma Mobile. It should work with any wlroots or Kwin based environment.
 
-It should be noted at this program has been tested on pmOS (a mainline OS), Droidian. (a Halium OS) and Manjaro Libhybris and AlpHybris.
+It should be noted at this program has been tested on pmOS and Mobian (mainline) as well as Droidian, Manjaro Libhybris and AlpHybris (hybris).
 
-upower should be in working condition and should return the correct battery and charging status. (which is the reason there is a special branch for Galaxy A5 because battery status reporting is broken, it has some missing drivers in kernel.)
+upower should be in working condition and should return the correct battery and charging status.
 
 It is currently available as a deb package, PKGBUILD and APKBUILD.
 
