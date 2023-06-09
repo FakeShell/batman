@@ -144,7 +144,7 @@ if [ -z "$GET_CHARGE" ] && [[ $(which upower) ]]; then
       echo "Falling back to /org/freedesktop/UPower/devices/battery_battery"
       GET_CHARGE='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
    fi
-else
+elif [ -z "$GET_CHARGE" ]; then
    echo "neither batman-helper nor upower is available. exiting"
    exit 0
 fi
