@@ -63,6 +63,13 @@ AVUSER=$(ls /run/user | wc -l)
 AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
 UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
+# Exynos chips require special configuration and governors, usually device tree has the chipset name in the model section.
+if grep -q -i "EXYNOS" /proc/device-tree/model; then
+   IS_EXYNOS=true
+else
+   IS_EXYNOS=false
+fi
+
 # Make sure the required directory exists.
 if [ ! -d /var/lib/batman/ ]; then
    mkdir -p /var/lib/batman/
@@ -107,14 +114,18 @@ fi
 # Check if powersave governor is available.
 if [ "$LEGACY" == "true" ]; then
    if grep -q powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
-      true
+      CPUSAVEGOVERNOR="powersave"
+   elif grep -q userspace /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
+      CPUSAVEGOVERNOR="userspace"
    else
       echo "powersave is not a governor on this system. exiting"
       exit 0
    fi
 else
    if grep -q powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
-      true
+      CPUSAVEGOVERNOR="powersave"
+   elif grep -q userspace /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
+      CPUSAVEGOVERNOR="userspace"
    else
       echo "powersave is not a governor on this system. exiting"
       exit 0
@@ -158,7 +169,7 @@ if [[ $(which batman-helper) ]]; then
       touch /var/lib/batman/using-batman-helper-for-screen
       WLRTOOL=true
    elif [[ $? -eq 1 ]]; then
-      if grep "wlrdisplay support is not enabled." /var/lib/batman/wlrfirstcheck &> /dev/null; then
+      if grep -q "wlrdisplay support is not enabled." /var/lib/batman/wlrfirstcheck; then
          if [[ $(which wlr-randr) ]]; then
             GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
             rm /var/lib/batman/using-batman-helper-for-screen -f
@@ -324,9 +335,7 @@ fi
 
 # If powersave is not a governor in the GPU profile then disable this feature.
 if [ $GPUSAVE == "true" ]; then
-   if grep "powersave" $GPU_GOVERNOR_PATH &> /dev/null; then
-      true
-   else
+   if ! grep -q "powersave" $GPU_GOVERNOR_PATH; then
       GPUSAVE=false
    fi
 fi
@@ -564,13 +573,34 @@ for var in "${!governors[@]}"; do
     fi
 done
 
-# Function that sets the cpu governor to powersave.
-function powersave() {
-    for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
-    do
-        echo "powersave" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
-    done
-}
+# hotplug has to be disabled for cpu cores to be allowed to go offline.
+if [ "$IS_EXYNOS" == "true" ]; then
+   echo 0 > /sys/power/cpuhotplug/enabled
+fi
+
+# on some (if not all) exynos chips powersave doesn't exist so we need an alternative way of lowering clock speeds
+# so set governor to userspace and set scaling_min_freq to scaling_setspeed to get the minimum frequency at idle.
+if [ "$CPUSAVEGOVERNOR" == "powersave" ]; then
+    function powersave() {
+        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        do
+            echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+        done
+    }
+elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+    function powersave() {
+        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        do
+            echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+            MINFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_min_freq)
+            echo $MINFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+        done
+    }
+else
+    function powersave() {
+        :
+    }
+fi
 
 # Function that sets the cpu governor to the default value.
 function default() {
@@ -596,7 +626,7 @@ function online() {
     done
 }
 
-# Check if GPUSAVE is enabled, if so enable use the right functions.
+# Check if GPUSAVE is enabled, if so declare the right functions.
 if [ "$GPUSAVE" == "true" ]; then
    function gpusave() {
        echo "powersave" > $GPU_GOVERNOR_PATH
@@ -607,11 +637,11 @@ if [ "$GPUSAVE" == "true" ]; then
    }
 else
    function gpusave() {
-       true
+       :
    }
 
    function gpudefault() {
-       true
+       :
    }
 fi
 
@@ -863,11 +893,11 @@ if [ "$BUSSAVE" == "true" ]; then
 
 else
    function bussave() {
-       true
+       :
    }
 
    function busdefault() {
-       true
+       :
    }
 fi
 
@@ -875,7 +905,7 @@ fi
 echo "" > /var/lib/batman/screen
 
 # Give ownership of /var/lib/batman to the user id available in /run/user.
-chown $UIDS:$UIDS /var/lib/batman -R
+chown -R $UIDS:$UIDS /var/lib/batman
 
 while [[ true ]]
 do
