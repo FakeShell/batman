@@ -64,10 +64,12 @@ AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
 UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
 # Exynos chips require special configuration and governors, usually device tree has the chipset name in the model section.
-if grep -q -i "EXYNOS" /proc/device-tree/model; then
-   IS_EXYNOS=true
-else
-   IS_EXYNOS=false
+if [ -f /proc/device-tree/model ]; then
+    if grep -q -i "EXYNOS" /proc/device-tree/model; then
+       IS_EXYNOS=true
+    else
+       IS_EXYNOS=false
+    fi
 fi
 
 # Make sure the required directory exists.
@@ -986,6 +988,19 @@ do
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
           offline
+       fi
+    fi
+
+    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+       # on x86 chips batman will be intrerrupted if device gets suspended but we can fix this by checking if we can read a file
+       # that is usually unavailable when cpu cores are set to offline and set the status accordingly to leave that unexpected state.
+       if [ "$SCREEN" == "yes" ]; then
+          if ! cat /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor > /dev/null 2>&1; then
+             online
+             default
+             gpudefault
+             busdefault
+          fi
        fi
     fi
 
