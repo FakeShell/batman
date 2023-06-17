@@ -11,7 +11,15 @@ Package: batman
 Architecture: any
 Depends: ${misc:Depends},
          bash,
-         libgtk-4-1,
 Suggests: wlr-randr
 Description: batman
  A battery managementservice for Linux phones
+
+Package: batman-gui
+Architecture: any
+Depends: ${misc:Depends},
+         batman (= ${binary:Version}),
+         libgtk-4-1,
+Suggests: wlr-randr
+Description: batman
+ A battery managementservice for Linux phones - GUI front-end

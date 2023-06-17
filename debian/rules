@@ -9,15 +9,13 @@ override_dh_auto_build:
 	gcc src/governor.c -o governor
 
 override_dh_auto_install:
-	install -D -m 0755 src/batman debian/batman/usr/bin/batman
-	install -D -m 0755 batman-helper debian/batman/usr/bin/batman-helper
-	install -D -m 0755 governor debian/batman/usr/bin/governor
-	install -D -m 0755 batman-gui debian/batman/usr/bin/batman-gui
-	install -D -m 0644 data/batman.gpg debian/batman/usr/share/keyrings/batman.gpg
-	install -D -m 0644 data/batman.list debian/batman/etc/apt/sources.list.d/batman.list
-	install -D -m 0644 data/config debian/batman/var/lib/batman/config
-	install -D -m 0644 data/batman-gui.desktop debian/batman/usr/share/applications/batman-gui.desktop
-	install -D -m 0644 data/batman.png debian/batman/usr/share/icons/batman.png
+	install -D -m 0755 src/batman debian/tmp/usr/bin/batman
+	install -D -m 0755 batman-helper debian/tmp/usr/bin/batman-helper
+	install -D -m 0755 governor debian/tmp/usr/bin/governor
+	install -D -m 0755 batman-gui debian/tmp/usr/bin/batman-gui
+	install -D -m 0644 data/config debian/tmp/var/lib/batman/config
+	install -D -m 0644 data/batman-gui.desktop debian/tmp/usr/share/applications/batman-gui.desktop
+	install -D -m 0644 data/batman.png debian/tmp/usr/share/icons/batman.png
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service --no-start
