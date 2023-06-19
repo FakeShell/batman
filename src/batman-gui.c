@@ -1,236 +1,258 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+
 #include <gtk/gtk.h>
+#include <adwaita.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "configcontrol.h"
 #include "getinfo.h"
 
-#define FILE_PATH_CPU "/var/lib/batman/default_cpu_governor"
-#define FILE_PATH_GPU "/var/lib/batman/default_gpu_governor"
-#define CONFIG_FILE "/var/lib/batman/config"
+void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
+    const char *developers[] = {
+        "Bardia Moshiri <fakeshell@bardia.tech>",
+        "Erik Inkinen <erik.inkinen@erikinkinen.fi>",
+        NULL
+    };
 
-typedef struct {
-    gboolean offline;
-    gboolean powersave;
-    int max_cpu_usage;
-    gboolean chargesave;
-    gboolean bussave;
-    gboolean gpusave;
-} Config;
+    const char *designers[] = {
+        "Erik Inkinen <erik.inkinen@erikinkinen.fi>",
+        NULL
+    };
 
-void button_restart_clicked(GtkWidget *widget, gpointer data) {
-    system("pkexec systemctl restart batman");
+    adw_show_about_window(
+        gtk_application_get_active_window(app),
+        "application-name", "Batman GUI",
+        "application-icon", "batman",
+        "version", "1.38",
+        "copyright", "© 2023 Bardia Moshiri, Erik Inkinen",
+        "issue-url", "https://github.com/droidian/batman/issues/new",
+        "license-type", GTK_LICENSE_GPL_2_0_ONLY,
+        "developers", developers,
+        "designers", designers,
+        NULL);
 }
 
-void button_stop_clicked(GtkWidget *widget, gpointer data) {
-    system("pkexec systemctl stop batman");
+void ctl_active_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
+    check_batman_active();
+    gtk_switch_set_state(GTK_SWITCH(sender), bm_state.active);
+    gtk_switch_set_active(GTK_SWITCH(sender), bm_state.active);
+    
+    g_object_unref(src_ctl);
 }
 
-void button_start_clicked(GtkWidget *widget, gpointer data) {
-    system("pkexec systemctl start batman");
+void ctl_enabled_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
+    check_batman_enabled();
+    gtk_switch_set_state(GTK_SWITCH(sender), bm_state.enabled);
+    gtk_switch_set_active(GTK_SWITCH(sender), bm_state.enabled);
+    
+    g_object_unref(src_ctl);
 }
 
-void switch_page(GtkWidget *widget, gpointer data) {
-    GtkWidget *stack = GTK_WIDGET(data);
-    const gchar *label = gtk_button_get_label(GTK_BUTTON(widget));
+gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
+    printf("%d\n", state);
+    if (state == bm_state.active) return FALSE;
 
-    if (strcmp(label, "Back") == 0) {
-        gtk_stack_set_visible_child_name(GTK_STACK(stack), "main_page");
-    } else if (strcmp(label, "Configuration") == 0) {
-        gtk_stack_set_visible_child_name(GTK_STACK(stack), "config_page");
-    }
+    const gchar* ctl_argv[] = {
+        "pkexec", "systemctl", (state) ? "start" : "stop", "batman", NULL
+    };
+    GSubprocess* ctl_proc = g_subprocess_newv(ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
+    g_subprocess_communicate_async(ctl_proc, NULL, NULL, ctl_active_cb, sender);
+    return TRUE;
 }
 
-Config read_config() {
-    Config config;
-    GKeyFile *keyfile = g_key_file_new();
-    GError *error = NULL;
-
-    if (!g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
-        g_error("Error loading config file: %s\n", error->message);
-    } else {
-        config.offline = g_key_file_get_boolean(keyfile, "Settings", "OFFLINE", NULL);
-        config.powersave = g_key_file_get_boolean(keyfile, "Settings", "POWERSAVE", NULL);
-        config.max_cpu_usage = g_key_file_get_integer(keyfile, "Settngs", "MAX_CPU_USAGE", NULL);
-        config.chargesave = g_key_file_get_boolean(keyfile, "Settings", "CHARGESAVE", NULL);
-        config.bussave = g_key_file_get_boolean(keyfile, "Settings", "BUSSAVE", NULL);
-        config.gpusave = g_key_file_get_boolean(keyfile, "Settings", "GPUSAVE", NULL);
-    }
-
-    g_key_file_free(keyfile);
-
-    return config;
+gboolean service_enabled_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
+    printf("%d\n", state);
+    if (state == bm_state.enabled) return FALSE;
+    
+    const gchar* ctl_argv[] = {
+        "pkexec", "systemctl", (state) ? "enable" : "disable", "batman", NULL
+    };
+    GSubprocess* ctl_proc = g_subprocess_newv(ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
+    g_subprocess_communicate_async(ctl_proc, NULL, NULL, ctl_enabled_cb, sender);
+    return TRUE;
 }
 
-static void on_stack_switch_page(GObject *gobject, GParamSpec *pspec, gpointer user_data) {
-    GtkStack *stack = GTK_STACK(gobject);
-    GtkWidget *text_view = GTK_WIDGET(user_data);
-    const gchar *name = gtk_stack_get_visible_child_name(stack);
-
-    if (g_strcmp0(name, "main_page") == 0 || g_strcmp0(name, "config_page") == 0) {
-        GString* info_string = display_info();
-        GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-        gtk_text_buffer_set_text(buffer, info_string->str, -1);
-        g_string_free(info_string, TRUE);
-    }
-}
+GActionEntry app_entries[] = {
+    { "about", about_activated, NULL, NULL, NULL }
+};
 
 void activate(GtkApplication* app, gpointer user_data) {
     Config config = read_config();
-    GString* info_string = display_info();
+    g_action_map_add_action_entries(G_ACTION_MAP (app),
+        app_entries, G_N_ELEMENTS (app_entries), app);
 
-    GtkWidget *window = gtk_application_window_new(app);
-    GtkWidget *stack = gtk_stack_new();
-    gtk_stack_set_transition_type(GTK_STACK(stack), GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT_RIGHT);
-
-    // Initialize CSS
-    GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_data(provider,
-    "* {"
-    "  font-size: 14px;"
-    "}"
-    "button {"
-    "  border-radius: 5px;"
-    "  border-width: 1px;"
-    "}"
-    "button:hover {"
-    "  background: #E1E1E1;"
-    "}", -1);
-
-    gtk_style_context_add_provider_for_display(gdk_display_get_default(),
-                                               GTK_STYLE_PROVIDER(provider),
-                                               GTK_STYLE_PROVIDER_PRIORITY_USER);
-
-    // Main page
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_stack_add_named(GTK_STACK(stack), vbox, "main_page");
-
-    // Create the text_view here so it's accessible later
-    GtkWidget *text_view = gtk_text_view_new();
-    gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
-    gtk_widget_set_focusable(text_view, FALSE);
-
-    // Set the initial text in the text_view
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    gtk_text_buffer_set_text(buffer, info_string->str, -1);
-
-    // Connect your stack switch page handler here
-    g_signal_connect(stack, "notify::visible-child-name", G_CALLBACK(on_stack_switch_page), text_view);
-
-    // Add the buttons to the main page
-    GtkWidget *button_restart = gtk_button_new_with_label("Restart");
-    g_signal_connect(button_restart, "clicked", G_CALLBACK(button_restart_clicked), NULL);
-    gtk_box_append(GTK_BOX(vbox), button_restart);
-
-    GtkWidget *button_stop = gtk_button_new_with_label("Stop");
-    g_signal_connect(button_stop, "clicked", G_CALLBACK(button_stop_clicked), NULL);
-    gtk_box_append(GTK_BOX(vbox), button_stop);
-
-    GtkWidget *button_start = gtk_button_new_with_label("Start");
-    g_signal_connect(button_start, "clicked", G_CALLBACK(button_start_clicked), NULL);
-    gtk_box_append(GTK_BOX(vbox), button_start);
-
-    GtkWidget *button_config = gtk_button_new_with_label("Configuration");
-    g_signal_connect(button_config, "clicked", G_CALLBACK(switch_page), stack);
-    gtk_box_append(GTK_BOX(vbox), button_config);
-
-    // Configuration page
-    GtkWidget *config_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-    gtk_widget_set_margin_top(config_page, 10);
-    gtk_widget_set_margin_bottom(config_page, 10);
-    gtk_widget_set_margin_start(config_page, 10);
-    gtk_widget_set_margin_end(config_page, 10);
-
-    gtk_stack_add_named(GTK_STACK(stack), config_page, "config_page");
-
-    // Add a back button to the configuration page
-    GtkWidget *back_button = gtk_button_new_with_label("Back");
-    g_signal_connect(back_button, "clicked", G_CALLBACK(switch_page), stack);
-    gtk_box_append(GTK_BOX(config_page), back_button);
-
-    // Add configuration buttons
-    if(config.powersave) {
-        GtkWidget *powersave_off_button = gtk_button_new_with_label("Powersave off");
-        g_signal_connect(powersave_off_button, "clicked", G_CALLBACK(powersave_off), NULL);
-        gtk_box_append(GTK_BOX(config_page), powersave_off_button);
-    } else {
-        GtkWidget *powersave_on_button = gtk_button_new_with_label("Powersave on");
-        g_signal_connect(powersave_on_button, "clicked", G_CALLBACK(powersave_on), NULL);
-        gtk_box_append(GTK_BOX(config_page), powersave_on_button);
-    }
-
-    if(config.offline) {
-        GtkWidget *offline_off_button = gtk_button_new_with_label("Offline off");
-        g_signal_connect(offline_off_button, "clicked", G_CALLBACK(offline_off), NULL);
-        gtk_box_append(GTK_BOX(config_page), offline_off_button);
-    } else {
-        GtkWidget *offline_on_button = gtk_button_new_with_label("Offline on");
-        g_signal_connect(offline_on_button, "clicked", G_CALLBACK(offline_on), NULL);
-        gtk_box_append(GTK_BOX(config_page), offline_on_button);
-    }
-
-    if(config.gpusave) {
-        GtkWidget *gpusave_off_button = gtk_button_new_with_label("GPUsave off");
-        g_signal_connect(gpusave_off_button, "clicked", G_CALLBACK(gpusave_off), NULL);
-        gtk_box_append(GTK_BOX(config_page), gpusave_off_button);
-    } else {
-        GtkWidget *gpusave_on_button = gtk_button_new_with_label("GPUsave on");
-        g_signal_connect(gpusave_on_button, "clicked", G_CALLBACK(gpusave_on), NULL);
-        gtk_box_append(GTK_BOX(config_page), gpusave_on_button);
-    }
-
-    if(config.chargesave) {
-        GtkWidget *chargesave_off_button = gtk_button_new_with_label("Chargesave off");
-        g_signal_connect(chargesave_off_button, "clicked", G_CALLBACK(chargesave_off), NULL);
-        gtk_box_append(GTK_BOX(config_page), chargesave_off_button);
-    } else {
-        GtkWidget *chargesave_on_button = gtk_button_new_with_label("Chargesave on");
-        g_signal_connect(chargesave_on_button, "clicked", G_CALLBACK(chargesave_on), NULL);
-        gtk_box_append(GTK_BOX(config_page), chargesave_on_button);
-    }
-
-    if(config.bussave) {
-        GtkWidget *bussave_off_button = gtk_button_new_with_label("Bussave off");
-        g_signal_connect(bussave_off_button, "clicked", G_CALLBACK(bussave_off), NULL);
-        gtk_box_append(GTK_BOX(config_page), bussave_off_button);
-    } else {
-        GtkWidget *bussave_on_button = gtk_button_new_with_label("Bussave on");
-        g_signal_connect(bussave_on_button, "clicked", G_CALLBACK(bussave_on), NULL);
-        gtk_box_append(GTK_BOX(config_page), bussave_on_button);
-    }
-
-    // MAX_CPU_USAGE Entry
-    GtkWidget *max_cpu_usage_label = gtk_label_new("MAX_CPU_USAGE: ");
-    gtk_box_append(GTK_BOX(config_page), max_cpu_usage_label);
-
-    GtkWidget *max_cpu_usage_spin = gtk_spin_button_new_with_range(0, 100, 1);
-    gtk_spin_button_set_value(GTK_SPIN_BUTTON(max_cpu_usage_spin), config.max_cpu_usage);
-    g_signal_connect(max_cpu_usage_spin, "value-changed", G_CALLBACK(set_max_cpu_usage), NULL);
-    gtk_box_append(GTK_BOX(config_page), max_cpu_usage_spin);
-
-    GtkWidget *scrollable = gtk_scrolled_window_new();
-
-    gtk_window_set_title(GTK_WINDOW(window), "Batman GUI");
+    // main window
+    GtkWidget *window = adw_application_window_new(app);
+    gtk_window_set_title(GTK_WINDOW(window), "Batman");
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
 
-    gtk_scrolled_window_set_propagate_natural_height(GTK_SCROLLED_WINDOW(scrollable), TRUE);
-    gtk_scrolled_window_set_propagate_natural_width(GTK_SCROLLED_WINDOW(scrollable), TRUE);
+    GtkWidget *wbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    GtkWidget *hdr_bar = adw_header_bar_new();
 
-    gtk_text_view_set_top_margin(GTK_TEXT_VIEW(text_view), 10);
-    gtk_text_view_set_bottom_margin(GTK_TEXT_VIEW(text_view), 10);
-    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(text_view), 10);
-    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(text_view), 10);
+    GtkWidget *menu_btn = gtk_menu_button_new();
+    gtk_menu_button_set_primary(GTK_MENU_BUTTON(menu_btn), TRUE);
+    gtk_menu_button_set_icon_name(GTK_MENU_BUTTON(menu_btn), "open-menu-symbolic");
 
-    gtk_text_view_set_monospace(GTK_TEXT_VIEW(text_view), TRUE);
+    GMenu *main_menu = g_menu_new();
+    g_menu_append(main_menu, "About Batman", "app.about");
 
-    gtk_box_append(GTK_BOX(vbox), scrollable);
-    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrollable), text_view);
+    gtk_menu_button_set_menu_model(GTK_MENU_BUTTON(menu_btn), G_MENU_MODEL(main_menu));
+    adw_header_bar_pack_end(ADW_HEADER_BAR(hdr_bar), menu_btn);
+    gtk_box_append(GTK_BOX(wbox), hdr_bar);
 
-    gtk_window_set_child(GTK_WINDOW(window), stack);
-    gtk_stack_set_visible_child_name(GTK_STACK(stack), "main_page");
+    GtkWidget *scrolled = gtk_scrolled_window_new();
+    gtk_widget_set_vexpand(scrolled, TRUE);
+
+    GtkWidget *clamp = adw_clamp_new();
+    gtk_widget_set_margin_top(clamp, 18);
+    gtk_widget_set_margin_bottom(clamp, 32);
+    gtk_widget_set_margin_start(clamp, 18);
+    gtk_widget_set_margin_end(clamp, 18);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_set_spacing(GTK_BOX(vbox), 18);
+
+    // Service management
+
+    GtkWidget *common_list_box = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(common_list_box), GTK_SELECTION_NONE);
+    gtk_widget_add_css_class(common_list_box, "boxed-list");
+
+    GtkWidget *service_active_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(service_active_action_row), "Batman service");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(service_active_action_row), "Start/stop Batman daemon");
+
+    GtkWidget *service_active_switch = gtk_switch_new();
+    gtk_widget_set_valign(service_active_switch, GTK_ALIGN_CENTER);
+    check_batman_active();
+    gtk_switch_set_state(GTK_SWITCH(service_active_switch), bm_state.active);
+    g_signal_connect(service_active_switch, "state-set", G_CALLBACK(service_active_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(service_active_action_row), service_active_switch);
+    gtk_list_box_append(GTK_LIST_BOX(common_list_box), service_active_action_row);
+
+    GtkWidget *service_enabled_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(service_enabled_action_row), "Auto-start");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(service_enabled_action_row), "Start Batman daemon automatically on boot");
+
+    GtkWidget *service_enabled_switch = gtk_switch_new();
+    gtk_widget_set_valign(service_enabled_switch, GTK_ALIGN_CENTER);
+    check_batman_enabled();
+    gtk_switch_set_state(GTK_SWITCH(service_enabled_switch), bm_state.enabled);
+    g_signal_connect(service_enabled_switch, "state-set", G_CALLBACK(service_enabled_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(service_enabled_action_row), service_enabled_switch);
+    gtk_list_box_append(GTK_LIST_BOX(common_list_box), service_enabled_action_row);
+    gtk_box_append(GTK_BOX(vbox), common_list_box);
+
+    // Configuration
+
+    GtkWidget *config_list_box = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(config_list_box), GTK_SELECTION_NONE);
+    gtk_widget_add_css_class(config_list_box, "boxed-list");
+
+    // Config : Max CPU
+
+    GtkWidget *max_cpu_entry_row = adw_entry_row_new();
+    adw_entry_row_set_show_apply_button(ADW_ENTRY_ROW(max_cpu_entry_row), TRUE);
+    adw_entry_row_set_input_purpose(ADW_ENTRY_ROW(max_cpu_entry_row), GTK_INPUT_PURPOSE_NUMBER);
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(max_cpu_entry_row), "CPU usage threshold to leave powersave");
+
+    GString *max_cpu_str = g_string_new(NULL);
+    g_string_printf(max_cpu_str, "%d", config.max_cpu_usage);
+    printf("\"%s\", %d\n", max_cpu_str->str, config.max_cpu_usage);
+    gtk_editable_set_text(GTK_EDITABLE(max_cpu_entry_row), max_cpu_str->str);
+    g_string_free(max_cpu_str, TRUE);
+
+    g_signal_connect(max_cpu_entry_row, "apply", G_CALLBACK(max_cpu_entry_apply), NULL);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), max_cpu_entry_row);
+
+    // Config : Powersave
+
+    GtkWidget *powersave_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(powersave_action_row), "Powersave");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(powersave_action_row), "Allow batman to set the CPU into powersave mode when discharging");
+
+    GtkWidget *powersave_switch = gtk_switch_new();
+    gtk_widget_set_valign(powersave_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(powersave_switch), config.powersave);
+    g_signal_connect(powersave_switch, "state-set", G_CALLBACK(powersave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(powersave_action_row), powersave_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), powersave_action_row);
+
+    // Config : Charge Save
+
+    GtkWidget *chargesave_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(chargesave_action_row), "Charge save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(chargesave_action_row), "Allow batman to set the CPU into powersave mode when charging");
+
+    GtkWidget *chargesave_switch = gtk_switch_new();
+    gtk_widget_set_valign(chargesave_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(chargesave_switch), config.chargesave);
+    g_signal_connect(chargesave_switch, "state-set", G_CALLBACK(chargesave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(chargesave_action_row), chargesave_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), chargesave_action_row);
+
+    gtk_box_append(GTK_BOX(vbox), config_list_box);
+
+    // Config : Offline
+
+    GtkWidget *offline_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(offline_action_row), "Offline");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(offline_action_row), "Allow batman to turn off CPU cores");
+
+    GtkWidget *offline_switch = gtk_switch_new();
+    gtk_widget_set_valign(offline_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(offline_switch), config.offline);
+    g_signal_connect(offline_switch, "state-set", G_CALLBACK(offline_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(offline_action_row), offline_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), offline_action_row);
+
+    // Config : GPU Save
+
+    GtkWidget *gpusave_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(gpusave_action_row), "GPU save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(gpusave_action_row), "Allow batman to turn on the GPU powersave mode");
+
+    GtkWidget *gpusave_switch = gtk_switch_new();
+    gtk_widget_set_valign(gpusave_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(gpusave_switch), config.gpusave);
+    g_signal_connect(gpusave_switch, "state-set", G_CALLBACK(gpusave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(gpusave_action_row), gpusave_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), gpusave_action_row);
+
+    gtk_box_append(GTK_BOX(vbox), config_list_box);
+
+    // Config : Bus Save
+
+    GtkWidget *bussave_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bussave_action_row), "Bus save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(bussave_action_row), "Allow batman to turn on powersave mode in devfreq bus nodes");
+
+    GtkWidget *bussave_switch = gtk_switch_new();
+    gtk_widget_set_valign(bussave_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(bussave_switch), config.bussave);
+    g_signal_connect(bussave_switch, "state-set", G_CALLBACK(bussave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(bussave_action_row), bussave_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), bussave_action_row);
+
+    // END : Config
+
+    gtk_box_append(GTK_BOX(vbox), config_list_box);
+
+    adw_clamp_set_child(ADW_CLAMP(clamp), vbox);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), clamp);
+    gtk_box_append(GTK_BOX(wbox), scrolled);
+    adw_application_window_set_content(ADW_APPLICATION_WINDOW(window), wbox);
     gtk_window_present(GTK_WINDOW(window));
-
-    g_string_free(info_string, TRUE);
 }
 
 int main(int argc, char **argv) {
@@ -244,7 +266,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    app = gtk_application_new("tech.bardia.batman-gui", G_APPLICATION_DEFAULT_FLAGS);
+    app = gtk_application_new("org.droidian.batman-gui", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);

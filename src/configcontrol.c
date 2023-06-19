@@ -1,11 +1,33 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
-#include <gtk/gtk.h>
+#include "configcontrol.h"
 
-#define CONFIG_FILE "/var/lib/batman/config"
-#define TEMP_FILE "/var/lib/batman/config.tmp"
+Config read_config() {
+    Config config;
+    GKeyFile *keyfile = g_key_file_new();
+    GError *error = NULL;
+
+    if (!g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
+        g_error("Error loading config file: %s\n", error->message);
+    } else {
+        config.offline = g_key_file_get_boolean(keyfile, "Settings", "OFFLINE", NULL);
+        config.powersave = g_key_file_get_boolean(keyfile, "Settings", "POWERSAVE", NULL);
+        config.max_cpu_usage = g_key_file_get_integer(keyfile, "Settings", "MAX_CPU_USAGE", NULL);
+        config.chargesave = g_key_file_get_boolean(keyfile, "Settings", "CHARGESAVE", NULL);
+        config.bussave = g_key_file_get_boolean(keyfile, "Settings", "BUSSAVE", NULL);
+        config.gpusave = g_key_file_get_boolean(keyfile, "Settings", "GPUSAVE", NULL);
+    }
+
+    g_key_file_free(keyfile);
+
+    return config;
+}
 
 void update_config_value(const char* config_key, const char* config_value) {
     FILE *src, *dst;
@@ -51,52 +73,35 @@ void update_config_value(const char* config_key, const char* config_value) {
     rename(TEMP_FILE, CONFIG_FILE);
 }
 
-void powersave_off(GtkWidget *widget, gpointer data) {
-    update_config_value("POWERSAVE", "false");
+gboolean powersave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("POWERSAVE", state ? "true" : "false");
 }
 
-void powersave_on(GtkWidget *widget, gpointer data) {
-    update_config_value("POWERSAVE", "true");
+gboolean offline_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("OFFLINE", state ? "true" : "false");
 }
 
-void offline_off(GtkWidget *widget, gpointer data) {
-    update_config_value("OFFLINE", "false");
+gboolean gpusave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("GPUSAVE", state ? "true" : "false");
 }
 
-void offline_on(GtkWidget *widget, gpointer data) {
-    update_config_value("OFFLINE", "true");
+gboolean chargesave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("CHARGESAVE", state ? "true" : "false");
 }
 
-void gpusave_off(GtkWidget *widget, gpointer data) {
-    update_config_value("GPUSAVE", "false");
+gboolean bussave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("BUSSAVE", state ? "true" : "false");
 }
 
-void gpusave_on(GtkWidget *widget, gpointer data) {
-    update_config_value("GPUSAVE", "true");
-}
-
-void chargesave_off(GtkWidget *widget, gpointer data) {
-    update_config_value("CHARGESAVE", "false");
-}
-
-void chargesave_on(GtkWidget *widget, gpointer data) {
-    update_config_value("CHARGESAVE", "true");
-}
-
-void bussave_off(GtkWidget *widget, gpointer data) {
-    update_config_value("BUSSAVE", "false");
-}
-
-void bussave_on(GtkWidget *widget, gpointer data) {
-    update_config_value("BUSSAVE", "true");
-}
-
-void set_max_cpu_usage(GtkSpinButton *spin_button, gpointer user_data) {
-    int max_cpu_usage = gtk_spin_button_get_value_as_int(spin_button);
-
+void max_cpu_entry_apply(AdwEntryRow* sender, gpointer) {
+    int max_cpu_usage = g_ascii_strtoull(
+        gtk_editable_get_text(GTK_EDITABLE(sender)), 
+        NULL, 10);
+    
     if (max_cpu_usage < 0 || max_cpu_usage > 100) {
         fprintf(stderr, "CPU usage must be between 0 and 100\n");
         max_cpu_usage = 0;  // Set default value
+        gtk_editable_set_text(GTK_EDITABLE(sender), "0");
     }
 
     FILE *file = fopen(CONFIG_FILE, "r");

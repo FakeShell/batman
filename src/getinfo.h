@@ -1,5 +1,9 @@
-#ifndef BATMAN_H
-#define BATMAN_H
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+
+#ifndef GETINFO_H
+#define GETINFO_H
 
 #include <stdio.h>
 #include <stddef.h>
@@ -11,11 +15,14 @@
 #include <libgen.h>
 #include <sys/sysinfo.h>
 
-#define FILE_PATH_CPU "/var/lib/batman/default_cpu_governor"
-#define FILE_PATH_GPU "/var/lib/batman/default_gpu_governor"
-#define CONFIG_FILE "/var/lib/batman/config"
+typedef struct {
+    gboolean active;
+    gboolean enabled;
+} BatmanState;
 
-void append_to_gstring(GString *string, char *format, ...);
-GString* display_info();
+extern BatmanState bm_state;
 
-#endif /* BATMAN_H */
+int check_batman_active();
+int check_batman_enabled();
+
+#endif /* GETINFO_H */

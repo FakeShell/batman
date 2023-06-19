@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY `pkg-config --cflags upower-glib gtk4`
-LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4`
+CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY `pkg-config --cflags upower-glib gtk4 libadwaita-1`
+LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1`
 TARGET = batman
 TARGET_HELPER = batman-helper
 TARGET_GUI = batman-gui
