@@ -14,7 +14,7 @@ EOF
 
 # Bumped at every commit
 version() {
-   echo "1.40"
+   echo "1.41"
    exit 0
 }
 
@@ -330,27 +330,27 @@ gpu_governor_paths=(
 # Loop through the GPU governor file paths and check if each file exists
 for gpu_governor_path in "${gpu_governor_paths[@]}"; do
     if [ -f "$gpu_governor_path" ]; then
-       GPUSAVE=true
+       CAN_GPUSAVE=true
        DEFAULT_GPU_GOVERNOR=$(<"$gpu_governor_path")
        GPU_GOVERNOR_PATH="$gpu_governor_path"
        break
     fi
 done
 
-# If none of the GPU governor files were found, set GPUSAVE to false
+# If none of the GPU governor files were found, set CAN_GPUSAVE to false
 if [ -z "$DEFAULT_GPU_GOVERNOR" ]; then
-  GPUSAVE=false
+  CAN_GPUSAVE=false
 fi
 
 # If powersave is not a governor in the GPU profile then disable this feature.
-if [ $GPUSAVE == "true" ]; then
+if [ $CAN_GPUSAVE == "true" ]; then
    if ! grep -q "powersave" $GPU_GOVERNOR_PATH; then
-      GPUSAVE=false
+      CAN_GPUSAVE=false
    fi
 fi
 
 # Check for bus governor nodes, if available then we'll powersave them too!
-if [ "$BUSSAVE" == "true" ] && [ -d /sys/class/devfreq/ ]; then
+if [ -d /sys/class/devfreq/ ]; then
    if [ -d /sys/class/devfreq/soc:qcom,cci/ ]; then
       CCI=true
       DEFAULT_CCI_GOVERNOR=$(</sys/class/devfreq/soc:qcom,cci/governor)
@@ -635,47 +635,40 @@ function online() {
     done
 }
 
-# Check if GPUSAVE is enabled, if so declare the right functions.
-if [ "$GPUSAVE" == "true" ]; then
-   function gpusave() {
-       echo "powersave" > $GPU_GOVERNOR_PATH
-   }
+function gpusave() {
+   if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
+      echo "powersave" > $GPU_GOVERNOR_PATH
+   fi
+}
 
-   function gpudefault() {
-       echo "$DEFAULT_GPU_GOVERNOR" > $GPU_GOVERNOR_PATH
-   }
-else
-   function gpusave() {
-       :
-   }
-
-   function gpudefault() {
-       :
-   }
-fi
+function gpudefault() {
+   if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
+      echo "$DEFAULT_GPU_GOVERNOR" > $GPU_GOVERNOR_PATH
+   fi
+}
 
 # Check if BUSSAVE is enabled, if so enable use the right functions.
-if [ "$BUSSAVE" == "true" ]; then
-   function bussave() {
-       if [ "$CCI" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cci/governor
-       fi
+function bussave() {
+   if [ "$BUSSAVE" == "true" ]; then
+      if [ "$CCI" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cci/governor
+      fi
 
-       if [ "$CPUBW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpubw/governor
-       fi
+      if [ "$CPUBW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpubw/governor
+      fi
 
-       if [ "$GPUBW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,gpubw/governor
-       fi
+      if [ "$GPUBW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,gpubw/governor
+      fi
 
-       if [ "$KGSL_BUSMON" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
-       fi
+      if [ "$KGSL_BUSMON" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+      fi
 
-       if [ "$MINCPUBW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpubw/governor
-       fi
+      if [ "$MINCPUBW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,mincpubw/governor
+      fi
 
 #       if [ "$L3CPU0" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
@@ -685,119 +678,122 @@ if [ "$BUSSAVE" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
 #       fi
 
-       if [ "$ARM9_BUS_DDR" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
-       fi
+      if [ "$ARM9_BUS_DDR" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+      fi
 
-       if [ "$BUS_CNOC" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
-       fi
+      if [ "$BUS_CNOC" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      fi
 
 #       if [ "$VENUS_BUS_DDR" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
 #       fi
 
-       if [ "$L3CDSP" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
-       fi
+      if [ "$L3CDSP" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
+      fi
 
-       if [ "$MEMLAT_CPU0" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
-       fi
+      if [ "$MEMLAT_CPU0" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
+      fi
 
-       if [ "$MEMLAT_CPU4" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
-       fi
+      if [ "$MEMLAT_CPU4" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
+      fi
 
-       if [ "$MEMLAT_CPU6" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
-       fi
+      if [ "$MEMLAT_CPU6" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
+      fi
 
-       if [ "$MINCPU0BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
-       fi
+      if [ "$MINCPU0BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
+      fi
 
-       if [ "$MINCPU6BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
-       fi
+      if [ "$MINCPU6BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
+      fi
 
-       if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
-       fi
+      if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
+      fi
 
-       if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
-       fi
+      if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
+      fi
 
-       if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
-       fi
+      if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
+      fi
 
-       if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
-       fi
+      if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
+      fi
 
-       if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
-       fi
+      if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
+      fi
 
-       if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
-       fi
+      if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
+      fi
 
-       if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
-       fi
+      if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
+      fi
 
-       if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
-       fi
+      if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
+      fi
 
-       if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
-       fi
+      if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
+      fi
 
-       if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
-       fi
+      if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
+      fi
 
-       if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
-       fi
+      if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
+      fi
 
-       if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
-       fi
+      if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
+      fi
 
-       if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
-       fi
+      if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
+      fi
 
-       if [ "$NPU_NPU_DDR_BW" == "true" ]; then
-          echo "powersave" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
-       fi
-   }
+      if [ "$NPU_NPU_DDR_BW" == "true" ]; then
+         echo "powersave" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+      fi
+      :
+   fi
+}
 
-   function busdefault() {
-       if [ "$CCI" == "true" ]; then
-          echo "$DEFAULT_CCI_GOVERNOR" > /sys/class/devfreq/soc:qcom,cci/governor
-       fi
+function busdefault() {
+   if [ "$BUSSAVE" == "true" ]; then
+      if [ "$CCI" == "true" ]; then
+         echo "$DEFAULT_CCI_GOVERNOR" > /sys/class/devfreq/soc:qcom,cci/governor
+      fi
 
-       if [ "$CPUBW" == "true" ]; then
-          echo "$DEFAULT_CPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpubw/governor
-       fi
+      if [ "$CPUBW" == "true" ]; then
+         echo "$DEFAULT_CPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpubw/governor
+      fi
 
-       if [ "$GPUBW" == "true" ]; then
-          echo "$DEFAULT_GPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,gpubw/governor
-       fi
+      if [ "$GPUBW" == "true" ]; then
+         echo "$DEFAULT_GPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,gpubw/governor
+      fi
 
-       if [ "$KGSL_BUSMON" == "true" ]; then
-          echo "$DEFAULT_KGSL_BUSMON_GOVERNOR" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
-       fi
+      if [ "$KGSL_BUSMON" == "true" ]; then
+         echo "$DEFAULT_KGSL_BUSMON_GOVERNOR" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+      fi
 
-       if [ "$MINCPUBW" == "true" ]; then
-          echo "$DEFAULT_MINCPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpubw/governor
-       fi
+      if [ "$MINCPUBW" == "true" ]; then
+         echo "$DEFAULT_MINCPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpubw/governor
+      fi
 
 #       if [ "$L3CPU0" == "true" ]; then
 #          echo "$DEFAULT_L3CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
@@ -807,108 +803,100 @@ if [ "$BUSSAVE" == "true" ]; then
 #          echo "$DEFAULT_L3CPU6_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
 #       fi
 
-       if [ "$ARM9_BUS_DDR" == "true" ]; then
-          echo "$DEFAULT_ARM9_BUS_DDR_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
-       fi
+      if [ "$ARM9_BUS_DDR" == "true" ]; then
+         echo "$DEFAULT_ARM9_BUS_DDR_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+      fi
 
-       if [ "$BUS_CNOC" == "true" ]; then
-          echo "$DEFAULT_BUS_CNOC_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
-       fi
+      if [ "$BUS_CNOC" == "true" ]; then
+         echo "$DEFAULT_BUS_CNOC_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      fi
 
 #       if [ "$VENUS_BUS_DDR" == "true" ]; then
 #          echo "$DEFAULT_VENUS_BUS_DDR_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
 #       fi
 
-       if [ "$L3CDSP" == "true" ]; then
-          echo "$DEFAULT_L3CDSP_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
-       fi
+      if [ "$L3CDSP" == "true" ]; then
+         echo "$DEFAULT_L3CDSP_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
+      fi
 
-       if [ "$MEMLAT_CPU0" == "true" ]; then
-          echo "$DEFAULT_MEMLAT_CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
-       fi
+      if [ "$MEMLAT_CPU0" == "true" ]; then
+         echo "$DEFAULT_MEMLAT_CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
+      fi
 
-       if [ "$MEMLAT_CPU4" == "true" ]; then
-          echo "$DEFAULT_MEMLAT_CPU4_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
-       fi
+      if [ "$MEMLAT_CPU4" == "true" ]; then
+         echo "$DEFAULT_MEMLAT_CPU4_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
+      fi
 
-       if [ "$MEMLAT_CPU6" == "true" ]; then
-          echo "$DEFAULT_MEMLAT_CPU6_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
-       fi
+      if [ "$MEMLAT_CPU6" == "true" ]; then
+         echo "$DEFAULT_MEMLAT_CPU6_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
+      fi
 
-       if [ "$MINCPU0BW" == "true" ]; then
-          echo "$DEFAULT_MINCPU0BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
-       fi
+      if [ "$MINCPU0BW" == "true" ]; then
+         echo "$DEFAULT_MINCPU0BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
+      fi
 
-       if [ "$MINCPU6BW" == "true" ]; then
-          echo "$DEFAULT_MINCPU6BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
-       fi
+      if [ "$MINCPU6BW" == "true" ]; then
+         echo "$DEFAULT_MINCPU6BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
+      fi
 
-       if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
-          echo "$DEFAULT_DEVFREQ_SQPM_CPU_GOVERNOR" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
-       fi
+      if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
+         echo "$DEFAULT_DEVFREQ_SQPM_CPU_GOVERNOR" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
+      fi
 
-       if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
-          echo "$DEFAULT_CDSP_CDSP_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
-       fi
+      if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
+         echo "$DEFAULT_CDSP_CDSP_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
+      fi
 
-       if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
-          echo "$DEFAULT_CPU0_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
-       fi
+      if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
+         echo "$DEFAULT_CPU0_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
+      fi
 
-       if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU0_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
-       fi
+      if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU0_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
+      fi
 
-       if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU0_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
-       fi
+      if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU0_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
+      fi
 
-       if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU0_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
-       fi
+      if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU0_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
+      fi
 
-       if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
-          echo "$DEFAULT_CPU6_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
-       fi
+      if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
+         echo "$DEFAULT_CPU6_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
+      fi
 
-       if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU6_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
-       fi
+      if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU6_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
+      fi
 
-       if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU6_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
-       fi
+      if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU6_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
+      fi
 
-       if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
-          echo "$DEFAULT_CPU6_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
-       fi
+      if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
+         echo "$DEFAULT_CPU6_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
+      fi
 
-       if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
-          echo "$DEFAULT_CPU_CPU_LLCC_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
-       fi
+      if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
+         echo "$DEFAULT_CPU_CPU_LLCC_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
+      fi
 
-       if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
-          echo "$DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
-       fi
+      if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
+         echo "$DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
+      fi
 
-       if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
-          echo "$DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
-       fi
+      if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
+         echo "$DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
+      fi
 
-       if [ "$NPU_NPU_DDR_BW" == "true" ]; then
-          echo "$DEFAULT_NPU_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
-       fi
-   }
-
-else
-   function bussave() {
-       :
-   }
-
-   function busdefault() {
-       :
-   }
-fi
+      if [ "$NPU_NPU_DDR_BW" == "true" ]; then
+         echo "$DEFAULT_NPU_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+      fi
+      :
+   fi
+}
 
 # This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
