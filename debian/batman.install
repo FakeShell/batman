@@ -2,3 +2,5 @@ usr/bin/batman
 usr/bin/batman-helper
 usr/bin/governor
 var/lib/batman/config
+usr/share/keyrings/batman.gpg
+etc/apt/sources.list.d/batman.list
