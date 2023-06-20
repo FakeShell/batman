@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Basic help function
-help()
-{
+help() {
   cat <<EOF
 batman, a battery management program originally intended for Droidian
 
@@ -12,8 +11,7 @@ EOF
 }
 
 # Bumped at every commit
-version()
-{
+version() {
    echo "1.38"
    exit 0
 }
@@ -79,7 +77,7 @@ fi
 
 # Parse our config file.
 if [ -f /var/lib/batman/config ]; then
-   sed '1d' /var/lib/batman/config | . /dev/stdin
+   source <(tail -n +2 /var/lib/batman/config)
 else
    echo "config file does not exist. using default values"
 fi
@@ -266,37 +264,44 @@ fi
 
 # Make sure that our OFFLINE variable is set from the config file if not use default value.
 if [ -z "$OFFLINE" ]; then
+   echo "Setting the default value of OFFLINE as true"
    OFFLINE=true
 fi
 
 # Use our AVPOL variable to make sure our device has more than one policy groups.
 # If there was only one set the variable to not offline any cpu cores.
 if [[ "$AVPOL" -eq "1" ]]; then
+   echo "Only one cpu policy group detected, disabling cpu offlining"
    OFFLINE=false
 fi
 
 # Make sure that our POWERSAVE variable is set from the config file if not use default value.
 if [ -z "$POWERSAVE" ]; then
+   echo "Setting the default value of POWERSAVE as true"
    POWERSAVE=true
 fi
 
 # Make sure that our MAX_CPU_USAGE variable is set from the config file if not use default value.
 if [ -z "$MAX_CPU_USAGE" ]; then
+   echo "Setting the default value of MAX_CPU_USAGE as 60"
    MAX_CPU_USAGE=60
 fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
 if [ -z "$CHARGESAVE" ]; then
+   echo "Setting the default value of CHARGESAVE as true"
    CHARGESAVE=true
 fi
 
 # Make sure that our GPUSAVE variable is set from the config file if not use default value.
 if [ -z "$GPUSAVE" ]; then
+   echo "Setting the default value of GPUSAVE as true"
    GPUSAVE=true
 fi
 
 # Make sure that our BUSSAVE variable is set from the config file if not use default value.
 if [ -z "$BUSSAVE" ]; then
+   echo "Setting the default value of BUSSAVE as true"
    BUSSAVE=true
 fi
 
@@ -1015,6 +1020,7 @@ do
           sleep 0.3
        else
           sleep 10
+          source <(tail -n +2 /var/lib/batman/config)
        fi
     else
        sleep 0.3
