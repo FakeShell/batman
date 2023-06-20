@@ -95,9 +95,9 @@ gboolean bussave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
 
 void max_cpu_entry_apply(AdwEntryRow* sender, gpointer) {
     int max_cpu_usage = g_ascii_strtoull(
-        gtk_editable_get_text(GTK_EDITABLE(sender)), 
+        gtk_editable_get_text(GTK_EDITABLE(sender)),
         NULL, 10);
-    
+
     if (max_cpu_usage < 0 || max_cpu_usage > 100) {
         fprintf(stderr, "CPU usage must be between 0 and 100\n");
         max_cpu_usage = 0;  // Set default value

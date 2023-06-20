@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
 
 # Basic help function
 help() {
@@ -12,7 +14,7 @@ EOF
 
 # Bumped at every commit
 version() {
-   echo "1.38"
+   echo "1.40"
    exit 0
 }
 

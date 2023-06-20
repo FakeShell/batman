@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>

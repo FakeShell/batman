@@ -26,7 +26,7 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         gtk_application_get_active_window(app),
         "application-name", "Batman GUI",
         "application-icon", "batman",
-        "version", "1.38",
+        "version", "1.40",
         "copyright", "© 2023 Bardia Moshiri, Erik Inkinen",
         "issue-url", "https://github.com/droidian/batman/issues/new",
         "license-type", GTK_LICENSE_GPL_2_0_ONLY,
@@ -39,7 +39,7 @@ void ctl_active_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
     check_batman_active();
     gtk_switch_set_state(GTK_SWITCH(sender), bm_state.active);
     gtk_switch_set_active(GTK_SWITCH(sender), bm_state.active);
-    
+
     g_object_unref(src_ctl);
 }
 
@@ -47,7 +47,7 @@ void ctl_enabled_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
     check_batman_enabled();
     gtk_switch_set_state(GTK_SWITCH(sender), bm_state.enabled);
     gtk_switch_set_active(GTK_SWITCH(sender), bm_state.enabled);
-    
+
     g_object_unref(src_ctl);
 }
 
@@ -66,7 +66,7 @@ gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpoi
 gboolean service_enabled_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
     printf("%d\n", state);
     if (state == bm_state.enabled) return FALSE;
-    
+
     const gchar* ctl_argv[] = {
         "pkexec", "systemctl", (state) ? "enable" : "disable", "batman", NULL
     };

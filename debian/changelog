@@ -1,5 +1,5 @@
-batman (1.38) all; urgency=medium
+batman (1.40) all; urgency=medium
 
-  * add the debian packaging
+  * redo batman-gui
 
  -- Bardia Moshiri <fakeshell@bardia.tech>  Fri, 26 May 2023 00:45:13 -0400
