@@ -244,6 +244,20 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(bussave_action_row), bussave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), bussave_action_row);
 
+    // Config : BT Save
+
+    GtkWidget *btsave_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(btsave_action_row), "Bluetooth save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(btsave_action_row), "Allow batman to turn off bluetooth according to device usage");
+
+    GtkWidget *btsave_switch = gtk_switch_new();
+    gtk_widget_set_valign(btsave_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(btsave_switch), config.btsave);
+    g_signal_connect(btsave_switch, "state-set", G_CALLBACK(btsave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(btsave_action_row), btsave_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), btsave_action_row);
+
     // END : Config
 
     gtk_box_append(GTK_BOX(vbox), config_list_box);
@@ -261,7 +275,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
-            printf("batman-gui version: 1.38\n");
+            printf("batman-gui version: 1.41\n");
             return 0;
         }
     }

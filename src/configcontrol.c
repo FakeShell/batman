@@ -22,6 +22,7 @@ Config read_config() {
         config.chargesave = g_key_file_get_boolean(keyfile, "Settings", "CHARGESAVE", NULL);
         config.bussave = g_key_file_get_boolean(keyfile, "Settings", "BUSSAVE", NULL);
         config.gpusave = g_key_file_get_boolean(keyfile, "Settings", "GPUSAVE", NULL);
+        config.btsave = g_key_file_get_boolean(keyfile, "Settings", "BTSAVE", NULL);
     }
 
     g_key_file_free(keyfile);
@@ -91,6 +92,10 @@ gboolean chargesave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
 
 gboolean bussave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
     update_config_value("BUSSAVE", state ? "true" : "false");
+}
+
+gboolean btsave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("BTSAVE", state ? "true" : "false");
 }
 
 void max_cpu_entry_apply(AdwEntryRow* sender, gpointer) {

@@ -18,6 +18,7 @@ typedef struct {
     gboolean chargesave;
     gboolean bussave;
     gboolean gpusave;
+    gboolean btsave;
 } Config;
 
 Config read_config();
@@ -27,6 +28,7 @@ gboolean offline_switch_state_set(GtkSwitch* sender, gboolean state, gpointer da
 gboolean gpusave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean chargesave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean bussave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
+gboolean btsave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 void max_cpu_entry_apply(AdwEntryRow* sender, gpointer);
 
 #endif /* CONFIG_CONTROL_H */

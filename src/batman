@@ -308,11 +308,15 @@ if [ -z "$BUSSAVE" ]; then
 fi
 
 # Make sure MAX_CPU_USAGE is a number betweem 0 and 100
-if [[ "$MAX_CPU_USAGE" =~ ^[0-9]+$ ]] && [[ "$MAX_CPU_USAGE" -ge 0 ]] && [[ "$MAX_CPU_USAGE" -le 100 ]]; then
-    true
-else
+if ! [[ "$MAX_CPU_USAGE" =~ ^[0-9]+$ ]] || [[ "$MAX_CPU_USAGE" -lt 0 ]] || [[ "$MAX_CPU_USAGE" -gt 100 ]]; then
     echo "bad MAX_CPU_USAGE value. defaulting to 60"
     MAX_CPU_USAGE=60
+fi
+
+# Make sure that our BUSSAVE variable is set from the config file if not use default value.
+if [ -z "$BTSAVE" ]; then
+   echo "Setting the default value of BTSAVE as true"
+   BTSAVE=true
 fi
 
 # Set up an array with the GPU governor file paths to check
@@ -347,6 +351,17 @@ if [ $CAN_GPUSAVE == "true" ]; then
    if ! grep -q "powersave" $GPU_GOVERNOR_PATH; then
       CAN_GPUSAVE=false
    fi
+fi
+
+if ! which bluetoothctl &> /dev/null; then
+    echo "bluetoothctl does not exist, setting BTSAVE to false"
+    BTSAVE=false
+else
+    if ! bluetoothctl info | grep -q 'Connected:'; then
+        BTSTAT="off"
+    else
+        BTSTAT="on"
+    fi
 fi
 
 # Check for bus governor nodes, if available then we'll powersave them too!
@@ -898,6 +913,24 @@ function busdefault() {
    fi
 }
 
+function btsave {
+   if [ "$BTSAVE" == "true" ]; then
+      if [ "$BTSTAT" == "on" ]; then
+         if ! bluetoothctl info | grep -q 'Connected:'; then
+            bluetoothctl power off > /dev/null 2>&1 &
+            BTSTAT="off"
+         fi
+      fi
+   fi
+}
+
+function btdefault {
+   if [ "$BTSAVE" == "true" ] && [ "$BTSTAT" == "off" ]; then
+      bluetoothctl power on > /dev/null 2>&1 &
+      BTSTAT="on"
+   fi
+}
+
 # This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
 
@@ -947,16 +980,19 @@ do
           powersave
           gpusave
           bussave
+          btsave
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
        elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
           default
           gpudefault
           busdefault
+          btdefault
        # if screen is on (user using the device) set everything back to default.
        elif [ "$SCREEN" == "yes" ]; then
           default
           gpudefault
           busdefault
+          btdefault
        fi
     fi
 

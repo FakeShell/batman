@@ -14,7 +14,6 @@ It is currently available as a deb package, PKGBUILD and APKBUILD.
 
 Not tested on Lomiri as it has integration for repowered.
 
-
 # Dependencies
 
 The following packages have to be installed as dependencies to build batman:
@@ -22,25 +21,25 @@ The following packages have to be installed as dependencies to build batman:
 For Debian based systems:
 
 ```
-sudo apt install gcc make libupower-glib-dev pkg-config libwayland-dev libgtk-4-dev debhelper fakeroot
+sudo apt install gcc make libupower-glib-dev pkg-config libwayland-dev libgtk-4-dev debhelper fakeroot libadwaita-1-dev
 ```
 
 For Fedora based systems:
 
 ```
-sudo dnf install upower-devel pkg-config wayland-devel gtk4-devel 'Development Tools'
+sudo dnf install upower-devel pkg-config wayland-devel gtk4-devel libadwaita-devel 'Development Tools'
 ```
 
 For Arch based systems:
 
 ```
-sudo pacman -S upower pkgconf wayland gcc make gtk4
+sudo pacman -S upower pkgconf wayland gcc make gtk4 libadwaita
 ```
 
 For Alpine based systems:
 
 ```
-sudo apk add upower-dev pkgconfig wayland-dev gcc make gtk4.0-dev
+sudo apk add upower-dev pkgconfig wayland-dev gcc make gtk4.0-dev libadwaita-dev
 ```
 
 Everything can be compiled using the Makefile:
@@ -67,6 +66,7 @@ dpkg-buildpackage
 And finally, to enable the service
 
 ```
+sudo systemctl daemon-reload
 sudo systemctl enable --now batman
 ```
 
@@ -106,6 +106,7 @@ To compile governor manually:
 gcc src/governor.c -o governor
 ```
 
+
 # Configuration
 
 `POWERSAVE`
@@ -131,5 +132,8 @@ This option allows devfreq bus nodes to be set to powersave. They also save a lo
 `MAX_CPU_USAGE`
 This option tells batman at what CPU usage it should leave powersaving. as an example when listening to music in the background this item can be set to a lower value to make the device not set it to powersave to not make audio choppy
 
+
+`BTSAVE`
+This option will allow batman to moderate bluetooth power management and switch states accordingly. it will check if it is connected and if something is using it and changes states accordingly
 
 Make sure to restart the service on changes.
