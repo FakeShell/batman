@@ -16,6 +16,7 @@ pkgbase = batman
 	depends = gtk4
 	depends = upower
 	depends = bash
+	depends = bluez-utils
 	provides = batman
 	source = https://github.com/FakeShell/batman/releases/download/batman/batman.tar.gz
 	md5sums = SKIP
