@@ -2,27 +2,35 @@
 # Maintainer: Bardia Moshiri <fakeshell@bardia.tech>
 
 pkgname=batman
-pkgver=0.37
+pkgver=1.41
 pkgrel=0
 pkgdesc="A battery management service and program for Linux phones"
 url="https://github.com/FakeShell/batman"
 arch="noarch"
 license="GPLv2"
-depends="wlr-randr bash upower yad"
-makedepends="git tar"
+depends="bash which upower bluez"
+makedepends="upower-dev pkgconfig wayland-dev gcc make gtk4.0-dev libadwaita-dev"
 source="https://github.com/FakeShell/batman/releases/download/batman/batman.tar.gz"
 options="!check"
 
-package() {
-	install -Dm755 $srcdir/$pkgname/batman "$pkgdir/usr/bin/batman"
-	install -Dm755 $srcdir/$pkgname/batman-gui "$pkgdir/usr/bin/batman-gui"
-	install -Dm755 $srcdir/$pkgname/governor "$pkgdir/usr/bin/governor"
-	install -Dm644 $srcdir/$pkgname/config "$pkgdir/var/lib/$pkgname/config"
-	install -Dm644 $srcdir/$pkgname/batman.rc "$pkgdir/etc/init.d/batman"
-	install -Dm644 $srcdir/$pkgname/batman.png "$pkgdir/usr/share/icons/batman.png"
-	install -Dm644 $srcdir/$pkgname/batman-gui.desktop "$pkgdir/usr/share/applications/batman-gui.desktop"
+build() {
+  cd "$builddir"
+
+  gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+  gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4 libadwaita-1`
+  gcc src/governor.c -o governor
 }
 
-sha512sums="
-d6d79f1299c9e29e5376946b93860fc7caea50ff48522230b62019c5af297f4c283edd89a3df27f5795ac95adea027515a01280bd00b8adf8dd6bde30eaf0441 batman.tar.gz
-"
+package() {
+  cd "$builddir"
+
+  install -Dm755 batman "$pkgdir/usr/bin/batman"
+  install -Dm755 batman-helper "$pkgdir/usr/bin/batman-helper"
+  install -Dm755 governor "$pkgdir/usr/bin/governor"
+  install -Dm755 batman-gui "$pkgdir/usr/bin/batman-gui"
+  install -Dm644 data/config "$pkgdir/var/lib/batman/config"
+  install -Dm644 data/batman-gui.desktop "$pkgdir/usr/share/applications/batman-gui.desktop"
+  install -Dm644 data/batman.png "$pkgdir/usr/share/icons/batman.png"
+  install -Dm644 data/batman.gpg "$pkgdir/usr/share/keyrings/batman.gpg"
+  install -Dm644 data/batman.list "$pkgdir/etc/apt/sources.list.d/batman.list"
+}
