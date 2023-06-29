@@ -3,20 +3,16 @@
 pkgname='batman'
 pkgver=1.41
 pkgrel=1
-pkgdesc="A battery management service and program for Linux phones"
+_commit=70efa135771a18f431d91c8341af717831699eab
+pkgdesc="A battery management service for Linux phones"
 arch=(any)
 url="https://github.com/FakeShell/batman"
 license=('GPLv2')
 depends=('gtk4' 'upower' 'bash' 'which' 'bluez-utils')
 makedepends=('git' 'tar' 'gtk4' 'libadwaita' 'pkgconf' 'wayland' 'gcc')
 provides=('batman')
-source=('https://github.com/FakeShell/batman/releases/download/batman/batman.tar.gz')
+source=("git+https://github.com/FakeShell/batman#commit=${_commit}")
 md5sums=('SKIP')
-
-prepare() {
-  tar -xf batman.tar.gz
-  rm -f batman.tar.gz
-}
 
 build() {
   cd "$srcdir/batman"
@@ -36,6 +32,4 @@ package() {
   install -Dm644 data/config "${pkgdir}/var/lib/batman/config"
   install -Dm644 data/batman-gui.desktop "${pkgdir}/usr/share/applications/batman-gui.desktop"
   install -Dm644 data/batman.png "${pkgdir}/usr/share/icons/batman.png"
-  install -Dm644 data/batman.gpg "${pkgdir}/usr/share/keyrings/batman.gpg"
-  install -Dm644 data/batman.list "${pkgdir}/etc/apt/sources.list.d/batman.list"
 }
