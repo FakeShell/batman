@@ -32,4 +32,5 @@ package() {
   install -Dm644 data/config "${pkgdir}/var/lib/batman/config"
   install -Dm644 data/batman-gui.desktop "${pkgdir}/usr/share/applications/batman-gui.desktop"
   install -Dm644 data/batman.png "${pkgdir}/usr/share/icons/batman.png"
+  install -Dm644 data/batman.service "${pkgdir}/usr/lib/systemd/system/batman.service"
 }
