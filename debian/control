@@ -1,6 +1,6 @@
 Source: batman
 Maintainer: Bardia Moshiri
-Section: metapackages
+Section: misc
 Priority: optional
 Build-Depends: debhelper (>= 10), gcc, make, libupower-glib-dev, pkg-config, libwayland-dev, libgtk-4-dev, libadwaita-1-dev
 Standards-Version: 4.5.0.3
