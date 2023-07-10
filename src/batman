@@ -18,6 +18,10 @@ version() {
    exit 0
 }
 
+delay() {
+   read -t $1 < /dev/tty0
+}
+
 # First check if user is asking for help or version if not move on.
 case "$1" in
   -h|-\?|--help)
@@ -215,7 +219,7 @@ if [ "$WLROOTS" == "true" ]; then
          break
       else
          # If the exit status is not 0, wait for some time and try again
-         sleep 10
+         delay 10
       fi
    done
 # Check if system is using KDE Plasma.
@@ -251,7 +255,7 @@ if [[ "$AVUSER" -gt "1" ]]; then
    do
       AVUSER=$(ls /run/user | wc -l)
       if [[ "$AVUSER" -gt "1" ]]; then
-         sleep 10
+         delay 10
       else
          echo "other user disappeared. starting"
          break
@@ -1043,12 +1047,12 @@ do
     # To not do as many useless iterations wait here for some time when the screen is on or when user is using the device.
     if [ "$SCREEN" == "yes" ]; then
        if [ "$SCREEN_OLD" == "no" ]; then
-          sleep 0.3
+          delay 0.3
        else
-          sleep 10
+          delay 10
           source <(tail -n +2 /var/lib/batman/config)
        fi
     else
-       sleep 0.3
+       delay 0.3
     fi
 done
