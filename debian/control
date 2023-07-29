@@ -12,6 +12,8 @@ Architecture: any
 Depends: ${misc:Depends},
          bash,
          bluez,
+         batman-helper,
+         batman-governor,
 Suggests: wlr-randr
 Description: batman
  A battery management service for Linux phones
@@ -21,6 +23,17 @@ Architecture: any
 Depends: ${misc:Depends},
          batman (= ${binary:Version}),
          libgtk-4-1,
-Suggests: wlr-randr
 Description: batman-gui
  A battery management service for Linux phones - GUI front-end
+
+Package: batman-helper
+Architecture: any
+Depends: ${misc:Depends},
+Description: batman-helper
+ A battery management service for Linux phones - helper program
+
+Package: batman-governor
+Architecture: any
+Depends: ${misc:Depends},
+Description: batman-governor
+ A battery management service for Linux phones - governor info
