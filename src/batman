@@ -18,9 +18,15 @@ version() {
    exit 0
 }
 
-delay() {
-   read -t $1 < /dev/tty0
-}
+if [ -r "/dev/tty0" ]; then
+    delay() {
+        read -t "$1" < /dev/tty0
+    }
+else
+    delay() {
+        sleep "$1"
+    }
+fi
 
 # First check if user is asking for help or version if not move on.
 case "$1" in
@@ -119,14 +125,14 @@ fi
 
 if [ -f /var/lib/batman/exynos_cpu_limit ]; then
    if [ -f /sys/power/cpufreq_min_limit ]; then
-      CANSAVEGOVERNOR="exynos_cpu_limit"
+      CPUSAVEGOVERNOR="exynos_cpu_limit"
       CPUFREQ_MIN_LIMIT=$(</sys/power/cpufreq_min_limit)
       CPUFREQ_MAX_LIMIT=$(</sys/power/cpufreq_max_limit)
    fi
 fi
 
 # Check if powersave governor is available.
-if [ "$LEGACY" == "true" ] && [ -z "$CANSAVEGOVERNOR" ]; then
+if [ "$LEGACY" == "true" ] && [ -z "$CPUSAVEGOVERNOR" ]; then
    if grep -q powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
       CPUSAVEGOVERNOR="powersave"
    elif grep -q userspace /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
@@ -135,7 +141,7 @@ if [ "$LEGACY" == "true" ] && [ -z "$CANSAVEGOVERNOR" ]; then
       echo "powersave or userspace are not available governors on this system. exiting"
       exit 0
    fi
-elif [ -z "$CANSAVEGOVERNOR" ]; then
+elif [ -z "$CPUSAVEGOVERNOR" ]; then
    if grep -q powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
       CPUSAVEGOVERNOR="powersave"
    elif grep -q userspace /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
@@ -616,8 +622,12 @@ if [ "$IS_EXYNOS" == "true" ]; then
    fi
 fi
 
-# on some (if not all) exynos chips powersave doesn't exist so we need an alternative way of lowering clock speeds
-# so set governor to userspace and set scaling_min_freq to scaling_setspeed to get the minimum frequency at idle.
+if [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+   RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
+fi
+
+# on some (if not all) exynos chips powersave doesn't exist so we need an alternative ways of lowering clock speeds
+# like to set governor to userspace and set scaling_min_freq to scaling_setspeed to get the minimum frequency at idle.
 if [ "$CPUSAVEGOVERNOR" == "powersave" ]; then
     function powersave() {
         for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
@@ -632,11 +642,13 @@ elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MINFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_min_freq)
             echo $MINFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+            RUNTIME_CUR_GOVERNOR="powersave"
         done
     }
 elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function powersave() {
         echo "$CPUFREQ_MIN_LIMIT" > /sys/power/cpufreq_max_limit
+        RUNTIME_CUR_GOVERNOR="powersave"
     }
 else
     function powersave() {
@@ -644,7 +656,7 @@ else
     }
 fi
 
-# Function that sets the cpu governor to the default value.
+# same story as above basically
 if [ "$CPUSAVEGOVERNOR" == "powersave" ]; then
     function default() {
         for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
@@ -659,32 +671,61 @@ elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MAXFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_max_freq)
             echo $MAXFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+            RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
         done
     }
 elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function default() {
         echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_max_limit
+        RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
     }
 else
     function default() {
        :
     }
 fi
-# This function sets cpu cores in policy group one to offline.
-function offline() {
-    for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
-    do
-         echo "0" > /sys/devices/system/cpu/cpu$i/online
-    done
-}
 
-# This function sets cpu cores in policy group one to online.
-function online() {
-    for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
-    do
-         echo "1" > /sys/devices/system/cpu/cpu$i/online
-    done
-}
+# some chipsets will crash the entire kernel if we set core 0 to offline so lets declare separate functions for them
+if [ "$CPUSAVEGOVERNOR" == "powersave" ] || [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+    function offline() {
+        for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
+        do
+             echo "0" > /sys/devices/system/cpu/cpu$i/online
+        done
+    }
+elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+    function offline() {
+        for ((i=1; i<=$LASTPOLCORE; i++))
+        do
+             echo "0" > /sys/devices/system/cpu/cpu$i/online
+        done
+    }
+else
+    function offline() {
+       :
+    }
+fi
+
+# same story as above but the opposite
+if [ "$CPUSAVEGOVERNOR" == "powersave" ] || [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+    function online() {
+        for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
+        do
+             echo "1" > /sys/devices/system/cpu/cpu$i/online
+        done
+    }
+elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+    function online() {
+        for ((i=1; i<=$LASTPOLCORE; i++))
+        do
+             echo "1" > /sys/devices/system/cpu/cpu$i/online
+        done
+    }
+else
+    function online() {
+       :
+    }
+fi
 
 function gpusave() {
    if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
@@ -1033,7 +1074,11 @@ do
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
-    CUR_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    if [ -z "$RUNTIME_CUR_GOVERNOR" ]; then
+       CUR_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    else
+       CUR_GOVERNOR=$RUNTIME_CUR_GOVERNOR
+    fi
 
     if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
        if [ "$SCREEN" = "no" ]; then
