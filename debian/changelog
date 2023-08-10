@@ -1,5 +1,142 @@
-batman (1.41) all; urgency=medium
+batman (1.41+git20230730181923.3a89b51.release) all; urgency=medium
 
+  [ Bardia Moshiri ]
+  * add files
+  * make script compatible with all types of cpus
+  * add systemd service file and add fully-charged from upower
+  * rename charging to charge because it might not be charging and the result of that command might not always be charge
+  * add files which work for all devices
+  * fix typo
+  * add init file for batman
+  * add show script
+  * remove bad conditions
+  * add init scripts
+  * find out uid of user without hardcoding and use default governor not just powersave and schedutil
+  * add a few exceptions
+  * pick correct value for charge status
+  * loop the script
+  * Merge pull request #1 from armgham/patch-1
+  * add experimental support for cpu offlining on load avgload
+  * fix cpu usage
+  * fix cpu usage
+  * fix a few typos and offline mode not working
+  * add more exceptions and fix a few bugs
+  * disable cpus covered by first policy and a check for older devices
+  * add gpu powersave
+  * optimize cpu usage and runtime
+  * add a ton of comments
+  * fix an issue with messed up governors after a random restart of the service
+  * initial support for config files
+  * add batman-gui batman desktop file and logo
+  * make another window for configuration in batman-gui and make version and help function for batman
+  * typos...
+  * add apt repo to deb package
+  * redo the readme file
+  * redo the readme file
+  * add CHARGESAVE check and config option as well as pkgbuild for arch and manjaro
+  * add CHARGESAVE to batman-gui and fix typos
+  * fix a check for cpu offlining
+  * add APKBUILD
+  * update README
+  * add support for kwin and plasma
+  * fix a check for cpu offlining
+  * higher the version numbers
+  * update init script
+  * add checks for gpu governor
+  * increase version number
+  * fix chargesave and fix systemd service
+  * change default value of cpu offlining and rework parts of batman-gui to make it more responsive
+  * batman-gui) seperate variables into two sets
+  * bump version number in APKBUILD PKGBUILD and SRCINFO
+  * fix service file
+  * rewrite variables to use less commands and faster commands
+  * more variables rewritten and optimized
+  * optimize all the commands for speed and PID. check for the CHARGESAVE variable before running upower to increase speed
+  * remove accidentally pasted string
+  * add support for more gpus and x86
+  * introduce bus powersaving
+  * add more bus nodes
+  * rewrite buses as an array and add more
+  * add exception for x86 architecture for cpu frequency
+  * add more bus nodes
+  * add more bus nodes
+  * make sure all variables are the correct value
+  * drop variable check
+  * set CHARGESAVE to true by default
+  * bump to 0.37
+  * use a file based approach for saving governors
+  * add support for older arm SoC's
+  * allow cpu offlining on older arm SoC's
+  * add which to PKGBUILD dependencies
+  * add batman-helper and optimize batman for speed and cpu usage
+  * add basic support for x86
+  * remove extra logging
+  * initial support for upower in batman-helper
+  * add the Makefile
+  * add openrc and traditional init to the Makefile
+  * prefer our own implementation over the upower command
+  * add wlrdisplay
+  * integrate the new wlrdisplay implementation into batman
+  * add wayland dependency to readme
+  * rework support for plasma and kde
+  * fix formatting of compilation in README
+  * rename the repo key
+  * ignore the powersave check on x86
+  * drop batman-helper binary
+  * add multi state support for x86
+  * add the debian packaging
+  * add initial implementation of batman-gui in C
+  * rewrite all the basic functions and seperate display function from all the gtk stuff
+  * add all the configuration options to batman-gui
+  * batman-gui: add the key if its missing in the config
+  * add error handling to batman-gui
+  * batman-gui: show the correct set of buttons in config_page by reading CONFIG_FILE
+  * drop batman-helper prebuilt binary
+  * fallback to /org/freedesktop/UPower/devices/battery_battery if none of the other methods have worked
+  * switch to the new config file format
+  * Merge pull request #3 from Bettehem/all
+  * rewrite governor in C
+  * governor: fix architecture detection on x86 and x86_64
+  * clean the repo and split functions into different files
+  * add info about dpkg-buildpackage and gtk to dependencies
+  * fix formatting of readme
+  * batman-gui is no longer yad!
+  * copy the compiled version of gui
+  * batman: only fail if GET_CHARGE is empty after all the operations
+  * batman: add support for exynos chips
+  * add libgtk-4-1 as a dependency
+  * add support for x86_64 systemd suspend recovery
+  * let configuration to be changed without restarting the service
+  * bump the version number and copyright
+  * add the custom repo back into debian/rules
   * batman(-gui): add support for bluetooth power management
+  * archlinux: rewrite the build script
+  * debian: minor strin adjustments to control
+  * alpinelinux: rewrite the build script
+  * add bluez to dependencies
+  * archlinux: use the commit hash instead of a tar file
+  * archlinux: add the systemd service
+  * debian: set section to misc
+  * deprecated: drop governor
+  * batman: use read to sleep without generating any pids
+  * debian: split governor and helper into different packages
+  * batman: add exynos cpufreq limit support
+  * batman: add support for exynos offlining
+  * drop old batman-gui yad script
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Sat, 24 Jun 2023 01:35:55 -0400
+  [ Erik Inkinen ]
+  * [debian] Move batman-gui to a separate sub-package
+  * [debian] fix incorrect copyright
+  * Batman GUI: The Next Generation
+  * [debian] Add libadwaita-1-dev in Build-Depends
+  * [debian] Add libadwaita-1 in rules for batman-gui
+  * make GPUSAVE and BUSSAVE configurable in real time
+
+  [ Bettehem ]
+  * Improved text scrolling.
+
+  [ Arman Ghamgossar ]
+  * correct syntax error in if conditional expression.
+
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Sun, 30 Jul 2023 18:19:23 -0400
+

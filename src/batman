@@ -14,7 +14,7 @@ EOF
 
 # Bumped at every commit
 version() {
-   echo "1.41"
+   echo "1.42"
    exit 0
 }
 
@@ -677,6 +677,7 @@ elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
 elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function default() {
         echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_max_limit
+        echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_min_limit
         RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
     }
 else
