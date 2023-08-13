@@ -164,13 +164,18 @@ int cpuUsage() {
     long long total_cpu_time_1 = getTotalCPUTime();
     long long idle_cpu_time_1 = getIdleCPUTime();
 
-    usleep(100000);
+    usleep(250000);
 
     long long total_cpu_time_2 = getTotalCPUTime();
     long long idle_cpu_time_2 = getIdleCPUTime();
 
     double total_diff = (double)(total_cpu_time_2 - total_cpu_time_1);
     double idle_diff = (double)(idle_cpu_time_2 - idle_cpu_time_1);
+
+    if (total_diff <= idle_diff) {
+        printf("0\n");
+        return 0;
+    }
 
     double cpu_usage = 100.0 * (1.0 - idle_diff / total_diff);
 
