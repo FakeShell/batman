@@ -88,8 +88,15 @@ if [ ! -d /var/lib/batman/ ]; then
 fi
 
 # Parse our config file.
-if [ -f /var/lib/batman/config ]; then
-   source <(tail -n +2 /var/lib/batman/config)
+if [ -f /etc/batman/config ]; then
+   CONFIG_FILE=/etc/batman/config
+elif [ -f /var/lib/batman/config ]; then
+   CONFIG_FILE=/var/lib/batman/config
+fi
+
+if [ ! -z $CONFIG_FILE ]; then
+   echo "Parsing $CONFIG_FILE"
+   source <(tail -n +2 $CONFIG_FILE)
 else
    echo "config file does not exist. using default values"
 fi
@@ -123,6 +130,7 @@ else
    exit 0
 fi
 
+# this is tricky so lets only use it if port requires it
 if [ -f /var/lib/batman/exynos_cpu_limit ]; then
    if [ -f /sys/power/cpufreq_min_limit ]; then
       CPUSAVEGOVERNOR="exynos_cpu_limit"
@@ -172,6 +180,8 @@ if [ -z "$GET_CHARGE" ] && [[ $(which upower) ]]; then
       rm /var/lib/batman/using-batman-helper-for-charge -f
    elif [ "$CHARGE_STATUS_FALLBACK" == "discharging" ] || [ "$CHARGE_STATUS_FALLBACK" == "fully-charged" ] || [ "$CHARGE_STATUS_FALLBACK" == "charging" ]; then
       rm /var/lib/batman/using-batman-helper-for-charge -f
+
+      # on some number of devices such as starqlte this is the only one that gets the status for us
       echo "Falling back to /org/freedesktop/UPower/devices/battery_battery"
       GET_CHARGE='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
    fi
@@ -642,12 +652,17 @@ elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MINFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_min_freq)
             echo $MINFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+
+            # the checks require powersave as saving governor as they were written back when that was the only supported governor
+            # so we have to set this here to satisfy them
             RUNTIME_CUR_GOVERNOR="powersave"
         done
     }
 elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function powersave() {
         echo "$CPUFREQ_MIN_LIMIT" > /sys/power/cpufreq_max_limit
+
+        # same story as above applies here
         RUNTIME_CUR_GOVERNOR="powersave"
     }
 else
@@ -671,6 +686,8 @@ elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MAXFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_max_freq)
             echo $MAXFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+
+            # same thing as the powersave function of userspace governor
             RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
         done
     }
@@ -678,6 +695,8 @@ elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function default() {
         echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_max_limit
         echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_min_limit
+
+        # same thing as powersave function of exynos_cpu_limit governor
         RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
     }
 else
@@ -717,6 +736,7 @@ if [ "$CPUSAVEGOVERNOR" == "powersave" ] || [ "$CPUSAVEGOVERNOR" == "userspace" 
     }
 elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
     function online() {
+        # hotplug is unstable on devices with exynos_cpu_limit. if 0 goes down the kernel crashes.
         for ((i=1; i<=$LASTPOLCORE; i++))
         do
              echo "1" > /sys/devices/system/cpu/cpu$i/online
@@ -728,6 +748,7 @@ else
     }
 fi
 
+# TODO: figure out why most gpu governors just error out when writing to them (non critical)
 function gpusave() {
    if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
       echo "powersave" > $GPU_GOVERNOR_PATH
@@ -1128,7 +1149,7 @@ do
           delay 0.3
        else
           delay 10
-          source <(tail -n +2 /var/lib/batman/config)
+          source <(tail -n +2 $CONFIG_FILE)
        fi
     else
        delay 0.3
