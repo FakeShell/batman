@@ -18,8 +18,6 @@ override_dh_auto_install:
 	install -D -m 0644 data/config debian/tmp/var/lib/batman/config
 	install -D -m 0644 data/batman-gui.desktop debian/tmp/usr/share/applications/batman-gui.desktop
 	install -D -m 0644 data/batman.png debian/tmp/usr/share/icons/batman.png
-	install -D -m 0644 data/batman.gpg debian/tmp/usr/share/keyrings/batman.gpg
-	install -D -m 0644 data/batman.list debian/tmp/etc/apt/sources.list.d/batman.list
 
 	install -D -m 0644 libbatman-wrappers.so debian/libbatman-wrappers/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-wrappers.so
 

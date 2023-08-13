@@ -1,4 +1,2 @@
 usr/bin/batman
 var/lib/batman/config
-usr/share/keyrings/batman.gpg
-etc/apt/sources.list.d/batman.list

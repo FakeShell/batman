@@ -16,8 +16,6 @@ BINDIR = /usr/bin
 CONFIGDIR = /var/lib/batman
 SYSTEMD_DIR = /usr/lib/systemd/system
 OPENRC_DIR = /etc/init.d
-APT_DIR = /etc/apt/sources.list.d
-KEYRING_DIR = /usr/share/keyrings
 DESKTOP_DIR = /usr/share/applications
 INCLUDE_DIR = /usr/include/batman
 
@@ -54,11 +52,6 @@ else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
 	cp data/batman.rc $(OPENRC_DIR)/batman
 else
 	cp data/batman-init $(OPENRC_DIR)/batman
-endif
-
-ifeq ($(shell test -x /usr/bin/apt-get && echo 1),1)
-	cp data/batman.list $(APT_DIR)
-	cp data/batman.gpg $(KEYRING_DIR)/batman.gpg
 endif
 
 .PHONY: clean
