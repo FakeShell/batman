@@ -14,6 +14,7 @@ Depends: ${misc:Depends},
          bluez,
          batman-helper,
          batman-governor,
+         libbatman-wrappers,
 Suggests: wlr-randr
 Description: batman
  A battery management service for Linux phones
@@ -37,3 +38,15 @@ Architecture: any
 Depends: ${misc:Depends},
 Description: batman-governor
  A battery management service for Linux phones - governor info
+
+Package: batman-dev
+Architecture: any
+Depends: ${misc:Depends},
+Description: batman-dev
+ A battery management service for Linux phones - development headers
+
+Package: libbatman-wrappers
+Architecture: any
+Depends: ${misc:Depends},
+Description: libbatman-wrappers
+ A battery management service for Linux phones - wrapper shared object

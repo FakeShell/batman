@@ -1,0 +1,4 @@
+usr/include/batman/batman-wrappers.h
+usr/include/batman/getinfo.h
+usr/include/batman/governor.h
+usr/include/batman/wlrdisplay.h

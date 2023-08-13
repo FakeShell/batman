@@ -1,4 +1,4 @@
-batman (1.41+git20230730181923.3a89b51.release) all; urgency=medium
+batman (0.0.0+git20230813130845.bb9909e.release) all; urgency=medium
 
   [ Bardia Moshiri ]
   * add files
@@ -123,6 +123,12 @@ batman (1.41+git20230730181923.3a89b51.release) all; urgency=medium
   * batman: add exynos cpufreq limit support
   * batman: add support for exynos offlining
   * drop old batman-gui yad script
+  * add cpufreq_min_limit to exynos_cpu_limit and bump to 1.42
+  * batman: find first occurance of bash instead of hardcoding the path
+  * batman: add user defined config file support and comments
+  * governor: add cpu usage, exynos nodes and optimize the main loop
+  * batman-helper: avoid negative and invalid values in cpu usage
+  * split batman-helper to batman-wrappers and build a shared object
 
   [ Erik Inkinen ]
   * [debian] Move batman-gui to a separate sub-package
@@ -138,5 +144,5 @@ batman (1.41+git20230730181923.3a89b51.release) all; urgency=medium
   [ Arman Ghamgossar ]
   * correct syntax error in if conditional expression.
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Sun, 30 Jul 2023 18:19:23 -0400
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Sun, 13 Aug 2023 13:08:45 -0400
 

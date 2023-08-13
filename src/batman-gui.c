@@ -26,9 +26,9 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         gtk_application_get_active_window(app),
         "application-name", "Batman GUI",
         "application-icon", "batman",
-        "version", "1.40",
+        "version", "1.42",
         "copyright", "© 2023 Bardia Moshiri, Erik Inkinen",
-        "issue-url", "https://github.com/droidian/batman/issues/new",
+        "issue-url", "https://github.com/fakeshell/batman/issues/new",
         "license-type", GTK_LICENSE_GPL_2_0_ONLY,
         "developers", developers,
         "designers", designers,
@@ -275,7 +275,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
-            printf("batman-gui version: 1.41\n");
+            printf("batman-gui version: 1.42\n");
             return 0;
         }
     }

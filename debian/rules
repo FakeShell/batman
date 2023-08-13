@@ -4,7 +4,8 @@
 	dh $@ --without=makefile
 
 override_dh_auto_build:
-	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -fPIC -shared -o libbatman-wrappers.so src/batman-wrappers.c -lwayland-client `pkg-config --cflags --libs upower-glib`
 	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4 libadwaita-1`
 	gcc src/governor.c -o governor
 
@@ -13,11 +14,19 @@ override_dh_auto_install:
 	install -D -m 0755 batman-helper debian/tmp/usr/bin/batman-helper
 	install -D -m 0755 governor debian/tmp/usr/bin/governor
 	install -D -m 0755 batman-gui debian/tmp/usr/bin/batman-gui
+
 	install -D -m 0644 data/config debian/tmp/var/lib/batman/config
 	install -D -m 0644 data/batman-gui.desktop debian/tmp/usr/share/applications/batman-gui.desktop
 	install -D -m 0644 data/batman.png debian/tmp/usr/share/icons/batman.png
 	install -D -m 0644 data/batman.gpg debian/tmp/usr/share/keyrings/batman.gpg
 	install -D -m 0644 data/batman.list debian/tmp/etc/apt/sources.list.d/batman.list
+
+	install -D -m 0644 libbatman-wrappers.so debian/libbatman-wrappers/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-wrappers.so
+
+	install -D -m 0644 src/batman-wrappers.h debian/tmp/usr/include/batman/batman-wrappers.h
+	install -D -m 0644 src/getinfo.h debian/tmp/usr/include/batman/getinfo.h
+	install -D -m 0644 src/governor.h debian/tmp/usr/include/batman/governor.h
+	install -D -m 0644 src/wlrdisplay.h debian/tmp/usr/include/batman/wlrdisplay.h
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service --no-start
