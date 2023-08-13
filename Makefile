@@ -17,6 +17,7 @@ CONFIGDIR = /var/lib/batman
 SYSTEMD_DIR = /usr/lib/systemd/system
 OPENRC_DIR = /etc/init.d
 DESKTOP_DIR = /usr/share/applications
+ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
 
 .PHONY: all
