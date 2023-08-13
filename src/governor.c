@@ -2,14 +2,16 @@
 // Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include <stdio.h>
+#include <time.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
-#include <sys/utsname.h>
+#include "governor.h"
 
 volatile sig_atomic_t keep_going = 1;
+char cpu_usage[1024] = "unknown\n";
+pthread_mutex_t cpu_usage_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 const char *paths[] = {
     "/sys/class/devfreq/soc:qcom,cci/governor",
@@ -47,7 +49,11 @@ const char *paths[] = {
     "/sys/class/devfreq/ddr_devfreq/governor",
     "/sys/class/devfreq/graphics/governor",
     "/sys/kernel/gpu/gpu_governor",
+    "/sys/power/cpufreq_max_limit",
+    "/sys/power/cpufreq_min_limit",
 };
+
+// should exynos nodes be defined somewhere else? they're not in devfreq ^^
 
 // Signal handler to handle Ctrl+C
 void handle_sigint(int sig)
@@ -66,6 +72,7 @@ char *get_node_name(const char *path) {
             }
         }
     }
+
     return "unknown";
 }
 
@@ -88,7 +95,41 @@ int is_arch_x86() {
     return 0;
 }
 
-void get_system_info() {
+void *update_cpu_usage(void *arg) {
+    const int sleep_interval_in_seconds = 2;
+    const int checks_per_interval = 10;
+    const int sleep_time = sleep_interval_in_seconds / checks_per_interval;
+
+    for(int i = 0; i < sleep_interval_in_seconds; i += sleep_time) {
+        if(!keep_going) {
+            break;
+        }
+
+        if (i % sleep_interval_in_seconds == 0) {
+            FILE *fp = popen("batman-helper cpu", "r");
+            if (fp != NULL) {
+                char new_cpu_usage[1024];
+                if (fgets(new_cpu_usage, sizeof(new_cpu_usage), fp) != NULL) {
+                    pthread_mutex_lock(&cpu_usage_mutex);
+                    strncpy(cpu_usage, new_cpu_usage, sizeof(cpu_usage) - 1);
+                    pthread_mutex_unlock(&cpu_usage_mutex);
+                }
+
+                pclose(fp);
+            }
+        }
+
+        sleep(sleep_time);
+    }
+
+    return NULL;
+}
+
+void get_system_info(int x86) {
+    static time_t last_cpu_update = 0;
+
+    time_t current_time = time(NULL);
+
     char buf[1024];
     FILE *file;
     int first_core = -1, last_core = -1, core;
@@ -112,6 +153,7 @@ void get_system_info() {
                 break;
             }
         }
+
         closedir(d);
     } else {
         printf("Could not open directory %s\n", dir_path);
@@ -130,6 +172,10 @@ void get_system_info() {
 
     pclose(fp);
 
+    pthread_mutex_lock(&cpu_usage_mutex);
+    printf("cpu usage: %s", cpu_usage);
+    pthread_mutex_unlock(&cpu_usage_mutex);
+
     file = fopen("/proc/cpuinfo", "r");
     if (file == NULL) {
         printf("CPU Information: unknown\n");
@@ -140,12 +186,12 @@ void get_system_info() {
                 last_core = core;
             }
         }
+
         fclose(file);
         free(line);
         line = NULL;
     }
 
-    int x86 = is_arch_x86();
     const char *CPUFREQ;
     if (x86 == 1) {
         CPUFREQ = "scaling_cur_freq";
@@ -166,6 +212,7 @@ void get_system_info() {
                 strncpy(node_name, get_node_name(path), sizeof(node_name));
                 printf("%s: %s", node_name, buf);
             }
+
             fclose(file);
         }
 
@@ -177,6 +224,7 @@ void get_system_info() {
                 strncpy(node_name, get_node_name(path), sizeof(node_name));
                 printf("%s: %s", node_name, buf);
             }
+
             fclose(file);
         }
 
@@ -188,6 +236,7 @@ void get_system_info() {
                 strncpy(node_name, get_node_name(path), sizeof(node_name));
                 printf("%s: %s", node_name, buf);
             }
+
             fclose(file);
         }
     }
@@ -217,11 +266,18 @@ int main() {
     // Set up the signal handler for Ctrl+C
     signal(SIGINT, handle_sigint);
 
+    int x86 = is_arch_x86();
+
+    pthread_t cpu_usage_thread;
+    pthread_create(&cpu_usage_thread, NULL, update_cpu_usage, NULL);
+
     while(keep_going) {
         printf("\033[H\033[J");  // Clear the screen
-        get_system_info();
+        get_system_info(x86);
         sleep(1);
     }
+
+    pthread_join(cpu_usage_thread, NULL);
 
     return 0;
 }
