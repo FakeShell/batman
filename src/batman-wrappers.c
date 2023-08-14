@@ -18,6 +18,10 @@
 #include "wlrdisplay.h"
 #endif
 
+#ifdef WITH_GETINFO
+#include "getinfo.h"
+#endif
+
 #define MEMINFO "/proc/meminfo"
 
 struct meminfo {
@@ -29,9 +33,9 @@ struct meminfo {
 };
 
 #ifdef WITH_UPOWER
-UpDevice *findBattery(UpClient *upower)
-{
+const gchar *findBattery(UpClient *upower) {
     UpDevice *device = NULL;
+    const gchar *statelabel = NULL;
 
     GPtrArray *devices = up_client_get_devices2(upower);
 
@@ -43,47 +47,41 @@ UpDevice *findBattery(UpClient *upower)
 
         g_object_get(this_dev, "power-supply", &power_supply, "kind", &kind, NULL);
 
-        if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY)
+        if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY) {
             device = this_dev;
+            g_object_ref(device);
+            break;
+        }
     }
 
-    if (device != NULL)
-        g_object_ref(device);
+    if (device != NULL) {
+        UpDeviceState state;
+        g_object_get(device, "state", &state, NULL);
+
+        switch (state) {
+        case UP_DEVICE_STATE_CHARGING:
+            statelabel = "charging";
+            break;
+        case UP_DEVICE_STATE_DISCHARGING:
+            statelabel = "discharging";
+            break;
+        case UP_DEVICE_STATE_FULLY_CHARGED:
+            statelabel = "fully-charged";
+            break;
+        default:
+            statelabel = NULL;
+        }
+
+        g_object_unref(device);
+    }
 
     g_ptr_array_unref(devices);
 
-    if (device == NULL) {
+    if (statelabel == NULL) {
         g_print("no battery\n");
-        return NULL;
     }
 
-    UpDeviceState state;
-
-    g_object_get(device, "state", &state, NULL);
-
-    const gchar *statelabel;
-
-    switch (state) {
-    case UP_DEVICE_STATE_CHARGING:
-        statelabel = "charging";
-        break;
-    case UP_DEVICE_STATE_DISCHARGING:
-        statelabel = "discharging";
-        break;
-    case UP_DEVICE_STATE_FULLY_CHARGED:
-        statelabel = "fully-charged";
-        break;
-    default:
-        statelabel = NULL;
-    }
-
-    if (statelabel != NULL) {
-        g_print("%s\n", statelabel);
-    }
-
-    g_object_unref(device);
-
-    return device;
+    return statelabel;
 }
 #endif
 
@@ -162,7 +160,7 @@ long long getIdleCPUTime() {
     return idle + iowait;
 }
 
-int cpuUsage() {
+double cpuUsage() {
     long long total_cpu_time_1 = getTotalCPUTime();
     long long idle_cpu_time_1 = getIdleCPUTime();
 
@@ -175,23 +173,19 @@ int cpuUsage() {
     double idle_diff = (double)(idle_cpu_time_2 - idle_cpu_time_1);
 
     if (total_diff <= idle_diff) {
-        printf("0\n");
-        return 0;
+        return 0.0;
     }
 
     double cpu_usage = 100.0 * (1.0 - idle_diff / total_diff);
-
-    printf("%.lf\n", cpu_usage);
-
-    return 0;
+    return cpu_usage;
 }
 
-int memUsage() {
+long double memUsage() {
     struct meminfo meminfo_new;
     memset(&meminfo_new, 0x00, sizeof(struct meminfo));
 
     if (!readMemInfo(&meminfo_new)) {
-        return EXIT_FAILURE;
+        return -1.0L;
     }
 
     long double used = meminfo_new.memtotal - meminfo_new.memfree -
@@ -202,7 +196,5 @@ int memUsage() {
     total /= 1000;
 
     long double percentage = (used / total) * 100;
-
-    printf("%.Lf\n", percentage);
-    return EXIT_SUCCESS;
+    return percentage;
 }

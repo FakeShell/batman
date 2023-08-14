@@ -4,8 +4,8 @@
 	dh $@ --without=makefile
 
 override_dh_auto_build:
-	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
-	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -fPIC -shared -o libbatman-wrappers.so src/batman-wrappers.c -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO src/batman-helper.c src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+	gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO -fPIC -shared src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c -o libbatman-wrappers.so -lwayland-client `pkg-config --cflags --libs upower-glib`
 	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4 libadwaita-1`
 	gcc src/governor.c -o governor
 

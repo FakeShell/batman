@@ -21,11 +21,13 @@ int check_batman_active() {
     int result = 0;
     FILE *file = popen("systemctl is-active batman", "r");
     if (!file) return -1;
+
     if (getline(&line, &len, file) != -1) {
         if (strcmp(line, "active\n") == 0)
             bm_state.active = TRUE;
         else bm_state.active = FALSE;
     } else result = -1;
+
     pclose(file);
     free(line);
     return result;
@@ -37,11 +39,13 @@ int check_batman_enabled() {
     int result = 0;
     FILE *file = popen("systemctl is-enabled batman", "r");
     if (!file) return -1;
+
     if (getline(&line, &len, file) != -1) {
         if (strcmp(line, "enabled\n") == 0)
             bm_state.enabled = TRUE;
         else bm_state.enabled = FALSE;
     } else result = -1;
+
     pclose(file);
     free(line);
     return result;

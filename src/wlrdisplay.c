@@ -153,12 +153,18 @@ WL_PRIVATE const struct wl_interface zwlr_output_configuration_head_v1_interface
 	0, NULL,
 };
 
-static void print_state(struct randr_state *state) {
-	struct randr_head *head;
-	wl_list_for_each(head, &state->heads, link) {
-		printf(head->enabled ? "yes\n" : "no\n");
-	}
-	state->running = false;
+int print_state(struct randr_state *state) {
+    int result = 1;
+    struct randr_head *head;
+    wl_list_for_each(head, &state->heads, link) {
+        if (head->enabled) {
+            result = 0;
+            break;
+        }
+    }
+
+    state->running = false;
+    return result;
 }
 
 static void mode_handle_size(void *data, struct zwlr_output_mode_v1 *wlr_mode,
@@ -318,42 +324,42 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 int wlrdisplay(int argc, char *argv[]) {
-	struct randr_state state = { .running = true };
-	wl_list_init(&state.heads);
+    struct randr_state state = { .running = true };
+    wl_list_init(&state.heads);
 
-	struct wl_display *display = wl_display_connect(NULL);
-	if (display == NULL) {
-		fprintf(stderr, "failed to connect to display\n");
-		return EXIT_FAILURE;
-	}
+    struct wl_display *display = wl_display_connect(NULL);
+    if (display == NULL) {
+        fprintf(stderr, "failed to connect to display\n");
+        return EXIT_FAILURE;
+    }
 
-	struct wl_registry *registry = wl_display_get_registry(display);
-	wl_registry_add_listener(registry, &registry_listener, &state);
-	wl_display_dispatch(display);
-	wl_display_roundtrip(display);
+    struct wl_registry *registry = wl_display_get_registry(display);
+    wl_registry_add_listener(registry, &registry_listener, &state);
+    wl_display_dispatch(display);
+    wl_display_roundtrip(display);
 
-	if (state.output_manager == NULL) {
-		fprintf(stderr, "compositor doesn't support "
-			"wlr-output-management-unstable-v1\n");
-		return EXIT_FAILURE;
-	}
+    if (state.output_manager == NULL) {
+        fprintf(stderr, "compositor doesn't support "
+                "wlr-output-management-unstable-v1\n");
+        return EXIT_FAILURE;
+    }
 
-	while (state.serial == 0) {
-		if (wl_display_dispatch(display) < 0) {
-			fprintf(stderr, "wl_display_dispatch failed\n");
-			return EXIT_FAILURE;
-		}
-	}
+    while (state.serial == 0) {
+        if (wl_display_dispatch(display) < 0) {
+            fprintf(stderr, "wl_display_dispatch failed\n");
+            return EXIT_FAILURE;
+        }
+    }
 
-	print_state(&state);
+    int result = print_state(&state);
 
-	while (state.running && wl_display_dispatch(display) != -1) {
-		// This space is intentionally left blank
-	}
+    while (state.running && wl_display_dispatch(display) != -1) {
+        // This space is intentionally left blank
+    }
 
-	zwlr_output_manager_v1_destroy(state.output_manager);
-	wl_registry_destroy(registry);
-	wl_display_disconnect(display);
+    zwlr_output_manager_v1_destroy(state.output_manager);
+    wl_registry_destroy(registry);
+    wl_display_disconnect(display);
 
-	return EXIT_SUCCESS;
+    return result;
 }

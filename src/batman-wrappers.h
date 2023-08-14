@@ -6,16 +6,9 @@
 
 #include <upower.h>
 
-struct meminfo;
+const gchar *findBattery(UpClient *upower);
 
-#ifdef WITH_UPOWER
-UpDevice *findBattery(UpClient *upower);
-#endif
-
-int readMemInfo(struct meminfo *mem);
-long long getTotalCPUTime();
-long long getIdleCPUTime();
-int cpuUsage();
-int memUsage();
+double cpuUsage();
+long double memUsage();
 
 #endif // BATMAN_WRAPPER_H
