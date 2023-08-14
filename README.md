@@ -73,38 +73,35 @@ sudo systemctl enable --now batman
 
 # Manual compilation
 
-To compile batman-helper manually you can use gcc:
+To build batman-helper manually you can use gcc:
 
 ```
-gcc -DWITH_UPOWER -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
+gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO src/batman-helper.c src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
 ```
 
-If you don't want upower status support and want the script to use the old upower implementation use:
-
-```
-gcc -DWITH_WLRDISPLAY src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
-```
-
-If you don't want wlrdisplay status support and want batman to use the old wlr-randr implementation use:
-
-```
-gcc -DWITH_UPOWER src/batman-helper.c src/wlrdisplay.c -o batman-helper -lwayland-client `pkg-config --cflags --libs upower-glib`
-```
+If you don't want wlrdisplay status support and want batman to use the old wlr-randr implementation, remove `-DWITH_WLRDISPLAY` and to use the older upower implementation, remove `-DWITH_UPOWER`. To not build the software with systemd batman status, remove `-DWITH_GETINFO`.
 
 older wlr-randr and upower implementations are slower so it is recommended to compile batman-helper with upower and wlrdisplay support
 
-
-To compile batman-gui manually you can use gcc:
+To build batman-gui manually you can use gcc:
 
 ```
 gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4`
 ```
 
-To compile governor manually:
+To build governor manually:
 
 ```
 gcc src/governor.c -o governor
 ```
+
+To build libbatman-wrappers.so:
+
+```
+gcc -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO -fPIC -shared src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c -o libbatman-wrappers.so -lwayland-client `pkg-config --cflags --libs upower-glib`
+```
+
+Example usage of these functions are available at [examples/](./examples/README.md)
 
 
 # Configuration
@@ -135,5 +132,3 @@ This option tells batman at what CPU usage it should leave powersaving. as an ex
 
 `BTSAVE`
 This option will allow batman to moderate bluetooth power management and switch states accordingly. it will check if it is connected and if something is using it and changes states accordingly
-
-Make sure to restart the service on changes.
