@@ -42,6 +42,9 @@ Description: batman-governor
 Package: batman-dev
 Architecture: any
 Depends: ${misc:Depends},
+         libbatman-wrappers,
+         libwayland-dev,
+         libupower-glib-dev,
 Description: batman-dev
  A battery management service for Linux phones - development headers
 
