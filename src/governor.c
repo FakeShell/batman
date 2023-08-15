@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "wlrdisplay.h"
 #include "governor.h"
 
 volatile sig_atomic_t keep_going = 1;
@@ -137,7 +138,6 @@ void get_system_info(int x86) {
     size_t len = 0;
     ssize_t read;
     size_t n_paths = sizeof(paths) / sizeof(paths[0]);
-    FILE *fp;
     char path[1035];
 
     char cmd[512];
@@ -149,7 +149,8 @@ void get_system_info(int x86) {
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
-                snprintf(cmd, sizeof(cmd), "XDG_RUNTIME_DIR=%s/%s batman-helper wlrdisplay", dir_path, dir->d_name);
+                int result = wlrdisplay(0, NULL);
+                printf("wlroots screen status: %s", result == 0 ? "yes\n" : "no\n");
                 break;
             }
         }
@@ -159,18 +160,6 @@ void get_system_info(int x86) {
         printf("Could not open directory %s\n", dir_path);
         return;
     }
-
-    fp = popen(cmd, "r");
-    if (fp == NULL) {
-        printf("Failed to run command\n");
-        return;
-    }
-
-    while (fgets(path, sizeof(path), fp) != NULL) {
-        printf("screen status [enabled]: %s", path);
-    }
-
-    pclose(fp);
 
     pthread_mutex_lock(&cpu_usage_mutex);
     printf("cpu usage: %s", cpu_usage);
