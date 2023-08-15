@@ -144,13 +144,22 @@ void get_system_info(int x86) {
     DIR *d;
     struct dirent *dir;
     char dir_path[] = "/run/user";
+    char uid_path[256];
 
     d = opendir(dir_path);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
+                snprintf(uid_path, sizeof(uid_path), "%s/%s", dir_path, dir->d_name);
+
+                if(setenv("XDG_RUNTIME_DIR", uid_path, 1) != 0) {
+                    printf("Could not set XDG_RUNTIME_DIR\n");
+                    closedir(d);
+                    return;
+                }
+
                 int result = wlrdisplay(0, NULL);
-                printf("wlroots screen status: %s", result == 0 ? "yes\n" : "no\n");
+                printf("wlroots screen status for UID %s: %s", dir->d_name, result == 0 ? "yes\n" : "no\n");
                 break;
             }
         }
