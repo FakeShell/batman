@@ -625,7 +625,13 @@ for var in "${!governors[@]}"; do
     fi
 done
 
-# hotplug has to be disabled for cpu cores to be allowed to go offline.
+# Allow port specific default governors
+if [ -f "/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR" ]; then
+   DEFAULT_GOVERNOR=$(</var/lib/batman/CUSTOM_DEFAULT_GOVERNOR)
+   echo "using $DEFAULT_GOVERNOR as default governor"
+fi
+
+# hotplug has to be disabled for cpu cores to be allowed to go offline on exynos chips (why? i don't know)
 if [ "$IS_EXYNOS" == "true" ]; then
    if [ -f /sys/power/cpuhotplug/enabled ]; then
       echo 0 > /sys/power/cpuhotplug/enabled
