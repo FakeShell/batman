@@ -20,7 +20,7 @@ version() {
 
 if [ -r "/dev/tty0" ]; then
     delay() {
-        read -t "$1" < /dev/tty0
+        read -rt "$1" < /dev/tty0
     }
 else
     delay() {
@@ -47,16 +47,15 @@ esac
 # FIRSTPOL will get the first policy group. (this group stores LITTLE cores)
 # FIRSTPOLCORE will get the first cpu core of policy group one.
 # LASTPOLCORE will get the last cpu core of policy group one.
-# UPTIME is just uptime of the system in minutes.
 CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
 CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
 UIDS=$(ls /run/user | head -1)
 ARCH=$(uname -m)
 
 # x86 cpus have powersave and performance governors, check architecture and set the governor accordingly.
-if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
-   if grep -q "performance" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_available_governors; then
-      if grep -q "powersave" /sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor; then
+if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+   if grep -q "performance" /sys/devices/system/cpu/cpu"${CORE_FIRST}"/cpufreq/scaling_available_governors; then
+      if grep -q "powersave" /sys/devices/system/cpu/cpu"${CORE_FIRST}"/cpufreq/scaling_governor; then
          DEFAULT_GOVERNOR="powersave"
       else
          DEFAULT_GOVERNOR="performance"
@@ -66,12 +65,11 @@ if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
       exit 0
    fi
 else
-   DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu$CORE_FIRST/cpufreq/scaling_governor)
+   DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu"${CORE_FIRST}"/cpufreq/scaling_governor)
 fi
 
 AVUSER=$(ls /run/user | wc -l)
 AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
-UPTIME=$(awk '{print int($1)/60}' /proc/uptime | cut -f 1 -d .)
 
 # Exynos chips require special configuration and governors, usually device tree has the chipset name in the model section.
 if [ -f /proc/device-tree/model ]; then
@@ -94,37 +92,37 @@ elif [ -f /var/lib/batman/config ]; then
    CONFIG_FILE=/var/lib/batman/config
 fi
 
-if [ ! -z $CONFIG_FILE ]; then
-   echo "Parsing $CONFIG_FILE"
-   source <(tail -n +2 $CONFIG_FILE)
+if [ -n "${CONFIG_FILE}" ]; then
+   echo "Parsing ${CONFIG_FILE}"
+   source <(tail -n +2 "${CONFIG_FILE}")
 else
    echo "config file does not exist. using default values"
 fi
 
 # Check if there are any policies available.
-if [[ "$AVPOL" != "0" ]]; then
-   if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+if [[ "${AVPOL}" != "0" ]]; then
+   if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
       FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
       FIRSTPOLCORE=1
-      LASTPOLCORE="$CORE_LAST"
+      LASTPOLCORE="${CORE_LAST}"
    else
       FIRSTPOL=$(ls /sys/devices/system/cpu/cpufreq | grep policy | head -1)
-      FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus)
-      LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/$FIRSTPOL/related_cpus | cut -c1 -)
+      FIRSTPOLCORE=$(cut -c1 - < /sys/devices/system/cpu/cpufreq/"${FIRSTPOL}"/related_cpus)
+      LASTPOLCORE=$(awk '{for(i=NF;i>=1;i--) printf("%s ", $i)}' /sys/devices/system/cpu/cpufreq/"${FIRSTPOL}"/related_cpus | cut -c1 -)
    fi
 # Support for older arm devices such as MSM8996.
-elif [[ "$AVPOL" == "0" ]] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_state" ]; then
+elif [[ "${AVPOL}" == "0" ]] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_state" ]; then
    LEGACY=true
    STATE=$(grep "cpu" /sys/devices/system/cpu/cpufreq/all_time_in_state | wc -w)
 
    # Just a bit of info for debugging. can be used later on.
-   for ((i=2; i<=$STATE; i++))
+   for ((i=2; i<=STATE; i++))
    do
-      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$(($i - 2))
+      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$((i - 2))
    done
 
-   FIRSTPOLCORE="$CORE_FIRST"
-   LASTPOLCORE=$(($CORE_LAST/2))
+   FIRSTPOLCORE="${CORE_FIRST}"
+   LASTPOLCORE=$((CORE_LAST/2))
 else
    echo "no cpu policies available. exiting"
    exit 0
@@ -140,7 +138,7 @@ if [ -f /var/lib/batman/exynos_cpu_limit ]; then
 fi
 
 # Check if powersave governor is available.
-if [ "$LEGACY" == "true" ] && [ -z "$CPUSAVEGOVERNOR" ]; then
+if [ "${LEGACY}" == "true" ] && [ -z "${CPUSAVEGOVERNOR}" ]; then
    if grep -q powersave /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
       CPUSAVEGOVERNOR="powersave"
    elif grep -q userspace /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
@@ -149,10 +147,10 @@ if [ "$LEGACY" == "true" ] && [ -z "$CPUSAVEGOVERNOR" ]; then
       echo "powersave or userspace are not available governors on this system. exiting"
       exit 0
    fi
-elif [ -z "$CPUSAVEGOVERNOR" ]; then
-   if grep -q powersave /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
+elif [ -z "${CPUSAVEGOVERNOR}" ]; then
+   if grep -q powersave /sys/devices/system/cpu/cpufreq/"${FIRSTPOL}"/scaling_available_governors; then
       CPUSAVEGOVERNOR="powersave"
-   elif grep -q userspace /sys/devices/system/cpu/cpufreq/$FIRSTPOL/scaling_available_governors; then
+   elif grep -q userspace /sys/devices/system/cpu/cpufreq/"${FIRSTPOL}"/scaling_available_governors; then
       CPUSAVEGOVERNOR="userspace"
    else
       echo "powersave or userspace are not available governors on this system. exiting"
@@ -163,29 +161,29 @@ fi
 # Use either upower client or our own upower wrapper
 if [[ $(which batman-helper) ]]; then
    BATMAN_OUTPUT=$(batman-helper battery)
-   if [[ $? -eq 0 ]] && [ ! -z "$BATMAN_OUTPUT" ]; then
+   if [[ $? -eq 0 ]] && [ -n "${BATMAN_OUTPUT}" ]; then
       echo "using batman-helper for charging status"
       GET_CHARGE="batman-helper battery"
       touch /var/lib/batman/using-batman-helper-for-charge
    fi
 fi
 
-if [ -z "$GET_CHARGE" ] && [[ $(which upower) ]]; then
+if [ -z "${GET_CHARGE}" ] && [[ $(which upower) ]]; then
    GET_CHARGE='upower -d | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
    GET_CHARGE_FALLBACK='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
 
-   CHARGE_STATUS=$(eval $GET_CHARGE)
-   CHARGE_STATUS_FALLBACK=$(eval $GET_CHARGE_FALLBACK)
-   if [ "$CHARGE_STATUS" == "discharging" ] || [ "$CHARGE_STATUS" == "fully-charged" ] || [ "$CHARGE_STATUS" == "charging" ]; then
+   CHARGE_STATUS=$(eval "${GET_CHARGE}")
+   CHARGE_STATUS_FALLBACK=$(eval "${GET_CHARGE_FALLBACK}")
+   if [ "${CHARGE_STATUS}" == "discharging" ] || [ "${CHARGE_STATUS}" == "fully-charged" ] || [ "${CHARGE_STATUS}" == "charging" ]; then
       rm /var/lib/batman/using-batman-helper-for-charge -f
-   elif [ "$CHARGE_STATUS_FALLBACK" == "discharging" ] || [ "$CHARGE_STATUS_FALLBACK" == "fully-charged" ] || [ "$CHARGE_STATUS_FALLBACK" == "charging" ]; then
+   elif [ "${CHARGE_STATUS_FALLBACK}" == "discharging" ] || [ "${CHARGE_STATUS_FALLBACK}" == "fully-charged" ] || [ "${CHARGE_STATUS_FALLBACK}" == "charging" ]; then
       rm /var/lib/batman/using-batman-helper-for-charge -f
 
       # on some number of devices such as starqlte this is the only one that gets the status for us
       echo "Falling back to /org/freedesktop/UPower/devices/battery_battery"
       GET_CHARGE='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
    fi
-elif [ -z "$GET_CHARGE" ]; then
+elif [ -z "${GET_CHARGE}" ]; then
    echo "neither batman-helper nor upower is available. exiting"
    exit 0
 fi
@@ -218,8 +216,8 @@ else
 fi
 
 # Check if system is using a wlroots based desktop environment.
-if [ "$WLRTOOL" == "true" ]; then
-   eval "$GET_SCREEN" &> /var/lib/batman/wlrcheck
+if [ "${WLRTOOL}" == "true" ]; then
+   eval "${GET_SCREEN}" &> /var/lib/batman/wlrcheck
 
    if grep -q "compositor doesn't support" /var/lib/batman/wlrcheck; then
       WLROOTS=false
@@ -233,10 +231,10 @@ else
 fi
 
 # Check if wlroots based environment has started. if not wait a bit and retry.
-if [ "$WLROOTS" == "true" ]; then
-   while [[ true ]]
+if [ "${WLROOTS}" == "true" ]; then
+   while true
    do
-      eval "$GET_SCREEN" &> /dev/null
+      eval "${GET_SCREEN}" &> /dev/null
 
       if [ $? -eq 0 ]; then
          # If the exit status is 0, break out of the loop
@@ -247,9 +245,9 @@ if [ "$WLROOTS" == "true" ]; then
       fi
    done
 # Check if system is using KDE Plasma.
-elif [ "$WLROOTS" == "false" ] && [[ $(which kscreen-doctor) ]]; then
-   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/$UIDS/ kscreen-doctor -o 2>/dev/null | grep Output >/dev/null 2>&1; then
-      USERNAME=$(id -un $UIDS)
+elif [ "${WLROOTS}" == "false" ] && [[ $(which kscreen-doctor) ]]; then
+   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/"${UIDS}"/ kscreen-doctor -o 2>/dev/null | grep Output >/dev/null 2>&1; then
+      USERNAME=$(id -un "${UIDS}")
       GET_SCREEN="sudo -u $USERNAME DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/$UIDS/bus' qdbus org.kde.screensaver /ScreenSaver org.freedesktop.ScreenSaver.GetActive"
       KDE=true
    else
@@ -267,18 +265,18 @@ else
 fi
 
 # If none of the supported compositors are used then exit.
-if [ "$KDE" == "false" ] && [ "$WLROOTS" == "false" ]; then
+if [ "${KDE}" == "false" ] && [ "${WLROOTS}" == "false" ]; then
    echo "Display server not supported. exiting"
    exit 0
 fi
 
 # Use our AVUSER variable to make sure only one active user session exists.
-if [[ "$AVUSER" -gt "1" ]]; then
+if [[ "${AVUSER}" -gt "1" ]]; then
    echo "more than one user active. waiting for the other user profile to disappear"
    while true
    do
       AVUSER=$(ls /run/user | wc -l)
-      if [[ "$AVUSER" -gt "1" ]]; then
+      if [[ "${AVUSER}" -gt "1" ]]; then
          delay 10
       else
          echo "other user disappeared. starting"
@@ -287,62 +285,62 @@ if [[ "$AVUSER" -gt "1" ]]; then
    done
 fi
 
-if [ -z "$(eval $GET_CHARGE)" ]; then
+if [ -z "$(eval "${GET_CHARGE}")" ]; then
    echo "No battery found in this device. exiting"
    exit 0
 fi
 
 # Make sure that our OFFLINE variable is set from the config file if not use default value.
-if [ -z "$OFFLINE" ]; then
+if [ -z "${OFFLINE}" ]; then
    echo "Setting the default value of OFFLINE as true"
    OFFLINE=true
 fi
 
 # Use our AVPOL variable to make sure our device has more than one policy groups.
 # If there was only one set the variable to not offline any cpu cores.
-if [[ "$AVPOL" -eq "1" ]]; then
+if [[ "${AVPOL}" -eq "1" ]]; then
    echo "Only one cpu policy group detected, disabling cpu offlining"
    OFFLINE=false
 fi
 
 # Make sure that our POWERSAVE variable is set from the config file if not use default value.
-if [ -z "$POWERSAVE" ]; then
+if [ -z "${POWERSAVE}" ]; then
    echo "Setting the default value of POWERSAVE as true"
    POWERSAVE=true
 fi
 
 # Make sure that our MAX_CPU_USAGE variable is set from the config file if not use default value.
-if [ -z "$MAX_CPU_USAGE" ]; then
+if [ -z "${MAX_CPU_USAGE}" ]; then
    echo "Setting the default value of MAX_CPU_USAGE as 60"
    MAX_CPU_USAGE=60
 fi
 
 # Make sure that our CHARGESAVE variable is set from the config file if not use default value.
-if [ -z "$CHARGESAVE" ]; then
+if [ -z "${CHARGESAVE}" ]; then
    echo "Setting the default value of CHARGESAVE as true"
    CHARGESAVE=true
 fi
 
 # Make sure that our GPUSAVE variable is set from the config file if not use default value.
-if [ -z "$GPUSAVE" ]; then
+if [ -z "${GPUSAVE}" ]; then
    echo "Setting the default value of GPUSAVE as true"
    GPUSAVE=true
 fi
 
 # Make sure that our BUSSAVE variable is set from the config file if not use default value.
-if [ -z "$BUSSAVE" ]; then
+if [ -z "${BUSSAVE}" ]; then
    echo "Setting the default value of BUSSAVE as true"
    BUSSAVE=true
 fi
 
 # Make sure MAX_CPU_USAGE is a number betweem 0 and 100
-if ! [[ "$MAX_CPU_USAGE" =~ ^[0-9]+$ ]] || [[ "$MAX_CPU_USAGE" -lt 0 ]] || [[ "$MAX_CPU_USAGE" -gt 100 ]]; then
+if ! [[ "${MAX_CPU_USAGE}" =~ ^[0-9]+$ ]] || [[ "${MAX_CPU_USAGE}" -lt 0 ]] || [[ "${MAX_CPU_USAGE}" -gt 100 ]]; then
     echo "bad MAX_CPU_USAGE value. defaulting to 60"
     MAX_CPU_USAGE=60
 fi
 
 # Make sure that our BUSSAVE variable is set from the config file if not use default value.
-if [ -z "$BTSAVE" ]; then
+if [ -z "${BTSAVE}" ]; then
    echo "Setting the default value of BTSAVE as true"
    BTSAVE=true
 fi
@@ -370,13 +368,13 @@ for gpu_governor_path in "${gpu_governor_paths[@]}"; do
 done
 
 # If none of the GPU governor files were found, set CAN_GPUSAVE to false
-if [ -z "$DEFAULT_GPU_GOVERNOR" ]; then
+if [ -z "${DEFAULT_GPU_GOVERNOR}" ]; then
   CAN_GPUSAVE=false
 fi
 
 # If powersave is not a governor in the GPU profile then disable this feature.
-if [ $CAN_GPUSAVE == "true" ]; then
-   if ! grep -q "powersave" $GPU_GOVERNOR_PATH; then
+if [ "${CAN_GPUSAVE}" == "true" ]; then
+   if ! grep -q "powersave" "${GPU_GOVERNOR_PATH}"; then
       CAN_GPUSAVE=false
    fi
 fi
@@ -419,15 +417,17 @@ if [ -d /sys/class/devfreq/ ]; then
       DEFAULT_MINCPUBW_GOVERNOR=$(</sys/class/devfreq/soc:qcom,mincpubw/governor)
    fi
 
-   if [ -d /sys/class/devfreq/soc:qcom,l3-cpu0/ ]; then
-      L3CPU0=true
-      DEFAULT_L3CPU0_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3-cpu0/governor)
-   fi
+   # if [ -d /sys/class/devfreq/soc:qcom,l3-cpu0/ ]; then
+   #    unused for now, slows down some devices
+   #    L3CPU0=true
+   #    DEFAULT_L3CPU0_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3-cpu0/governor)
+   # fi
 
-   if [ -d /sys/class/devfreq/soc:qcom,l3-cpu6/ ]; then
-      L3CPU6=true
-      DEFAULT_L3CPU6_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3-cpu6/governor)
-   fi
+   # if [ -d /sys/class/devfreq/soc:qcom,l3-cpu6/ ]; then
+   #    unused for now, slows down some devices
+   #    L3CPU6=true
+   #    DEFAULT_L3CPU6_GOVERNOR=$(</sys/class/devfreq/soc:qcom,l3-cpu6/governor)
+   # fi
 
    if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/ ]; then
       ARM9_BUS_DDR=true
@@ -439,10 +439,11 @@ if [ -d /sys/class/devfreq/ ]; then
       DEFAULT_BUS_CNOC_GOVERNOR=$(</sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor)
    fi
 
-   if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/ ]; then
-      VENUS_BUS_DDR=true
-      DEFAULT_VENUSBUSDDR_GOVERNOR=$(</sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor)
-   fi
+   # if [ -d /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/ ]; then
+   #    unused for now, slows down some devices
+   #    VENUS_BUS_DDR=true
+   #    DEFAULT_VENUSBUSDDR_GOVERNOR=$(</sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor)
+   # fi
 
    if [ -d /sys/class/devfreq/soc:qcom,l3-cdsp/ ]; then
       L3CDSP=true
@@ -582,15 +583,15 @@ declare -A governors=(
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
 if [ ! -f /var/lib/batman/saved ]; then
-   if [ "$DEFAULT_GOVERNOR" == "powersave" ]; then
-      if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
-         echo "$DEFAULT_GOVERNOR" > /var/lib/batman/default_cpu_governor
+   if [ "${DEFAULT_GOVERNOR}" == "powersave" ]; then
+      if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+         echo "${DEFAULT_GOVERNOR}" > /var/lib/batman/default_cpu_governor
       else
          echo "bad starting governor. exiting"
          exit 0
       fi
    else
-      echo "$DEFAULT_GOVERNOR" > /var/lib/batman/default_cpu_governor
+      echo "${DEFAULT_GOVERNOR}" > /var/lib/batman/default_cpu_governor
    fi
 
    for gov in "${!governors[@]}"; do
@@ -602,8 +603,8 @@ if [ ! -f /var/lib/batman/saved ]; then
 
    touch /var/lib/batman/saved
 # In case of bad governor values choose the right value or exit if it fails to do so.
-elif [[ "$DEFAULT_GOVERNOR" == "powersave" ]]; then
-   if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+elif [[ "${DEFAULT_GOVERNOR}" == "powersave" ]]; then
+   if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
       true
    elif [[ $(</var/lib/batman/default_cpu_governor)  == "powersave" ]]; then
       echo "bad starting governor. exiting"
@@ -628,43 +629,43 @@ done
 # Allow port specific default governors
 if [ -f "/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR" ]; then
    DEFAULT_GOVERNOR=$(</var/lib/batman/CUSTOM_DEFAULT_GOVERNOR)
-   echo "using $DEFAULT_GOVERNOR as default governor"
+   echo "using ${DEFAULT_GOVERNOR} as default governor"
 fi
 
 # hotplug has to be disabled for cpu cores to be allowed to go offline on exynos chips (why? i don't know)
-if [ "$IS_EXYNOS" == "true" ]; then
+if [ "${IS_EXYNOS}" == "true" ]; then
    if [ -f /sys/power/cpuhotplug/enabled ]; then
       echo 0 > /sys/power/cpuhotplug/enabled
    fi
 fi
 
-if [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
-   RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
+if [ "${CPUSAVEGOVERNOR}" == "exynos_cpu_limit" ]; then
+   RUNTIME_CUR_GOVERNOR="${DEFAULT_GOVERNOR}"
 fi
 
 # on some (if not all) exynos chips powersave doesn't exist so we need an alternative ways of lowering clock speeds
 # like to set governor to userspace and set scaling_min_freq to scaling_setspeed to get the minimum frequency at idle.
-if [ "$CPUSAVEGOVERNOR" == "powersave" ]; then
+if [ "${CPUSAVEGOVERNOR}" == "powersave" ]; then
     function powersave() {
-        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "userspace" ]; then
     function powersave() {
-        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
-            echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+            echo "${CPUSAVEGOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MINFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_min_freq)
-            echo $MINFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+            echo "${MINFREQ}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
 
             # the checks require powersave as saving governor as they were written back when that was the only supported governor
             # so we have to set this here to satisfy them
             RUNTIME_CUR_GOVERNOR="powersave"
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "exynos_cpu_limit" ]; then
     function powersave() {
         echo "$CPUFREQ_MIN_LIMIT" > /sys/power/cpufreq_max_limit
 
@@ -678,32 +679,32 @@ else
 fi
 
 # same story as above basically
-if [ "$CPUSAVEGOVERNOR" == "powersave" ]; then
+if [ "${CPUSAVEGOVERNOR}" == "powersave" ]; then
     function default() {
-        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
-            echo "$DEFAULT_GOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+            echo "${DEFAULT_GOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "userspace" ]; then
     function default() {
-        for ((i=$CORE_FIRST; i<=$CORE_LAST; i++))
+        for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "$CPUSAVEGOVERNOR" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
             MAXFREQ=$(</sys/devices/system/cpu/cpu$i/cpufreq/scaling_max_freq)
-            echo $MAXFREQ > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
+            echo "${MAXFREQ}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_setspeed
 
             # same thing as the powersave function of userspace governor
-            RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
+            RUNTIME_CUR_GOVERNOR="${DEFAULT_GOVERNOR}"
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "exynos_cpu_limit" ]; then
     function default() {
-        echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_max_limit
-        echo "$CPUFREQ_MAX_LIMIT" > /sys/power/cpufreq_min_limit
+        echo "${CPUFREQ_MAX_LIMIT}" > /sys/power/cpufreq_max_limit
+        echo "${CPUFREQ_MAX_LIMIT}" > /sys/power/cpufreq_min_limit
 
         # same thing as powersave function of exynos_cpu_limit governor
-        RUNTIME_CUR_GOVERNOR=$DEFAULT_GOVERNOR
+        RUNTIME_CUR_GOVERNOR="${DEFAULT_GOVERNOR}"
     }
 else
     function default() {
@@ -712,16 +713,16 @@ else
 fi
 
 # some chipsets will crash the entire kernel if we set core 0 to offline so lets declare separate functions for them
-if [ "$CPUSAVEGOVERNOR" == "powersave" ] || [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+if [ "${CPUSAVEGOVERNOR}" == "powersave" ] || [ "${CPUSAVEGOVERNOR}" == "userspace" ]; then
     function offline() {
-        for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
+        for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
         do
              echo "0" > /sys/devices/system/cpu/cpu$i/online
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "exynos_cpu_limit" ]; then
     function offline() {
-        for ((i=1; i<=$LASTPOLCORE; i++))
+        for ((i=1; i<=LASTPOLCORE; i++))
         do
              echo "0" > /sys/devices/system/cpu/cpu$i/online
         done
@@ -733,17 +734,17 @@ else
 fi
 
 # same story as above but the opposite
-if [ "$CPUSAVEGOVERNOR" == "powersave" ] || [ "$CPUSAVEGOVERNOR" == "userspace" ]; then
+if [ "${CPUSAVEGOVERNOR}" == "powersave" ] || [ "${CPUSAVEGOVERNOR}" == "userspace" ]; then
     function online() {
-        for ((i=$FIRSTPOLCORE; i<=$LASTPOLCORE; i++))
+        for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
         do
              echo "1" > /sys/devices/system/cpu/cpu$i/online
         done
     }
-elif [ "$CPUSAVEGOVERNOR" == "exynos_cpu_limit" ]; then
+elif [ "${CPUSAVEGOVERNOR}" == "exynos_cpu_limit" ]; then
     function online() {
         # hotplug is unstable on devices with exynos_cpu_limit. if 0 goes down the kernel crashes.
-        for ((i=1; i<=$LASTPOLCORE; i++))
+        for ((i=1; i<=LASTPOLCORE; i++))
         do
              echo "1" > /sys/devices/system/cpu/cpu$i/online
         done
@@ -756,271 +757,273 @@ fi
 
 # TODO: figure out why most gpu governors just error out when writing to them (non critical)
 function gpusave() {
-   if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
-      echo "powersave" > $GPU_GOVERNOR_PATH
+   if [ "${GPUSAVE}" == "true" ] && [ "${CAN_GPUSAVE}" == "true" ]; then
+      echo "powersave" > "${GPU_GOVERNOR_PATH}"
    fi
 }
 
 function gpudefault() {
-   if [ "$GPUSAVE" == "true" ] && [ "$CAN_GPUSAVE" == "true" ]; then
-      echo "$DEFAULT_GPU_GOVERNOR" > $GPU_GOVERNOR_PATH
+   if [ "${GPUSAVE}" == "true" ] && [ "${CAN_GPUSAVE}" == "true" ]; then
+      echo "${DEFAULT_GPU_GOVERNOR}" > "${GPU_GOVERNOR_PATH}"
    fi
 }
 
 # Check if BUSSAVE is enabled, if so enable use the right functions.
 function bussave() {
-   if [ "$BUSSAVE" == "true" ]; then
-      if [ "$CCI" == "true" ]; then
+   if [ "${BUSSAVE}" == "true" ]; then
+      if [ "${CCI}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cci/governor
       fi
 
-      if [ "$CPUBW" == "true" ]; then
+      if [ "${CPUBW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpubw/governor
       fi
 
-      if [ "$GPUBW" == "true" ]; then
+      if [ "${GPUBW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,gpubw/governor
       fi
 
-      if [ "$KGSL_BUSMON" == "true" ]; then
+      if [ "${KGSL_BUSMON}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
       fi
 
-      if [ "$MINCPUBW" == "true" ]; then
+      if [ "${MINCPUBW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpubw/governor
       fi
 
-#       if [ "$L3CPU0" == "true" ]; then
+#       if [ "${L3CPU0}" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
 #       fi
 
-#       if [ "$L3CPU6" == "true" ]; then
+#       if [ "${L3CPU6}" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
 #       fi
 
-      if [ "$ARM9_BUS_DDR" == "true" ]; then
+      if [ "${ARM9_BUS_DDR}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
       fi
 
-      if [ "$BUS_CNOC" == "true" ]; then
+      if [ "${BUS_CNOC}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
       fi
 
-#       if [ "$VENUS_BUS_DDR" == "true" ]; then
+#       if [ "${VENUS_BUS_DDR}" == "true" ]; then
 #          echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
 #       fi
 
-      if [ "$L3CDSP" == "true" ]; then
+      if [ "${L3CDSP}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
       fi
 
-      if [ "$MEMLAT_CPU0" == "true" ]; then
+      if [ "${MEMLAT_CPU0}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
       fi
 
-      if [ "$MEMLAT_CPU4" == "true" ]; then
+      if [ "${MEMLAT_CPU4}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
       fi
 
-      if [ "$MEMLAT_CPU6" == "true" ]; then
+      if [ "${MEMLAT_CPU6}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
       fi
 
-      if [ "$MINCPU0BW" == "true" ]; then
+      if [ "${MINCPU0BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
       fi
 
-      if [ "$MINCPU6BW" == "true" ]; then
+      if [ "${MINCPU6BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
       fi
 
-      if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
+      if [ "${DEVFREQ_SPDM_CPU}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
       fi
 
-      if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
+      if [ "${CDSP_CDSP_L3_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
       fi
 
-      if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
+      if [ "${CPU0_CPU_DDR_LATFLOOR}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
       fi
 
-      if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
+      if [ "${CPU0_CPU_L3_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
       fi
 
-      if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
+      if [ "${CPU0_CPU_LLCC_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
       fi
 
-      if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
+      if [ "${CPU0_LLCC_DDR_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
       fi
 
-      if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
+      if [ "${CPU6_CPU_DDR_LATFLOOR}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
       fi
 
-      if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
+      if [ "${CPU6_CPU_L3_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
       fi
 
-      if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
+      if [ "${CPU6_CPU_LLCC_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
       fi
 
-      if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
+      if [ "${CPU6_LLCC_DDR_LAT}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
       fi
 
-      if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
+      if [ "${CPU_CPU_LLCC_BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
       fi
 
-      if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
+      if [ "${CPU_LLCC_DDR_BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
       fi
 
-      if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
+      if [ "${NPUDSP_NPU_DDR_BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
       fi
 
-      if [ "$NPU_NPU_DDR_BW" == "true" ]; then
+      if [ "${NPU_NPU_DDR_BW}" == "true" ]; then
          echo "powersave" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
       fi
+
       :
    fi
 }
 
 function busdefault() {
-   if [ "$BUSSAVE" == "true" ]; then
-      if [ "$CCI" == "true" ]; then
-         echo "$DEFAULT_CCI_GOVERNOR" > /sys/class/devfreq/soc:qcom,cci/governor
+   if [ "${BUSSAVE}" == "true" ]; then
+      if [ "${CCI}" == "true" ]; then
+         echo "${DEFAULT_CCI_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cci/governor
       fi
 
-      if [ "$CPUBW" == "true" ]; then
-         echo "$DEFAULT_CPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpubw/governor
+      if [ "${CPUBW}" == "true" ]; then
+         echo "${DEFAULT_CPUBW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpubw/governor
       fi
 
-      if [ "$GPUBW" == "true" ]; then
-         echo "$DEFAULT_GPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,gpubw/governor
+      if [ "${GPUBW}" == "true" ]; then
+         echo "${DEFAULT_GPUBW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,gpubw/governor
       fi
 
-      if [ "$KGSL_BUSMON" == "true" ]; then
-         echo "$DEFAULT_KGSL_BUSMON_GOVERNOR" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
+      if [ "${KGSL_BUSMON}" == "true" ]; then
+         echo "${DEFAULT_KGSL_BUSMON_GOVERNOR}" > /sys/class/devfreq/soc:qcom,kgsl-busmon/governor
       fi
 
-      if [ "$MINCPUBW" == "true" ]; then
-         echo "$DEFAULT_MINCPUBW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpubw/governor
+      if [ "${MINCPUBW}" == "true" ]; then
+         echo "${DEFAULT_MINCPUBW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,mincpubw/governor
       fi
 
-#       if [ "$L3CPU0" == "true" ]; then
-#          echo "$DEFAULT_L3CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
+#       if [ "${L3CPU0}" == "true" ]; then
+#          echo "${DEFAULT_L3CPU0_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
 #       fi
 
-#       if [ "$L3CPU6" == "true" ]; then
-#          echo "$DEFAULT_L3CPU6_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
+#       if [ "${L3CPU6}" == "true" ]; then
+#          echo "${DEFAULT_L3CPU6_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
 #       fi
 
-      if [ "$ARM9_BUS_DDR" == "true" ]; then
-         echo "$DEFAULT_ARM9_BUS_DDR_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+      if [ "${ARM9_BUS_DDR}" == "true" ]; then
+         echo "${DEFAULT_ARM9_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
       fi
 
-      if [ "$BUS_CNOC" == "true" ]; then
-         echo "$DEFAULT_BUS_CNOC_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      if [ "${BUS_CNOC}" == "true" ]; then
+         echo "${DEFAULT_BUS_CNOC_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
       fi
 
-#       if [ "$VENUS_BUS_DDR" == "true" ]; then
-#          echo "$DEFAULT_VENUS_BUS_DDR_GOVERNOR" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
+#       if [ "${VENUS_BUS_DDR}" == "true" ]; then
+#          echo "${DEFAULT_VENUS_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
 #       fi
 
-      if [ "$L3CDSP" == "true" ]; then
-         echo "$DEFAULT_L3CDSP_GOVERNOR" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
+      if [ "${L3CDSP}" == "true" ]; then
+         echo "${DEFAULT_L3CDSP_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
       fi
 
-      if [ "$MEMLAT_CPU0" == "true" ]; then
-         echo "$DEFAULT_MEMLAT_CPU0_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
+      if [ "${MEMLAT_CPU0}" == "true" ]; then
+         echo "${DEFAULT_MEMLAT_CPU0_GOVERNOR}" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
       fi
 
-      if [ "$MEMLAT_CPU4" == "true" ]; then
-         echo "$DEFAULT_MEMLAT_CPU4_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
+      if [ "${MEMLAT_CPU4}" == "true" ]; then
+         echo "${DEFAULT_MEMLAT_CPU4_GOVERNOR}" > /sys/class/devfreq/soc:qcom,memlat-cpu4/governor
       fi
 
-      if [ "$MEMLAT_CPU6" == "true" ]; then
-         echo "$DEFAULT_MEMLAT_CPU6_GOVERNOR" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
+      if [ "${MEMLAT_CPU6}" == "true" ]; then
+         echo "${DEFAULT_MEMLAT_CPU6_GOVERNOR}" > /sys/class/devfreq/soc:qcom,memlat-cpu6/governor
       fi
 
-      if [ "$MINCPU0BW" == "true" ]; then
-         echo "$DEFAULT_MINCPU0BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
+      if [ "${MINCPU0BW}" == "true" ]; then
+         echo "${DEFAULT_MINCPU0BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,mincpu0bw/governor
       fi
 
-      if [ "$MINCPU6BW" == "true" ]; then
-         echo "$DEFAULT_MINCPU6BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
+      if [ "${MINCPU6BW}" == "true" ]; then
+         echo "${DEFAULT_MINCPU6BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,mincpu6bw/governor
       fi
 
-      if [ "$DEVFREQ_SQPM_CPU" == "true" ]; then
-         echo "$DEFAULT_DEVFREQ_SQPM_CPU_GOVERNOR" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
+      if [ "${DEVFREQ_SPDM_CPU}" == "true" ]; then
+         echo "${DEFAULT_DEVFREQ_SPDM_CPU_GOVERNOR}" > /sys/class/devfreq/soc:devfreq_spdm_cpu/governor
       fi
 
-      if [ "$CDSP_CDSP_L3_LAT" == "true" ]; then
-         echo "$DEFAULT_CDSP_CDSP_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
+      if [ "${CDSP_CDSP_L3_LAT}" == "true" ]; then
+         echo "${DEFAULT_CDSP_CDSP_L3_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cdsp-cdsp-l3-lat/governor
       fi
 
-      if [ "$CPU0_CPU_DDR_LATFLOOR" == "true" ]; then
-         echo "$DEFAULT_CPU0_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
+      if [ "${CPU0_CPU_DDR_LATFLOOR}" == "true" ]; then
+         echo "${DEFAULT_CPU0_CPU_DDR_LATFLOOR_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu0-cpu-ddr-latfloor/governor
       fi
 
-      if [ "$CPU0_CPU_L3_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU0_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
+      if [ "${CPU0_CPU_L3_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU0_CPU_L3_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu0-cpu-l3-lat/governor
       fi
 
-      if [ "$CPU0_CPU_LLCC_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU0_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
+      if [ "${CPU0_CPU_LLCC_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU0_CPU_LLCC_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu0-cpu-llcc-lat/governor
       fi
 
-      if [ "$CPU0_LLCC_DDR_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU0_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
+      if [ "${CPU0_LLCC_DDR_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU0_LLCC_DDR_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu0-llcc-ddr-lat/governor
       fi
 
-      if [ "$CPU6_CPU_DDR_LATFLOOR" == "true" ]; then
-         echo "$DEFAULT_CPU6_CPU_DDR_LATFLOOR_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
+      if [ "${CPU6_CPU_DDR_LATFLOOR}" == "true" ]; then
+         echo "${DEFAULT_CPU6_CPU_DDR_LATFLOOR_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu6-cpu-ddr-latfloor/governor
       fi
 
-      if [ "$CPU6_CPU_L3_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU6_CPU_L3_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
+      if [ "${CPU6_CPU_L3_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU6_CPU_L3_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu6-cpu-l3-lat/governor
       fi
 
-      if [ "$CPU6_CPU_LLCC_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU6_CPU_LLCC_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
+      if [ "${CPU6_CPU_LLCC_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU6_CPU_LLCC_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu6-cpu-llcc-lat/governor
       fi
 
-      if [ "$CPU6_LLCC_DDR_LAT" == "true" ]; then
-         echo "$DEFAULT_CPU6_LLCC_DDR_LAT_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
+      if [ "${CPU6_LLCC_DDR_LAT}" == "true" ]; then
+         echo "${DEFAULT_CPU6_LLCC_DDR_LAT_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu6-llcc-ddr-lat/governor
       fi
 
-      if [ "$CPU_CPU_LLCC_BW" == "true" ]; then
-         echo "$DEFAULT_CPU_CPU_LLCC_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
+      if [ "${CPU_CPU_LLCC_BW}" == "true" ]; then
+         echo "${DEFAULT_CPU_CPU_LLCC_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu-cpu-llcc-bw/governor
       fi
 
-      if [ "$CPU_LLCC_DDR_BW" == "true" ]; then
-         echo "$DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
+      if [ "${CPU_LLCC_DDR_BW}" == "true" ]; then
+         echo "${DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
       fi
 
-      if [ "$NPUDSP_NPU_DDR_BW" == "true" ]; then
-         echo "$DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
+      if [ "${NPUDSP_NPU_DDR_BW}" == "true" ]; then
+         echo "${DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
       fi
 
-      if [ "$NPU_NPU_DDR_BW" == "true" ]; then
-         echo "$DEFAULT_NPU_NPU_DDR_BW_GOVERNOR" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+      if [ "${NPU_NPU_DDR_BW}" == "true" ]; then
+         echo "${DEFAULT_NPU_NPU_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
       fi
+
       :
    fi
 }
 
 function btsave {
-   if [ "$BTSAVE" == "true" ]; then
-      if [ "$BTSTAT" == "on" ]; then
+   if [ "${BTSAVE}" == "true" ]; then
+      if [ "${BTSTAT}" == "on" ]; then
          if ! bluetoothctl info | grep -q 'Connected:'; then
             bluetoothctl power off > /dev/null 2>&1 &
             BTSTAT="off"
@@ -1030,7 +1033,7 @@ function btsave {
 }
 
 function btdefault {
-   if [ "$BTSAVE" == "true" ] && [ "$BTSTAT" == "off" ]; then
+   if [ "${BTSAVE}" == "true" ] && [ "${BTSTAT}" == "off" ]; then
       bluetoothctl power on > /dev/null 2>&1 &
       BTSTAT="on"
    fi
@@ -1040,38 +1043,38 @@ function btdefault {
 echo "" > /var/lib/batman/screen
 
 # Give ownership of /var/lib/batman to the user id available in /run/user.
-chown -R $UIDS:$UIDS /var/lib/batman
+chown -R "${UIDS}":"${UIDS}" /var/lib/batman
 
-while [[ true ]]
+while true
 do
     # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
     SCREEN_OLD=$(</var/lib/batman/screen)
 
     # Get cpu usage from /proc/stat
-    CPU_USAGE=$(eval "$GET_CPU_USAGE")
+    CPU_USAGE=$(eval "${GET_CPU_USAGE}")
 
     # Save screen status to a variable so that we can use it later in our checks.
-    SCREEN=$(eval "$GET_SCREEN")
+    SCREEN=$(eval "${GET_SCREEN}")
 
-    if [ "$KDE" == "true" ]; then
-        if [ "$SCREEN" == "true" ]; then
+    if [ "${KDE}" == "true" ]; then
+        if [ "${SCREEN}" == "true" ]; then
            SCREEN="no"
         else
            SCREEN="yes"
         fi
     fi
 
-    if [ "$CHARGESAVE" == "true" ]; then
+    if [ "${CHARGESAVE}" == "true" ]; then
         CHARGE="discharging"
     else
         # Check if device is plugged into a power source.
-        CHARGE=$(eval "$GET_CHARGE")
+        CHARGE=$(eval "${GET_CHARGE}")
     fi
 
     # on x86 devices mostly operate in powersave anyways so we should check
     # if device is plugged into a power source then set the governor to performance
-    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
-       if [ "$CHARGE" = "charging" ] || [ "$CHARGE" = "fully-charged" ]; then
+    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+       if [ "${CHARGE}" = "charging" ] || [ "${CHARGE}" = "fully-charged" ]; then
           DEFAULT_GOVERNOR="performance"
        else
           DEFAULT_GOVERNOR="powersave"
@@ -1079,21 +1082,21 @@ do
     fi
 
     # Check if powersave should be set.
-    if [ "$POWERSAVE" == "true" ]; then
+    if [ "${POWERSAVE}" == "true" ]; then
        # if screen is off and device is not charging then device will be set into powersave.
-       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ]; then
+       if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" == "discharging" ] && [ "${SCREEN}" == "no" ]; then
           powersave
           gpusave
           bussave
           btsave
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
-       elif [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "charging" ] || [ "$CHARGE" == "fully-charged" ]; then
+       elif [ "${SCREEN_OLD}" != "$SCREEN" ] && [ "${CHARGE}" == "charging" ] || [ "${CHARGE}" == "fully-charged" ]; then
           default
           gpudefault
           busdefault
           btdefault
        # if screen is on (user using the device) set everything back to default.
-       elif [ "$SCREEN" == "yes" ]; then
+       elif [ "${SCREEN}" == "yes" ]; then
           default
           gpudefault
           busdefault
@@ -1102,14 +1105,14 @@ do
     fi
 
     # Save the current governor (check what has happened in the last run) so that if it is set to powersave we can use this info in our cpu offlining.
-    if [ -z "$RUNTIME_CUR_GOVERNOR" ]; then
+    if [ -z "${RUNTIME_CUR_GOVERNOR}" ]; then
        CUR_GOVERNOR=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
     else
-       CUR_GOVERNOR=$RUNTIME_CUR_GOVERNOR
+       CUR_GOVERNOR="${RUNTIME_CUR_GOVERNOR}"
     fi
 
-    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
-       if [ "$SCREEN" = "no" ]; then
+    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+       if [ "${SCREEN}" = "no" ]; then
           SCREEN_OLD=yes
        fi
 
@@ -1118,23 +1121,23 @@ do
     fi
 
     # Use our OFFLINE variable to see if this process should even be started.
-    if [ "$OFFLINE" == "true" ]; then
+    if [ "${OFFLINE}" == "true" ]; then
        # if device is not plugged into a power source and screen is off and cpu usage is less than MAX_CPU_USAGE (default is 60) then set cpu to offline.
-       if [ "$SCREEN_OLD" != "$SCREEN" ] && [ "$CHARGE" == "discharging" ] && [ "$SCREEN" == "no" ] && [ "$CPU_USAGE" -le "$MAX_CPU_USAGE" ]; then
+       if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" == "discharging" ] && [ "${SCREEN}" == "no" ] && [ "${CPU_USAGE}" -le "${MAX_CPU_USAGE}" ]; then
           offline
        # if screen or on or current governor is the same as default governor or cpu usage is higher than MAX_CPU_USAGE (default is 60) set cpu cores to online.
-       elif [ "$SCREEN" == "yes" ] || [ "$CUR_GOVERNOR" == "$DEFAULT_GOVERNOR" ] || [ "$CPU_USAGE" -gt "$MAX_CPU_USAGE" ]; then
+       elif [ "${SCREEN}" == "yes" ] || [ "${CUR_GOVERNOR}" == "${DEFAULT_GOVERNOR}" ] || [ "${CPU_USAGE}" -gt "${MAX_CPU_USAGE}" ]; then
           online
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
-       elif [ "$SCREEN_OLD" == "$SCREEN" ] && [ "$CUR_GOVERNOR" == "powersave" ]; then
+       elif [ "${SCREEN_OLD}" == "${SCREEN}" ] && [ "${CUR_GOVERNOR}" == "powersave" ]; then
           offline
        fi
     fi
 
-    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then
+    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
        # on x86 chips batman will be intrerrupted if device gets suspended but we can fix this by checking if we can read a file
        # that is usually unavailable when cpu cores are set to offline and set the status accordingly to leave that unexpected state.
-       if [ "$SCREEN" == "yes" ]; then
+       if [ "${SCREEN}" == "yes" ]; then
           if ! cat /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor > /dev/null 2>&1; then
              online
              default
@@ -1145,17 +1148,17 @@ do
     fi
 
     # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
-    if [ "$SCREEN_OLD" != "$SCREEN" ]; then
-       echo "$SCREEN" > /var/lib/batman/screen
+    if [ "${SCREEN_OLD}" != "${SCREEN}" ]; then
+       echo "${SCREEN}" > /var/lib/batman/screen
     fi
 
     # To not do as many useless iterations wait here for some time when the screen is on or when user is using the device.
-    if [ "$SCREEN" == "yes" ]; then
-       if [ "$SCREEN_OLD" == "no" ]; then
+    if [ "${SCREEN}" == "yes" ]; then
+       if [ "${SCREEN_OLD}" == "no" ]; then
           delay 0.3
        else
           delay 10
-          source <(tail -n +2 $CONFIG_FILE)
+          source <(tail -n +2 "${CONFIG_FILE}")
        fi
     else
        delay 0.3
