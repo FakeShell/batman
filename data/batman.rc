@@ -1,13 +1,48 @@
 #!/sbin/openrc-run
 
-  start() {
-    ebegin "Starting batman..."
-    start-stop-daemon --background --start --exec /usr/bin/batman --make-pidfile --pidfile /run/batman.pid
-    eend $?
- }
+# Default Configurations
+log_file="/var/log/batman.log"
+error_log_file="/var/log/batman.err.log"
+CONFIG_FILE=""
 
-  stop() {
+# Check for the existence of the configuration file
+if [ -f /etc/batman/config ]; then
+   CONFIG_FILE="/etc/batman/config"
+elif [ -f /var/lib/batman/config ]; then
+   CONFIG_FILE="/var/lib/batman/config"
+fi
+
+# Load the found configuration
+[ -n "${CONFIG_FILE}" ] && . "${CONFIG_FILE}"
+
+start_pre() {
+    if [ -z "${CONFIG_FILE}" ]; then
+        eerror "No configuration file found in standard paths."
+        return 1
+    fi
+}
+
+start() {
+    ebegin "Starting batman..."
+
+    start-stop-daemon --background --start --exec /usr/bin/batman -- \
+        ${BATMAN_ARGS} >> "${log_file}" 2>> "${error_log_file}" --make-pidfile --pidfile /run/batman.pid
+
+    eend $?
+}
+
+stop() {
     ebegin "Stopping batman..."
     start-stop-daemon --stop --exec /usr/bin/batman --pidfile /run/batman.pid
     eend $?
+}
+
+status() {
+    if start-stop-daemon --status --pidfile /run/batman.pid; then
+        echo "batman is running."
+        return 0
+    else
+        echo "batman is not running."
+        return 3
+    fi
 }
