@@ -129,6 +129,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_widget_set_valign(service_active_switch, GTK_ALIGN_CENTER);
     check_batman_active();
     gtk_switch_set_state(GTK_SWITCH(service_active_switch), bm_state.active);
+    gtk_switch_set_active(GTK_SWITCH(service_active_switch), bm_state.active);
     g_signal_connect(service_active_switch, "state-set", G_CALLBACK(service_active_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(service_active_action_row), service_active_switch);
@@ -142,6 +143,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_widget_set_valign(service_enabled_switch, GTK_ALIGN_CENTER);
     check_batman_enabled();
     gtk_switch_set_state(GTK_SWITCH(service_enabled_switch), bm_state.enabled);
+    gtk_switch_set_active(GTK_SWITCH(service_enabled_switch), bm_state.enabled);
     g_signal_connect(service_enabled_switch, "state-set", G_CALLBACK(service_enabled_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(service_enabled_action_row), service_enabled_switch);
@@ -179,6 +181,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *powersave_switch = gtk_switch_new();
     gtk_widget_set_valign(powersave_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(powersave_switch), config.powersave);
+    gtk_switch_set_active(GTK_SWITCH(powersave_switch), config.powersave);
     g_signal_connect(powersave_switch, "state-set", G_CALLBACK(powersave_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(powersave_action_row), powersave_switch);
@@ -193,6 +196,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *chargesave_switch = gtk_switch_new();
     gtk_widget_set_valign(chargesave_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(chargesave_switch), config.chargesave);
+    gtk_switch_set_active(GTK_SWITCH(chargesave_switch), config.chargesave);
     g_signal_connect(chargesave_switch, "state-set", G_CALLBACK(chargesave_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(chargesave_action_row), chargesave_switch);
@@ -209,6 +213,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *offline_switch = gtk_switch_new();
     gtk_widget_set_valign(offline_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(offline_switch), config.offline);
+    gtk_switch_set_active(GTK_SWITCH(offline_switch), config.offline);
     g_signal_connect(offline_switch, "state-set", G_CALLBACK(offline_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(offline_action_row), offline_switch);
@@ -223,6 +228,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *gpusave_switch = gtk_switch_new();
     gtk_widget_set_valign(gpusave_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(gpusave_switch), config.gpusave);
+    gtk_switch_set_active(GTK_SWITCH(gpusave_switch), config.gpusave);
     g_signal_connect(gpusave_switch, "state-set", G_CALLBACK(gpusave_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(gpusave_action_row), gpusave_switch);
@@ -239,6 +245,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *bussave_switch = gtk_switch_new();
     gtk_widget_set_valign(bussave_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(bussave_switch), config.bussave);
+    gtk_switch_set_active(GTK_SWITCH(bussave_switch), config.bussave);
     g_signal_connect(bussave_switch, "state-set", G_CALLBACK(bussave_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(bussave_action_row), bussave_switch);
@@ -253,6 +260,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *btsave_switch = gtk_switch_new();
     gtk_widget_set_valign(btsave_switch, GTK_ALIGN_CENTER);
     gtk_switch_set_state(GTK_SWITCH(btsave_switch), config.btsave);
+    gtk_switch_set_active(GTK_SWITCH(btsave_switch), config.btsave);
     g_signal_connect(btsave_switch, "state-set", G_CALLBACK(btsave_switch_state_set), NULL);
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(btsave_action_row), btsave_switch);
