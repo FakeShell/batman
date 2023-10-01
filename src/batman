@@ -338,6 +338,12 @@ if [ -z "${BTSAVE}" ]; then
    BTSAVE=true
 fi
 
+if which chrt > /dev/null 2>&1 && which pidof > /dev/null 2>&1; then
+   if which pulseaudio > /dev/null 2>&1; then
+      MANAGE_PULSE=true
+   fi
+fi
+
 # Set up an array with the GPU governor file paths to check
 gpu_governor_paths=(
   "/sys/class/kgsl/kgsl-3d0/devfreq/governor"
@@ -778,6 +784,10 @@ do
           gpusave
           bussave
           btsave
+
+          if [ "${MANAGE_PULSE}" = true ] && pidof pulseaudio &> /dev/null; then
+              chrt -f -p 10 $(pidof pulseaudio)
+          fi
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
        elif [ "${SCREEN_OLD}" != "$SCREEN" ] && [ "${CHARGE}" = "charging" ] || [ "${CHARGE}" = "fully-charged" ]; then
           default
