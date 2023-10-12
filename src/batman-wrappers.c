@@ -164,7 +164,7 @@ double cpuUsage() {
     long long total_cpu_time_1 = getTotalCPUTime();
     long long idle_cpu_time_1 = getIdleCPUTime();
 
-    usleep(250000);
+    usleep(500000);
 
     long long total_cpu_time_2 = getTotalCPUTime();
     long long idle_cpu_time_2 = getIdleCPUTime();
