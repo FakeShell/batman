@@ -126,6 +126,8 @@ else
    exit 0
 fi
 
+OFFLINE_COUNT="${LASTPOLCORE}"
+
 # this is tricky so lets only use it if port requires it
 if [ -f /var/lib/batman/exynos_cpu_limit ]; then
    if [ -f /sys/power/cpufreq_min_limit ]; then
@@ -766,6 +768,26 @@ do
         CHARGE=$(eval "${GET_CHARGE}")
     fi
 
+    # an attempt to fix choppy audio when system goes to sleep by lowering the number of cores that go offline if there is an audio playing
+    if ! [ "${ARCH}" = "x86_64" ] && ! [ "${ARCH}" = "i686" ]; then
+        if cat /proc/asound/card*/pcm*/sub*/status | grep -q RUNNING; then
+            if [ "${LASTPOLCORE}" -ge "${OFFLINE_COUNT}" ]; then
+                LASTPOLCORE=$((LASTPOLCORE/2))
+                if [ "${OFFLINE}" = "true" ] && [ "${SCREEN}" = "no" ]; then
+                    LASTPOLCORE_TMP="${LASTPOLCORE}"
+                    LASTPOLCORE="${OFFLINE_COUNT}"
+                    online
+                    LASTPOLCORE="${LASTPOLCORE_TMP}"
+                    offline
+                fi
+            fi
+        fi
+    fi
+
+    if [ "${SCREEN}" = yes ]; then
+        LASTPOLCORE="${OFFLINE_COUNT}"
+    fi
+
     # on x86 devices mostly operate in powersave anyways so we should check
     # if device is plugged into a power source then set the governor to performance
     if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
@@ -849,6 +871,12 @@ do
     # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
     if [ "${SCREEN_OLD}" != "${SCREEN}" ]; then
        echo "${SCREEN}" > /var/lib/batman/screen
+    fi
+
+    if ! [ "${ARCH}" = "x86_64" ] && ! [ "${ARCH}" = "i686" ]; then
+        if ! cat /proc/asound/card*/pcm*/sub*/status | grep -q RUNNING; then
+            LASTPOLCORE="${OFFLINE_COUNT}"
+        fi
     fi
 
     # To not do as many useless iterations wait here for some time when the screen is on or when user is using the device.
