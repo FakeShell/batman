@@ -6,10 +6,12 @@ TARGET_HELPER = batman-helper
 TARGET_GUI = batman-gui
 TARGET_GOVERNOR = governor
 TARGET_LIB = libbatman-wrappers.so
+TARGET_LIBPOWER = batman-libpower
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
 SRC_GOVERNOR = src/governor.c src/wlrdisplay.c
 SRC_LIB = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
+SRC_LIBPOWER = src/batman-libpower.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h
 INCLUDE_DIR = /usr/include
 BINDIR = /usr/bin
@@ -21,13 +23,16 @@ ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
 
 .PHONY: all
-all: $(TARGET)
+all: $(TARGET) $(TARGET_LIBPOWER)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
 	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
 	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
 	$(CC) -fPIC -shared $(CFLAGS) $(SRC_LIB) $(LDFLAGS) -o $(TARGET_LIB)
+
+$(TARGET_LIBPOWER):
+	gcc $(SRC_LIBPOWER) -o $(TARGET_LIBPOWER) `pkg-config --libs --cflags libgbinder`
 
 .PHONY: install
 install: $(TARGET)
@@ -36,6 +41,7 @@ install: $(TARGET)
 	cp $(TARGET_GUI) $(BINDIR)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
 	cp $(TARGET_LIB) /usr/lib
+	cp $(TARGET_LIBPOWER) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -61,3 +67,4 @@ clean:
 	rm -f $(TARGET_GUI)
 	rm -f $(TARGET_GOVERNOR)
 	rm -f $(TARGET_LIB)
+	rm -f $(TARGET_LIBPOWER)

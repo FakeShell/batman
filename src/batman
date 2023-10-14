@@ -346,6 +346,10 @@ if which chrt > /dev/null 2>&1 && which pidof > /dev/null 2>&1; then
    fi
 fi
 
+if which batman-libpower > /dev/null 2>&1; then
+   LIBPOWER=true
+fi
+
 # Set up an array with the GPU governor file paths to check
 gpu_governor_paths=(
   "/sys/class/kgsl/kgsl-3d0/devfreq/governor"
@@ -810,18 +814,24 @@ do
           if [ "${MANAGE_PULSE}" = true ] && pidof pulseaudio &> /dev/null; then
               chrt -f -p 10 $(pidof pulseaudio)
           fi
+
+          [ "${LIBPOWER}" = "true" ] && batman-libpower 0
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
        elif [ "${SCREEN_OLD}" != "$SCREEN" ] && [ "${CHARGE}" = "charging" ] || [ "${CHARGE}" = "fully-charged" ]; then
           default
           gpudefault
           busdefault
           btdefault
+
+          [ "${LIBPOWER}" = "true" ] && batman-libpower 1
        # if screen is on (user using the device) set everything back to default.
        elif [ "${SCREEN}" = "yes" ]; then
           default
           gpudefault
           busdefault
           btdefault
+
+          [ "${LIBPOWER}" = "true" ] && batman-libpower 1
        fi
     fi
 
