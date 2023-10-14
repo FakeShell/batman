@@ -1,4 +1,4 @@
-batman (0.0.0+git20230813130845.bb9909e.release) all; urgency=medium
+batman (0.0.0+git20231013221356.05436be.release) all; urgency=medium
 
   [ Bardia Moshiri ]
   * add files
@@ -129,6 +129,26 @@ batman (0.0.0+git20230813130845.bb9909e.release) all; urgency=medium
   * governor: add cpu usage, exynos nodes and optimize the main loop
   * batman-helper: avoid negative and invalid values in cpu usage
   * split batman-helper to batman-wrappers and build a shared object
+  * drop gpg and debian repo files
+  * Makefile: add ICON_DIR back
+  * treewide: adapt all functions to work externally
+  * add examples and adapt README to latest changes
+  * debian: drop governor.h from system headers
+  * debian: add libwayland-dev and upower-glib to batman-dev
+  * governor: replace batman-helper with builtin wlrdisplay
+  * batman: allow port specific default governors
+  * governor: set a variable to work even when user runs as root
+  * batman: rectify all issues brought up by shellcheck
+  * batman: refactor devfreq node checking and cleanup the code
+  * batman: remove as many bashisms as possible without touching too much of the code
+  * batman-gui: synchronize state and active on batman switches
+  * data: rewrite openrc script for batman
+  * data: rewrite traditional init script
+  * data: read the config files in the systemd service to allow for future use of runtime options
+  * batman: set pulse to sched fifo to crack down on stutters in powersave mode
+  * batman: adjust the number of offline cores according to system background usage
+  * batman-wrappers: increase the timeout between idle and total cpu times
+  * treewide: add support for libpower interactive mode
 
   [ Erik Inkinen ]
   * [debian] Move batman-gui to a separate sub-package
@@ -144,5 +164,5 @@ batman (0.0.0+git20230813130845.bb9909e.release) all; urgency=medium
   [ Arman Ghamgossar ]
   * correct syntax error in if conditional expression.
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Sun, 13 Aug 2023 13:08:45 -0400
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Fri, 13 Oct 2023 22:13:56 -0400
 
