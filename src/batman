@@ -782,6 +782,7 @@ do
                     LASTPOLCORE="${OFFLINE_COUNT}"
                     online
                     LASTPOLCORE="${LASTPOLCORE_TMP}"
+                    delay 0.3
                     offline
                 fi
             fi
