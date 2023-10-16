@@ -2,7 +2,19 @@ Source: batman
 Maintainer: Bardia Moshiri
 Section: misc
 Priority: optional
-Build-Depends: debhelper (>= 10), gcc, make, libupower-glib-dev, pkg-config, libwayland-dev, libgtk-4-dev, libadwaita-1-dev, libgbinder-dev
+Build-Depends: debhelper (>= 10),
+               gcc,
+               make,
+               libupower-glib-dev,
+               pkg-config,
+               libwayland-dev,
+               libgtk-4-dev,
+               libadwaita-1-dev,
+               libgbinder-dev,
+               libnciplugin-dev,
+               libnfcd-dev,
+               libglib2.0-dev,
+               libglibutil-dev,
 Standards-Version: 4.5.0.3
 Vcs-Browser: https://github.com/FakeShell/batman
 Vcs-Git: https://github.com/FakeShell/batman.git
@@ -60,3 +72,12 @@ Architecture: any
 Depends: ${misc:Depends},
 Description: libbatman-wrappers
  A battery management service for Linux phones - wrapper shared object
+
+Package: nfcd-batman-plugin
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+         libncicore,
+         libnciplugin,
+Description: nfcd-batman-plugin
+ state switching plugin for the NFC daemon
