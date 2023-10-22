@@ -23,11 +23,9 @@ Package: batman
 Architecture: any
 Depends: ${misc:Depends},
          bash,
-         bluez,
          batman-helper,
          batman-governor,
          libbatman-wrappers,
-Suggests: wlr-randr
 Description: batman
  A battery management service for Linux phones
 

@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
-            printf("batman-gui version: 1.42\n");
+            printf("batman-gui version: 1.43\n");
             return 0;
         }
     }

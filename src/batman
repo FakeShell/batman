@@ -14,7 +14,7 @@ EOF
 
 # Bumped at every commit
 version() {
-   echo "1.42"
+   echo "1.43"
    exit 0
 }
 
@@ -38,12 +38,6 @@ case "$1" in
     ;;
 esac
 
-# CORE_FIRST will read cpuinfo and get the first cpu core number at boot. (we know its 0 but just in case to be 100% safe)
-# CORE_LAST will read cpuinfo and get the last cpu core number at boot.
-# UIDS will list users from /run/user to later use with wlrdisplay or wlr-randr
-# DEFAULT_GOVERNOR stores the default cpu governor used by the device.
-# AVUSER will get the number of active user sessions. It's used later on to make sure there is only one active user with a session.
-# AVPOL will check for the amount of cpu policy groups. It's used later on to disable offlining on devices with a single group.
 # FIRSTPOL will get the first policy group. (this group stores LITTLE cores)
 # FIRSTPOLCORE will get the first cpu core of policy group one.
 # LASTPOLCORE will get the last cpu core of policy group one.
@@ -111,14 +105,6 @@ if [ "${AVPOL}" != "0" ]; then
 # Support for older arm devices such as MSM8996.
 elif [ "${AVPOL}" = "0" ] && [ -f "/sys/devices/system/cpu/cpufreq/all_time_in_state" ]; then
    LEGACY=true
-   STATE=$(grep "cpu" /sys/devices/system/cpu/cpufreq/all_time_in_state | wc -w)
-
-   # Just a bit of info for debugging. can be used later on.
-   for ((i=2; i<=STATE; i++))
-   do
-      awk -v col_num="$i" 'NR>1 {print $col_num}' /sys/devices/system/cpu/cpufreq/all_time_in_state &> /var/lib/batman/LEGACY-CPU-$((i - 2))
-   done
-
    FIRSTPOLCORE="${CORE_FIRST}"
    LASTPOLCORE=$((CORE_LAST/2))
 else
@@ -158,64 +144,21 @@ elif [ -z "${CPUSAVEGOVERNOR}" ]; then
    fi
 fi
 
-# Use either upower client or our own upower wrapper
-if which batman-helper > /dev/null 2>&1; then
-   BATMAN_OUTPUT=$(batman-helper battery)
-   if [ $? -eq 0 ] && [ -n "${BATMAN_OUTPUT}" ]; then
-      echo "using batman-helper for charging status"
-      GET_CHARGE="batman-helper battery"
-      touch /var/lib/batman/using-batman-helper-for-charge
-   fi
-fi
-
-if [ -z "${GET_CHARGE}" ] && which upower > /dev/null 2>&1; then
-   GET_CHARGE='upower -d | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
-   GET_CHARGE_FALLBACK='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
-
-   CHARGE_STATUS=$(eval "${GET_CHARGE}")
-   CHARGE_STATUS_FALLBACK=$(eval "${GET_CHARGE_FALLBACK}")
-   if [ "${CHARGE_STATUS}" = "discharging" ] || [ "${CHARGE_STATUS}" = "fully-charged" ] || [ "${CHARGE_STATUS}" = "charging" ]; then
-      rm /var/lib/batman/using-batman-helper-for-charge -f
-   elif [ "${CHARGE_STATUS_FALLBACK}" = "discharging" ] || [ "${CHARGE_STATUS_FALLBACK}" = "fully-charged" ] || [ "${CHARGE_STATUS_FALLBACK}" = "charging" ]; then
-      rm /var/lib/batman/using-batman-helper-for-charge -f
-
-      # on some number of devices such as starqlte this is the only one that gets the status for us
-      echo "Falling back to /org/freedesktop/UPower/devices/battery_battery"
-      GET_CHARGE='upower -i /org/freedesktop/UPower/devices/battery_battery | awk '\''{if(/state/){if(!seen[$0]){seen[$0]=1;print substr($0,26);exit}}}'\'
-   fi
-elif [ -z "${GET_CHARGE}" ]; then
-   echo "neither batman-helper nor upower is available. exiting"
+if ! which batman-helper > /dev/null 2>&1; then
+   echo "batman-helper is not available. exiting"
    exit 0
 fi
 
-# Use either wlrdisplay or wlr-randr
-if which batman-helper > /dev/null 2>&1; then
-   if eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /var/lib/batman/wlrfirstcheck; then
-      echo "using batman-helper for screen status"
-      GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
-      touch /var/lib/batman/using-batman-helper-for-screen
-      WLRTOOL=true
-   elif [ $? -eq 1 ]; then
-      if grep -q "wlrdisplay support is not enabled." /var/lib/batman/wlrfirstcheck; then
-         if which wlr-randr > /dev/null 2>&1; then
-            GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
-            rm /var/lib/batman/using-batman-helper-for-screen -f
-            WLRTOOL=true
-         fi
-      else
-         WLRTOOL=false
-      fi
-   fi
-elif which wlr-randr > /dev/null 2>&1; then
-   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ wlr-randr | sed -n '/Enabled/s/^.\{11\}//p'"
-   rm /var/lib/batman/using-batman-helper-for-screen -f
-   WLRTOOL=true
+if eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /var/lib/batman/wlrfirstcheck; then
+   echo "using wlrdisplay for screen status"
+   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
+   WLR=true
 else
-   WLRTOOL=false
+   WLR=false
 fi
 
 # Check if system is using a wlroots based desktop environment.
-if [ "${WLRTOOL}" = "true" ]; then
+if [ "${WLR}" = "true" ]; then
    eval "${GET_SCREEN}" &> /var/lib/batman/wlrcheck
 
    if grep -q "compositor doesn't support" /var/lib/batman/wlrcheck || grep -q "wl_display_dispatch failed" /var/lib/batman/wlrcheck; then
@@ -232,14 +175,12 @@ if [ "${WLROOTS}" = "true" ]; then
    while true
    do
       if eval "${GET_SCREEN}" &> /dev/null; then
-         # If the exit status is 0, break out of the loop
          break
       else
-         # If the exit status is not 0, wait for some time and try again
          delay 10
       fi
    done
-# Check if system is using KDE Plasma.
+# Check if system is using kwin
 elif [ "${WLROOTS}" = "false" ] && which kscreen-doctor > /dev/null 2>&1; then
    if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/"${UIDS}"/ kscreen-doctor -o 2>/dev/null | grep Output >/dev/null 2>&1; then
       USERNAME=$(id -un "${UIDS}")
@@ -250,22 +191,12 @@ elif [ "${WLROOTS}" = "false" ] && which kscreen-doctor > /dev/null 2>&1; then
    fi
 fi
 
-if which batman-helper > /dev/null 2>&1; then
-   echo "using batman-helper for CPU usage"
-   GET_CPU_USAGE="batman-helper cpu"
-   touch /var/lib/batman/using-batman-helper-for-cpu
-else
-   GET_CPU_USAGE="awk '{u=\$2+\$4; t=\$2+\$4+\$5; if (NR==1){u1=u; t1=t;} else print (\$2+\$4-u1) * 100 / (t-t1) ; }' <(grep 'cpu ' /proc/stat) <(sleep 0.2; grep 'cpu ' /proc/stat) | cut -d '.' -f1"
-   rm /var/lib/batman/using-batman-helper-for-cpu -f
-fi
-
-# If none of the supported compositors are used then exit.
 if [ "${KDE}" = "false" ] && [ "${WLROOTS}" = "false" ]; then
-   echo "Display server not supported. exiting"
+   echo "compositor not supported. exiting"
    exit 0
 fi
 
-# Use our AVUSER variable to make sure only one active user session exists.
+# make sure only one active user session exists.
 if [ "${AVUSER}" -gt "1" ]; then
    echo "more than one user active. waiting for the other user profile to disappear"
    while true
@@ -280,77 +211,61 @@ if [ "${AVUSER}" -gt "1" ]; then
    done
 fi
 
-if [ -z "$(eval "${GET_CHARGE}")" ]; then
+if [ -z "$(batman-helper battery)" ]; then
    echo "No battery found in this device. exiting"
    exit 0
 fi
 
-# Make sure that our OFFLINE variable is set from the config file if not use default value.
 if [ -z "${OFFLINE}" ]; then
    echo "Setting the default value of OFFLINE as true"
    OFFLINE=true
 fi
 
-# Use our AVPOL variable to make sure our device has more than one policy groups.
-# If there was only one set the variable to not offline any cpu cores.
 if [ "${AVPOL}" -eq "1" ]; then
    echo "Only one cpu policy group detected, disabling cpu offlining"
    OFFLINE=false
 fi
 
-# Make sure that our POWERSAVE variable is set from the config file if not use default value.
 if [ -z "${POWERSAVE}" ]; then
    echo "Setting the default value of POWERSAVE as true"
    POWERSAVE=true
 fi
 
-# Make sure that our MAX_CPU_USAGE variable is set from the config file if not use default value.
 if [ -z "${MAX_CPU_USAGE}" ]; then
    echo "Setting the default value of MAX_CPU_USAGE as 60"
    MAX_CPU_USAGE=60
 fi
 
-# Make sure that our CHARGESAVE variable is set from the config file if not use default value.
 if [ -z "${CHARGESAVE}" ]; then
    echo "Setting the default value of CHARGESAVE as true"
    CHARGESAVE=true
 fi
 
-# Make sure that our GPUSAVE variable is set from the config file if not use default value.
 if [ -z "${GPUSAVE}" ]; then
    echo "Setting the default value of GPUSAVE as true"
    GPUSAVE=true
 fi
 
-# Make sure that our BUSSAVE variable is set from the config file if not use default value.
 if [ -z "${BUSSAVE}" ]; then
    echo "Setting the default value of BUSSAVE as true"
    BUSSAVE=true
 fi
 
-# Make sure MAX_CPU_USAGE is a number betweem 0 and 100
 if ! [[ "${MAX_CPU_USAGE}" =~ ^[0-9]+$ ]] || [[ "${MAX_CPU_USAGE}" -lt 0 ]] || [[ "${MAX_CPU_USAGE}" -gt 100 ]]; then
     echo "bad MAX_CPU_USAGE value. defaulting to 60"
     MAX_CPU_USAGE=60
 fi
 
-# Make sure that our BUSSAVE variable is set from the config file if not use default value.
 if [ -z "${BTSAVE}" ]; then
    echo "Setting the default value of BTSAVE as true"
    BTSAVE=true
-fi
-
-if which chrt > /dev/null 2>&1 && which pidof > /dev/null 2>&1; then
-   if which pulseaudio > /dev/null 2>&1; then
-      MANAGE_PULSE=true
-   fi
 fi
 
 if which batman-libpower > /dev/null 2>&1; then
    LIBPOWER=true
 fi
 
-# Set up an array with the GPU governor file paths to check
+# Set up an array with the GPU governor file paths to check, can be extended later when more devices are added
 gpu_governor_paths=(
   "/sys/class/kgsl/kgsl-3d0/devfreq/governor"
   "/sys/class/kgsl/kgsl-3d0/governor"
@@ -372,7 +287,6 @@ for gpu_governor_path in "${gpu_governor_paths[@]}"; do
     fi
 done
 
-# If none of the GPU governor files were found, set CAN_GPUSAVE to false
 [ -z "${DEFAULT_GPU_GOVERNOR}" ] && CAN_GPUSAVE=false
 
 # If powersave is not a governor in the GPU profile then disable this feature.
@@ -427,7 +341,6 @@ if [ -d /sys/class/devfreq/ ]; then
    [ -d /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/ ] && NPU_NPU_DDR_BW=true && DEFAULT_NPU_NPU_DDR_BW_GOVERNOR="$(</sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor)"
 fi
 
-# Declare an array with the configuration values
 declare -A governors=(
   ["GPUSAVE"]="${DEFAULT_GPU_GOVERNOR}"
   ["CCI"]="${DEFAULT_CCI_GOVERNOR}"
@@ -507,7 +420,6 @@ for var in "${!governors[@]}"; do
     fi
 done
 
-# Allow port specific default governors
 if [ -f "/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR" ]; then
    DEFAULT_GOVERNOR="$(</var/lib/batman/CUSTOM_DEFAULT_GOVERNOR)"
    echo "using ${DEFAULT_GOVERNOR} as default governor"
@@ -740,21 +652,16 @@ function btdefault {
    fi
 }
 
-# This clears the screen status whether or not it is off.
 echo "" > /var/lib/batman/screen
 
-# Give ownership of /var/lib/batman to the user id available in /run/user.
 chown -R "${UIDS}":"${UIDS}" /var/lib/batman
 
 while true
 do
-    # Save screen status of the last run to a variable so that we can use it later in our checks. (will be filled after the first run)
     SCREEN_OLD="$(</var/lib/batman/screen)"
 
-    # Get cpu usage from /proc/stat
-    CPU_USAGE=$(eval "${GET_CPU_USAGE}")
+    CPU_USAGE=$(batman-helper cpu)
 
-    # Save screen status to a variable so that we can use it later in our checks.
     SCREEN=$(eval "${GET_SCREEN}")
 
     if [ "${KDE}" = "true" ]; then
@@ -768,8 +675,7 @@ do
     if [ "${CHARGESAVE}" = "true" ]; then
         CHARGE="discharging"
     else
-        # Check if device is plugged into a power source.
-        CHARGE=$(eval "${GET_CHARGE}")
+        CHARGE=$(batman-helper battery)
     fi
 
     # an attempt to fix choppy audio when system goes to sleep by lowering the number of cores that go offline if there is an audio playing
@@ -803,7 +709,6 @@ do
        fi
     fi
 
-    # Check if powersave should be set.
     if [ "${POWERSAVE}" = "true" ]; then
        # if screen is off and device is not charging then device will be set into powersave.
        if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ]; then
@@ -811,10 +716,6 @@ do
           gpusave
           bussave
           btsave
-
-          if [ "${MANAGE_PULSE}" = true ] && pidof pulseaudio &> /dev/null; then
-              chrt -f -p 10 $(pidof pulseaudio)
-          fi
 
           [ "${LIBPOWER}" = "true" ] && batman-libpower 0
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
@@ -852,7 +753,6 @@ do
        CHARGE='discharging'
     fi
 
-    # Use our OFFLINE variable to see if this process should even be started.
     if [ "${OFFLINE}" = "true" ]; then
        # if device is not plugged into a power source and screen is off and cpu usage is less than MAX_CPU_USAGE (default is 60) then set cpu to offline.
        if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ] && [ "${CPU_USAGE}" -le "${MAX_CPU_USAGE}" ]; then
@@ -879,7 +779,6 @@ do
        fi
     fi
 
-    # Put old status of screen into a file so that we can use it in the next run of this loop to lower cpu and memory usage later on.
     if [ "${SCREEN_OLD}" != "${SCREEN}" ]; then
        echo "${SCREEN}" > /var/lib/batman/screen
     fi
