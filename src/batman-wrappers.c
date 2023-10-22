@@ -37,45 +37,39 @@ const gchar *findBattery(UpClient *upower) {
     UpDevice *device = NULL;
     const gchar *statelabel = NULL;
 
-    GPtrArray *devices = up_client_get_devices2(upower);
-
-    for (int i = 0; i < devices->len; i++) {
-        UpDevice *this_dev = g_ptr_array_index(devices, i);
-
-        gboolean power_supply;
-        UpDeviceKind kind;
-
-        g_object_get(this_dev, "power-supply", &power_supply, "kind", &kind, NULL);
-
-        if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY) {
-            device = this_dev;
-            g_object_ref(device);
-            break;
-        }
+    device = up_device_new();
+    
+    if (!up_device_set_object_path_sync(device, "/org/freedesktop/UPower/devices/DisplayDevice", NULL, NULL)) {
+        g_object_unref(device);
+        g_print("Failed to set device object path\n");
+        return NULL;
     }
 
     if (device != NULL) {
         UpDeviceState state;
-        g_object_get(device, "state", &state, NULL);
+        gboolean power_supply;
+        UpDeviceKind kind;
 
-        switch (state) {
-        case UP_DEVICE_STATE_CHARGING:
-            statelabel = "charging";
-            break;
-        case UP_DEVICE_STATE_DISCHARGING:
-            statelabel = "discharging";
-            break;
-        case UP_DEVICE_STATE_FULLY_CHARGED:
-            statelabel = "fully-charged";
-            break;
-        default:
-            statelabel = NULL;
+        g_object_get(device, "power-supply", &power_supply, "kind", &kind, "state", &state, NULL);
+
+        if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY) {
+            switch (state) {
+            case UP_DEVICE_STATE_CHARGING:
+                statelabel = "charging";
+                break;
+            case UP_DEVICE_STATE_DISCHARGING:
+                statelabel = "discharging";
+                break;
+            case UP_DEVICE_STATE_FULLY_CHARGED:
+                statelabel = "fully-charged";
+                break;
+            default:
+                statelabel = NULL;
+            }
         }
 
         g_object_unref(device);
     }
-
-    g_ptr_array_unref(devices);
 
     if (statelabel == NULL) {
         g_print("no battery\n");
