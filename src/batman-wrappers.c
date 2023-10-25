@@ -33,12 +33,12 @@ struct meminfo {
 };
 
 #ifdef WITH_UPOWER
-const gchar *findBattery(UpClient *upower) {
+const gchar *findBattery(UpClient *upower, gdouble *percentage) {
     UpDevice *device = NULL;
     const gchar *statelabel = NULL;
 
     device = up_device_new();
-    
+
     if (!up_device_set_object_path_sync(device, "/org/freedesktop/UPower/devices/DisplayDevice", NULL, NULL)) {
         g_object_unref(device);
         g_print("Failed to set device object path\n");
@@ -49,8 +49,18 @@ const gchar *findBattery(UpClient *upower) {
         UpDeviceState state;
         gboolean power_supply;
         UpDeviceKind kind;
+        gdouble percent;
 
-        g_object_get(device, "power-supply", &power_supply, "kind", &kind, "state", &state, NULL);
+        g_object_get(device,
+                     "power-supply", &power_supply,
+                     "kind", &kind,
+                     "state", &state,
+                     "percentage", &percent,
+                     NULL);
+
+        if (percentage != NULL) {
+            *percentage = percent;
+        }
 
         if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY) {
             switch (state) {

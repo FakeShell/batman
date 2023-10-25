@@ -5,13 +5,14 @@
 
 int main(int argc, char *argv[]) {
     UpClient *upower = up_client_new();
+    gdouble battery_percentage;
 
     if (upower == NULL) {
         g_print("Could not connect to upower");
         return 2;
     }
 
-    const gchar *statelabel = findBattery(upower);
+    const gchar *statelabel = findBattery(upower, &battery_percentage);
 
     g_object_unref(upower);
 
@@ -37,7 +38,7 @@ int main(int argc, char *argv[]) {
     printf("wlroots screen status: %s", result == 0 ? "yes\n" : "no\n");
 
     if (statelabel != NULL) {
-        g_print("Battery Status: %s\n", statelabel);
+        g_print("Battery status: %s\nBattery percentage: %.2f%%\n", statelabel, battery_percentage);
     } else {
         g_print("No battery found\n");
     }

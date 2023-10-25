@@ -6,7 +6,7 @@
 
 #include <upower.h>
 
-const gchar *findBattery(UpClient *upower);
+const gchar *findBattery(UpClient *upower, gdouble *percentage);
 
 double cpuUsage();
 long double memUsage();

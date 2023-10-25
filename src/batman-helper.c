@@ -14,7 +14,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s [cpu|mem|wlrdisplay|battery|batman_active|batman_enabled]\n", argv[0]);
+        printf("Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -36,15 +36,38 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(argv[1], "battery") == 0) {
         #ifdef WITH_UPOWER
         UpClient *upower = up_client_new();
+        gdouble battery_percentage;
 
         if (upower == NULL) {
             g_print("Could not connect to upower");
             return 2;
         }
 
-        const gchar *batteryStatus = findBattery(upower);
+        const gchar *batteryStatus = findBattery(upower, &battery_percentage);
         if (batteryStatus != NULL) {
             g_print("%s\n", batteryStatus);
+        }
+
+        g_object_unref(upower);
+
+        return 0;
+        #else
+        printf("Upower support is not enabled. Recompile with -DWITH_UPOWER to enable it.\n");
+        return EXIT_FAILURE;
+        #endif
+    } else if (strcmp(argv[1], "battery_percentage") == 0) {
+        #ifdef WITH_UPOWER
+        UpClient *upower = up_client_new();
+        gdouble battery_percentage;
+
+        if (upower == NULL) {
+            g_print("Could not connect to upower");
+            return 2;
+        }
+
+        const gchar *batteryStatus = findBattery(upower, &battery_percentage);
+        if (batteryStatus != NULL) {
+            g_print("%.2f\n", battery_percentage);
         }
 
         g_object_unref(upower);
@@ -81,7 +104,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE
         #endif
     } else {
-        printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery|batman_active|batman_enabled]\n", argv[0]);
+        printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled]\n", argv[0]);
         return EXIT_FAILURE;
     }
 }
