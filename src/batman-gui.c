@@ -87,7 +87,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     // main window
     GtkWidget *window = adw_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Batman");
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 500);
+    gtk_window_set_default_size(GTK_WINDOW(window), 500, 600);
 
     GtkWidget *wbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     GtkWidget *hdr_bar = adw_header_bar_new();
@@ -202,7 +202,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(chargesave_action_row), chargesave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), chargesave_action_row);
 
-    gtk_box_append(GTK_BOX(vbox), config_list_box);
+    //gtk_box_append(GTK_BOX(vbox), config_list_box);
 
     // Config : Offline
 
@@ -234,7 +234,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(gpusave_action_row), gpusave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), gpusave_action_row);
 
-    gtk_box_append(GTK_BOX(vbox), config_list_box);
+    //gtk_box_append(GTK_BOX(vbox), config_list_box);
 
     // Config : Bus Save
 
