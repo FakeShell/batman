@@ -3,6 +3,9 @@ CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO `pkg-config --cflags upo
 LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1`
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
+LDFLAGS_LIBPOWER = `pkg-config --libs --cflags libgbinder`
+CFLAGS_WMT = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
+LDFLAGS_WMT = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 
 TARGET = batman
 TARGET_HELPER = batman-helper
@@ -11,6 +14,7 @@ TARGET_GOVERNOR = governor
 TARGET_LIB = libbatman-wrappers.so
 TARGET_LIBPOWER = batman-libpower
 TARGET_NFCD = batman.so
+TARGET_WMT = batman-wmt
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
@@ -18,6 +22,7 @@ SRC_GOVERNOR = src/governor.c src/wlrdisplay.c
 SRC_LIB = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
 SRC_LIBPOWER = src/batman-libpower.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
+SRC_WMT = src/batman-wmt.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h
 
 BINDIR = /usr/bin
@@ -29,7 +34,7 @@ ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
 
 .PHONY: all
-all: $(TARGET) $(TARGET_LIBPOWER) $(TARGET_NFCD)
+all: $(TARGET) $(TARGET_LIBPOWER) $(TARGET_WMT) $(TARGET_NFCD)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
@@ -38,7 +43,10 @@ $(TARGET): $(SRC)
 	$(CC) -fPIC -shared $(CFLAGS) $(SRC_LIB) $(LDFLAGS) -o $(TARGET_LIB)
 
 $(TARGET_LIBPOWER):
-	gcc $(SRC_LIBPOWER) -o $(TARGET_LIBPOWER) `pkg-config --libs --cflags libgbinder`
+	gcc $(SRC_LIBPOWER) -o $(TARGET_LIBPOWER) $(LDFLAGS_LIBPOWER)
+
+$(TARGET_WMT):
+	$(CC) $(SRC_WMT) -o $(TARGET_WMT) $(CFLAGS_WMT) $(LDFLAGS_WMT)
 
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 	$(CC) $^ $(LDFLAGS_NFCD) -o $@
@@ -57,6 +65,7 @@ install: $(TARGET)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
 	cp $(TARGET_LIB) /usr/lib
 	cp $(TARGET_LIBPOWER) $(BINDIR)
+	cp $(TARGET_WMT) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -84,4 +93,5 @@ clean:
 	rm -f $(TARGET_LIB)
 	rm -f $(TARGET_LIBPOWER)
 	rm -f $(TARGET_NFCD)
+	rm -f $(TARGET_WMT)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o

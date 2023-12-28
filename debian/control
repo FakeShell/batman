@@ -15,6 +15,9 @@ Build-Depends: debhelper (>= 10),
                libnfcd-dev,
                libglib2.0-dev,
                libglibutil-dev,
+               libnl-3-dev,
+               libnl-genl-3-dev,
+               libnl-route-3-dev,
 Standards-Version: 4.5.0.3
 Vcs-Browser: https://github.com/FakeShell/batman
 Vcs-Git: https://github.com/FakeShell/batman.git
@@ -79,3 +82,10 @@ Depends: ${misc:Depends}
          libnciplugin,
 Description: nfcd-batman-plugin
  state switching plugin for the NFC daemon
+
+Package: batman-wmt
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+Description: batman-wmt
+ A battery management service for Linux phones - wmt suspend
