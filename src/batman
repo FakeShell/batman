@@ -656,6 +656,62 @@ function btdefault {
    fi
 }
 
+function tweakboost {
+   [ -f /proc/cpufreq/cpufreq_power_mode ] && echo 3 > /proc/cpufreq/cpufreq_power_mode # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_cci_mode ] && echo 1 > /proc/cpufreq/cpufreq_cci_mode # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_sched_disable ] && echo 0 > /proc/cpufreq/cpufreq_sched_disable # spotted on mt6769v
+   [ -f /sys/devices/system/cpu/perf/enable ] && echo 1 > /sys/devices/system/cpu/perf/enable # spotted on mt6769v
+   [ -f /sys/devices/system/cpu/sched/sched_boost ] && echo 1 > /sys/devices/system/cpu/sched/sched_boost # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_stress_test ] && echo 1 > /proc/cpufreq/cpufreq_stress_test # spotted on mt6769v
+   [ -f /proc/gpufreq/gpufreq_opp_stress_test ] && echo 1 > /proc/gpufreq/gpufreq_opp_stress_test # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/boost_gpu_enable ] && echo 1 > /sys/module/ged/parameters/boost_gpu_enable # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/boost_extra ] && echo 1 > /sys/module/ged/parameters/boost_extra # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/gx_game_mode ] && echo 1 > /sys/module/ged/parameters/gx_game_mode # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/gx_boost_on ] && echo 1 > /sys/module/ged/parameters/gx_boost_on # spotted on mt6769v
+   [ -f /sys/kernel/gbe/gbe_enable1 ] && echo 1 > /sys/kernel/gbe/gbe_enable1 # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe_enable2 ] && echo 1 > /sys/kernel/gbe/gbe_enable2 # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe2_max_boost_cnt ] && echo 2 > /sys/kernel/gbe/gbe2_max_boost_cnt # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe2_loading_th ] && echo 20 > /sys/kernel/gbe/gbe2_loading_th # spotted on mt6789
+   [ -f /sys/module/ged/parameters/ged_force_mdp_enable ] && echo 1 > /sys/module/ged/parameters/ged_force_mdp_enable # spotted on mt6789
+   [ -f /sys/module/lpm_levels/parameters/sleep_disabled ] && echo Y > /sys/module/lpm_levels/parameters/sleep_disabled # spotted on msm8996 and sm7125
+   [ -f /sys/module/lpm_levels/parameters/lpm_prediction ] && echo N > /sys/module/lpm_levels/parameters/lpm_prediction # spotted on sm7125
+   [ -f /sys/module/lpm_levels/parameters/lpm_ipi_prediction ] && echo N > /sys/module/lpm_levels/parameters/lpm_ipi_prediction # spotted on sm7125
+   [ -f /sys/kernel/debug/msm_vidc/fw_low_power_mode ] && echo 0 > /sys/kernel/debug/msm_vidc/fw_low_power_mode # spotted on msm8996 and sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable # spotted on sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable # spotted on sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable # spotted on sm7125
+
+   :
+}
+
+function tweaksave {
+   [ -f /proc/cpufreq/cpufreq_power_mode ] && echo 1 > /proc/cpufreq/cpufreq_power_mode # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_cci_mode ] && echo 0 > /proc/cpufreq/cpufreq_cci_mode # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_sched_disable ] && echo 1 > /proc/cpufreq/cpufreq_sched_disable # spotted on mt6769v
+   [ -f /sys/devices/system/cpu/perf/enable ] && echo 0 > /sys/devices/system/cpu/perf/enable # spotted on mt6769v
+   [ -f /sys/devices/system/cpu/sched/sched_boost ] && echo 0 > /sys/devices/system/cpu/sched/sched_boost # spotted on mt6769v
+   [ -f /proc/cpufreq/cpufreq_stress_test ] && echo 0 > /proc/cpufreq/cpufreq_stress_test # spotted on mt6769v
+   [ -f /proc/gpufreq/gpufreq_opp_stress_test ] && echo 0 > /proc/gpufreq/gpufreq_opp_stress_test # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/boost_gpu_enable ] && echo 0 > /sys/module/ged/parameters/boost_gpu_enable # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/boost_extra ] && echo 0 > /sys/module/ged/parameters/boost_extra # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/gx_game_mode ] && echo 0 > /sys/module/ged/parameters/gx_game_mode # spotted on mt6769v
+   [ -f /sys/module/ged/parameters/gx_boost_on ] && echo 0 > /sys/module/ged/parameters/gx_boost_on # spotted on mt6769v
+   [ -f /sys/kernel/gbe/gbe_enable1 ] && echo 0 > /sys/kernel/gbe/gbe_enable1 # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe_enable2 ] && echo 0 > /sys/kernel/gbe/gbe_enable2 # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe2_max_boost_cnt ] && echo 2 > /sys/kernel/gbe/gbe2_max_boost_cnt # spotted on mt6789
+   [ -f /sys/kernel/gbe/gbe2_loading_th ] && echo 5 > /sys/kernel/gbe/gbe2_loading_th # spotted on mt6789
+   [ -f /sys/module/ged/parameters/ged_force_mdp_enable ] && echo 1 > /sys/module/ged/parameters/ged_force_mdp_enable # spotted on mt6789
+   [ -f /sys/module/lpm_levels/parameters/sleep_disabled ] && echo N > /sys/module/lpm_levels/parameters/sleep_disabled  # spotted on msm8996 and sm7125
+   [ -f /sys/module/lpm_levels/parameters/lpm_prediction ] && echo N > /sys/module/lpm_levels/parameters/lpm_prediction # spotted on sm7125
+   [ -f /sys/module/lpm_levels/parameters/lpm_ipi_prediction ] && echo N > /sys/module/lpm_levels/parameters/lpm_ipi_prediction # spotted on sm7125
+   [ -f /sys/kernel/debug/msm_vidc/fw_low_power_mode ] && echo 1 > /sys/kernel/debug/msm_vidc/fw_low_power_mode # spotted on msm8996 and sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable # spotted on sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable # spotted on sm7125
+   [ -f /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable # spotted on sm7125
+
+   :
+}
+
 echo "" > /var/lib/batman/screen
 
 chown -R "${UIDS}":"${UIDS}" /var/lib/batman
@@ -720,6 +776,7 @@ do
           gpusave
           bussave
           btsave
+          tweaksave
 
           [ "${LIBPOWER}" = "true" ] && batman-libpower 0
           [ "${WMT}" = "true" ] && batman-wmt suspend
@@ -729,6 +786,7 @@ do
           gpudefault
           busdefault
           btdefault
+          tweakboost
 
           [ "${LIBPOWER}" = "true" ] && batman-libpower 1
           [ "${WMT}" = "true" ] && batman-wmt resume
@@ -738,6 +796,7 @@ do
           gpudefault
           busdefault
           btdefault
+          tweakboost
 
           [ "${LIBPOWER}" = "true" ] && batman-libpower 1
           [ "${WMT}" = "true" ] && batman-wmt resume
