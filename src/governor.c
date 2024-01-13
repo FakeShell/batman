@@ -22,9 +22,12 @@ const char *paths[] = {
     "/sys/class/devfreq/soc:qcom,mincpubw/governor",
     "/sys/class/devfreq/soc:qcom,l3-cpu0/governor",
     "/sys/class/devfreq/soc:qcom,l3-cpu6/governor",
-    "/sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor"
+    "/sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor",
     "/sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor",
     "/sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor",
+    "/sys/class/devfreq/aa00000.qcom,vidc:arm9_bus_ddr/governor",
+    "/sys/class/devfreq/aa00000.qcom,vidc:bus_cnoc/governor",
+    "/sys/class/devfreq/aa00000.qcom,vidc:venus_bus_ddr/governor",
     "/sys/class/devfreq/soc:qcom,l3-cdsp/governor",
     "/sys/class/devfreq/soc:qcom,memlat-cpu0/governor",
     "/sys/class/devfreq/soc:qcom,memlat-cpu4/governor",
