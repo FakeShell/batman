@@ -320,8 +320,10 @@ if [ -d /sys/class/devfreq/ ]; then
    [ -d /sys/class/devfreq/soc:qcom,mincpubw/ ] && MINCPUBW=true && DEFAULT_MINCPUBW_GOVERNOR="$(</sys/class/devfreq/soc:qcom,mincpubw/governor)"
    # [ -d /sys/class/devfreq/soc:qcom,l3-cpu0/ ] && L3CPU0=true && DEFAULT_L3CPU0_GOVERNOR="$(</sys/class/devfreq/soc:qcom,l3-cpu0/governor)"
    # [ -d /sys/class/devfreq/soc:qcom,l3-cpu6/ ] && L3CPU6=true && DEFAULT_L3CPU6_GOVERNOR="$(</sys/class/devfreq/soc:qcom,l3-cpu6/governor)"
-   [ -d /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/ ] && ARM9_BUS_DDR=true && DEFAULT_ARM9_BUS_DDR_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor)"
-   [ -d /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/ ] && BUS_CNOC=true && DEFAULT_BUS_CNOC_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor)"
+   [ -d /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/ ] && VIDC1_ARM9_BUS_DDR=true && DEFAULT_VIDC1_ARM9_BUS_DDR_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor)"
+   [ -d /sys/class/devfreq/aa00000.qcom,vidc:arm9_bus_ddr/ ] && VIDC_ARM9_BUS_DDR=true && DEFAULT_VIDC_ARM9_BUS_DDR_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc:arm9_bus_ddr/governor)"
+   [ -d /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/ ] && VIDC1_BUS_CNOC=true && DEFAULT_VIDC1_BUS_CNOC_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor)"
+   [ -d /sys/class/devfreq/aa00000.qcom,vidc:bus_cnoc/ ] && VIDC_BUS_CNOC=true && DEFAULT_VIDC_BUS_CNOC_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc:bus_cnoc/governor)"
    # [ -d /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/ ] && VENUS_BUS_DDR=true && DEFAULT_VENUSBUSDDR_GOVERNOR="$(</sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor)"
    [ -d /sys/class/devfreq/soc:qcom,l3-cdsp/ ] && L3CDSP=true && DEFAULT_L3CDSP_GOVERNOR="$(</sys/class/devfreq/soc:qcom,l3-cdsp/governor)"
    [ -d /sys/class/devfreq/soc:qcom,memlat-cpu0/ ] && MEMLAT_CPU0=true && DEFAULT_MEMLAT_CPU0_GOVERNOR="$(</sys/class/devfreq/soc:qcom,memlat-cpu0/governor)"
@@ -354,8 +356,10 @@ declare -A governors=(
   ["MINCPUBW"]="${DEFAULT_MINCPUBW_GOVERNOR}"
   ["L3CPU0"]="${DEFAULT_L3CPU0_GOVERNOR}"
   ["L3CPU6"]="${DEFAULT_L3CPU6_GOVERNOR}"
-  ["ARM9_BUS_DDR"]="${DEFAULT_ARM9_BUS_DDR_GOVERNOR}"
-  ["BUS_CNOC"]="${DEFAULT_BUS_CNOC_GOVERNOR}"
+  ["VIDC1_ARM9_BUS_DDR"]="${DEFAULT_VIDC1_ARM9_BUS_DDR_GOVERNOR}"
+  ["VIDC1_BUS_CNOC"]="${DEFAULT_VIDC1_BUS_CNOC_GOVERNOR}"
+  ["VIDC_ARM9_BUS_DDR"]="${DEFAULT_VIDC_ARM9_BUS_DDR_GOVERNOR}"
+  ["VIDC_BUS_CNOC"]="${DEFAULT_VIDC_BUS_CNOC_GOVERNOR}"
   ["VENUS_BUS_DDR"]="${DEFAULT_VENUS_BUS_DDR_GOVERNOR}"
   ["L3CDSP"]="${DEFAULT_L3CDSP_GOVERNOR}"
   ["MEMLAT_CPU0"]="${DEFAULT_MEMLAT_CPU0_GOVERNOR}"
@@ -573,8 +577,10 @@ function bussave() {
       [ "${MINCPUBW}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,mincpubw/governor
       # [ "${L3CPU0}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
       # [ "${L3CPU6}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
-      [ "${ARM9_BUS_DDR}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
-      [ "${BUS_CNOC}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      [ "${VIDC1_ARM9_BUS_DDR}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+      [ "${VIDC1_BUS_CNOC}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      [ "${VIDC_ARM9_BUS_DDR}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc:arm9_bus_ddr/governor
+      [ "${VIDC_BUS_CNOC}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc:bus_cnoc/governor
       # [ "${VENUS_BUS_DDR}" = "true" ] && echo "powersave" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
       [ "${L3CDSP}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
       [ "${MEMLAT_CPU0}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
@@ -610,8 +616,10 @@ function busdefault() {
       [ "${MINCPUBW}" = "true" ] && echo "${DEFAULT_MINCPUBW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,mincpubw/governor
       # [ "${L3CPU0}" = "true" ] && echo "${DEFAULT_L3CPU0_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cpu0/governor
       # [ "${L3CPU6}" = "true" ] && echo "${DEFAULT_L3CPU6_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cpu6/governor
-      [ "${ARM9_BUS_DDR}" = "true" ] && echo "${DEFAULT_ARM9_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
-      [ "${BUS_CNOC}" = "true" ] && echo "${DEFAULT_BUS_CNOC_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      [ "${VIDC1_ARM9_BUS_DDR}" = "true" ] && echo "${DEFAULT_VIDC1_ARM9_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:arm9_bus_ddr/governor
+      [ "${VIDC1_BUS_CNOC}" = "true" ] && echo "${DEFAULT_VIDC1_BUS_CNOC_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:bus_cnoc/governor
+      [ "${VIDC_ARM9_BUS_DDR}" = "true" ] && echo "${DEFAULT_VIDC_ARM9_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc:arm9_bus_ddr/governor
+      [ "${VIDC_BUS_CNOC}" = "true" ] && echo "${DEFAULT_VIDC_BUS_CNOC_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc:bus_cnoc/governor
       # [ "${VENUS_BUS_DDR}" = "true" ] && echo "${DEFAULT_VENUS_BUS_DDR_GOVERNOR}" > /sys/class/devfreq/aa00000.qcom,vidc1:venus_bus_ddr/governor
       [ "${L3CDSP}" = "true" ] && echo "${DEFAULT_L3CDSP_GOVERNOR}" > /sys/class/devfreq/soc:qcom,l3-cdsp/governor
       [ "${MEMLAT_CPU0}" = "true" ] && echo "${DEFAULT_MEMLAT_CPU0_GOVERNOR}" > /sys/class/devfreq/soc:qcom,memlat-cpu0/governor
