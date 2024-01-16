@@ -89,3 +89,10 @@ Architecture: any
 Depends: ${misc:Depends}
 Description: batman-wmt
  A battery management service for Linux phones - wmt suspend
+
+Package: batman-vr
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+Description: batman-vr
+ A battery management service for Linux phones - vr boost
