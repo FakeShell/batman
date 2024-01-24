@@ -1,4 +1,4 @@
-batman (0.0.0+git20231013221356.05436be.release) all; urgency=medium
+batman (0.0.0+git20240123195745.c511a3f.release) all; urgency=medium
 
   [ Bardia Moshiri ]
   * add files
@@ -149,6 +149,31 @@ batman (0.0.0+git20231013221356.05436be.release) all; urgency=medium
   * batman: adjust the number of offline cores according to system background usage
   * batman-wrappers: increase the timeout between idle and total cpu times
   * treewide: add support for libpower interactive mode
+  * debian: bump changelog
+  * debian: skip dh_shlibdeps
+  * batman: wait a bit before turning the cores back off during audio adjustments
+  * batman-libpower: add support for powersave and performance hints
+  * treewide: add nfcd batman state switcher plugin
+  * batman-wrappers: use upower DisplayDevice for battery status
+  * treewide: clean the repo and drop all backwards compat and fallback methods
+  * wrappers: add support for battery percentage wrapper
+  * debian: do not stop the service on updates
+  * batman-gui: fix window size and remove redundant gtk box append
+  * treewide: add wmtWifi suspend support
+  * batman: add functions for system tweaks and integrate into the mainloop
+  * batman-libpower: split and add aidl backend
+  * Merge pull request #6 from darkgeek/feature/sdm845_vidc_support
+  * Merge pull request #7 from Bettehem/all
+  * treewide: implement batman-vr
+  * treewide: combine vr and power hal as batman gbinder and allow programs to build against it
+
+  [ Bettehem ]
+  * Improved text scrolling.
+  * batman: change hardcoded cpu0 to ${CORE_FIRST}
+
+  [ Justin Yang ]
+  * Add support for sdm845 on vidc related nodes
+  * add sdm845 specific vidc nodes to governor
 
   [ Erik Inkinen ]
   * [debian] Move batman-gui to a separate sub-package
@@ -158,11 +183,8 @@ batman (0.0.0+git20231013221356.05436be.release) all; urgency=medium
   * [debian] Add libadwaita-1 in rules for batman-gui
   * make GPUSAVE and BUSSAVE configurable in real time
 
-  [ Bettehem ]
-  * Improved text scrolling.
-
   [ Arman Ghamgossar ]
   * correct syntax error in if conditional expression.
 
- -- Bardia Moshiri <fakeshell@bardia.tech>  Fri, 13 Oct 2023 22:13:56 -0400
+ -- Bardia Moshiri <fakeshell@bardia.tech>  Tue, 23 Jan 2024 19:57:45 -0500
 
