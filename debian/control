@@ -29,7 +29,7 @@ Depends: ${misc:Depends},
          batman-helper,
          batman-governor,
          libbatman-wrappers,
-Recommends: batman-wmt,
+Recommends: batman-wifi,
             batman-hybris,
             libbatman-gbinder
 Description: batman
@@ -79,12 +79,12 @@ Depends: ${misc:Depends}
 Description: nfcd-batman-plugin
  state switching plugin for the NFC daemon
 
-Package: batman-wmt
+Package: batman-wifi
 Section: misc
 Architecture: any
 Depends: ${misc:Depends}
-Description: batman-wmt
- A battery management service for Linux phones - wmt suspend
+Description: batman-wifi
+ A battery management service for Linux phones - wifi suspend
 
 Package: libbatman-gbinder
 Section: misc

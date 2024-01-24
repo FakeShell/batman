@@ -12,7 +12,7 @@ override_dh_auto_build:
 	gcc src/batman-gbinder.c -fPIC -shared `pkg-config --libs --cflags libgbinder` -o libbatman-gbinder.so
 	gcc src/batman-hybris.c src/batman-gbinder.c `pkg-config --libs --cflags libgbinder` -o batman-hybris
 
-	gcc src/batman-wmt.c `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o batman-wmt
+	gcc src/batman-wifi.c `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o batman-wifi
 
 	gcc -c src/nfcd-batman-plugin.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o nfcd-batman-plugin.o
 	gcc -c src/wlrdisplay.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o wlrdisplay.o
@@ -27,7 +27,7 @@ override_dh_auto_install:
 	install -D -m 0644 libbatman-gbinder.so debian/libbatman-gbinder/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-gbinder.so
 	install -D -m 0755 batman-hybris debian/tmp/usr/bin/batman-hybris
 
-	install -D -m 0755 batman-wmt debian/tmp/usr/bin/batman-wmt
+	install -D -m 0755 batman-wifi debian/tmp/usr/bin/batman-wifi
 
 	install -D -m 0755 batman.so debian/tmp/usr/lib/nfcd/plugins/batman.so
 

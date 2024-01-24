@@ -5,8 +5,8 @@ CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libgl
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
 LDFLAGS_GBINDER = `pkg-config --libs --cflags libgbinder`
 LDFLAGS_HYBRIS = `pkg-config --libs --cflags libgbinder`
-CFLAGS_WMT = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
-LDFLAGS_WMT = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
+CFLAGS_WIFI = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
+LDFLAGS_WIFI = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 
 TARGET = batman
 TARGET_HELPER = batman-helper
@@ -16,7 +16,7 @@ TARGET_WRAPPERS = libbatman-wrappers.so
 TARGET_GBINDER = libbatman-gbinder.so
 TARGET_HYBRIS = batman-hybris
 TARGET_NFCD = batman.so
-TARGET_WMT = batman-wmt
+TARGET_WIFI = batman-wifi
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
@@ -25,7 +25,7 @@ SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
 SRC_GBINDER = src/batman-gbinder.c
 SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
-SRC_WMT = src/batman-wmt.c
+SRC_WIFI = src/batman-wifi.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h
 
 BINDIR = /usr/bin
@@ -37,7 +37,7 @@ ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
 
 .PHONY: all
-all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WMT) $(TARGET_NFCD)
+all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
@@ -51,8 +51,8 @@ $(TARGET_GBINDER):
 $(TARGET_HYBRIS):
 	$(CC) $(SRC_HYBRIS) -o $(TARGET_HYBRIS) $(LDFLAGS_HYBRIS)
 
-$(TARGET_WMT):
-	$(CC) $(SRC_WMT) -o $(TARGET_WMT) $(CFLAGS_WMT) $(LDFLAGS_WMT)
+$(TARGET_WIFI):
+	$(CC) $(SRC_WIFI) -o $(TARGET_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI)
 
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 	$(CC) $^ $(LDFLAGS_NFCD) -o $@
@@ -72,7 +72,7 @@ install: $(TARGET)
 	cp $(TARGET_WRAPPERS) /usr/lib
 	cp $(TARGET_GBINDER) /usr/lib
 	cp $(TARGET_HYBRIS) $(BINDIR)
-	cp $(TARGET_WMT) $(BINDIR)
+	cp $(TARGET_WIFI) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -101,5 +101,5 @@ clean:
 	rm -f $(TARGET_GBINDER)
 	rm -f $(TARGET_HYBRIS)
 	rm -f $(TARGET_NFCD)
-	rm -f $(TARGET_WMT)
+	rm -f $(TARGET_WIFI)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o
