@@ -157,3 +157,79 @@ int init_vr_hidl(const int mode) {
 
     return 0;
 }
+
+void radio_hidl(GBinderClient* client, const int type, const int enabled) {
+    int status;
+    GBinderLocalRequest* req = gbinder_client_new_request(client);
+    GBinderWriter writer;
+
+    gbinder_local_request_init_writer(req, &writer);
+    gbinder_writer_append_int32(&writer, 1); // serial
+    gbinder_writer_append_int32(&writer, type);
+    gbinder_writer_append_bool(&writer, enabled);
+    gbinder_client_transact_sync_reply(client, 128, req, &status); // sendDeviceState
+    gbinder_local_request_unref(req);
+}
+
+void radio_aidl(GBinderClient* client, const int type, const int enabled) {
+    int status;
+    GBinderLocalRequest* req = gbinder_client_new_request(client);
+    GBinderWriter writer;
+
+    gbinder_local_request_init_writer(req, &writer);
+    gbinder_writer_append_int32(&writer, 1); // serial
+    gbinder_writer_append_int32(&writer, type);
+    gbinder_writer_append_bool(&writer, enabled);
+    gbinder_client_transact_sync_reply(client, 14, req, &status); // sendDeviceState
+    gbinder_local_request_unref(req);
+}
+
+int init_radio_hidl(const int type, const int mode) {
+    GBinderServiceManager* sm = gbinder_servicemanager_new("/dev/hwbinder");
+    if (!sm) return 1;
+
+    GBinderRemoteObject* remote = gbinder_servicemanager_get_service_sync(sm, "android.hardware.radio@1.0::IRadio/slot1", NULL);
+    if (!remote) {
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    GBinderClient* client = gbinder_client_new(remote, "android.hardware.radio@1.0::IRadio");
+    if (!client) {
+        gbinder_remote_object_unref(remote);
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    radio_hidl(client, type, mode);
+
+    gbinder_client_unref(client);
+    gbinder_remote_object_unref(remote);
+
+    return 0;
+}
+
+int init_radio_aidl(const int type, const int mode) {
+    GBinderServiceManager* sm = gbinder_servicemanager_new("/dev/binder");
+    if (!sm) return 1;
+
+    GBinderRemoteObject* remote = gbinder_servicemanager_get_service_sync(sm, "android.hardware.radio.modem.IRadioModem/default", NULL);
+    if (!remote) {
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    GBinderClient* client = gbinder_client_new(remote, "android.hardware.radio.modem.IRadioModem");
+    if (!client) {
+        gbinder_remote_object_unref(remote);
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    radio_aidl(client, type, mode);
+
+    gbinder_client_unref(client);
+    gbinder_remote_object_unref(remote);
+
+    return 0;
+}

@@ -24,11 +24,19 @@ enum boost {
     INTERACTION_AIDL = 0,
 };
 
-void power_aidl(GBinderClient* client, const int interactive, const enum hints hint);
-void power_hidl(GBinderClient* client, const int interactive, const enum hints hint);
+// init functions, you should be calling these
 int init_power_aidl(const int mode);
 int init_power_hidl(const int mode);
-void vr_hidl(GBinderClient* client, const int enabled);
 int init_vr_hidl(const int mode);
+int init_radio_hidl(const int type, const int mode);
+int init_radio_aidl(const int type, const int mode);
+
+// these are called by init of each feature. should not be called directly
+// unless there is a custom interface that has to be called
+void power_aidl(GBinderClient* client, const int interactive, const enum hints hint);
+void power_hidl(GBinderClient* client, const int interactive, const enum hints hint);
+void vr_hidl(GBinderClient* client, const int enabled);
+void radio_hidl(GBinderClient* client, const int type, const int enabled);
+void radio_aidl(GBinderClient* client, const int type, const int enabled);
 
 #endif // BATMAN_GBINDER_H
