@@ -9,8 +9,9 @@ override_dh_auto_build:
 	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c -o batman-gui `pkg-config --cflags --libs gtk4 libadwaita-1`
 	gcc src/governor.c src/wlrdisplay.c -o governor -lwayland-client
 
-	gcc src/batman-vr.c -o batman-vr `pkg-config --libs --cflags libgbinder`
-	gcc src/batman-libpower.c -o batman-libpower `pkg-config --libs --cflags libgbinder`
+	gcc src/batman-gbinder.c -fPIC -shared `pkg-config --libs --cflags libgbinder` -o libbatman-gbinder.so
+	gcc src/batman-hybris.c src/batman-gbinder.c `pkg-config --libs --cflags libgbinder` -o batman-hybris
+
 	gcc src/batman-wmt.c `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o batman-wmt
 
 	gcc -c src/nfcd-batman-plugin.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o nfcd-batman-plugin.o
@@ -23,8 +24,9 @@ override_dh_auto_install:
 	install -D -m 0755 governor debian/tmp/usr/bin/governor
 	install -D -m 0755 batman-gui debian/tmp/usr/bin/batman-gui
 
-	install -D -m 0755 batman-vr debian/tmp/usr/bin/batman-vr
-	install -D -m 0755 batman-libpower debian/tmp/usr/bin/batman-libpower
+	install -D -m 0644 libbatman-gbinder.so debian/libbatman-gbinder/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-gbinder.so
+	install -D -m 0755 batman-hybris debian/tmp/usr/bin/batman-hybris
+
 	install -D -m 0755 batman-wmt debian/tmp/usr/bin/batman-wmt
 
 	install -D -m 0755 batman.so debian/tmp/usr/lib/nfcd/plugins/batman.so
@@ -38,6 +40,7 @@ override_dh_auto_install:
 	install -D -m 0644 src/batman-wrappers.h debian/tmp/usr/include/batman/batman-wrappers.h
 	install -D -m 0644 src/getinfo.h debian/tmp/usr/include/batman/getinfo.h
 	install -D -m 0644 src/wlrdisplay.h debian/tmp/usr/include/batman/wlrdisplay.h
+	install -D -m 0644 src/batman-gbinder.h debian/tmp/usr/include/batman/batman-gbinder.h
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service

@@ -3,8 +3,8 @@ CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO `pkg-config --cflags upo
 LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1`
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
-LDFLAGS_LIBPOWER = `pkg-config --libs --cflags libgbinder`
-LDFLAGS_VR = `pkg-config --libs --cflags libgbinder`
+LDFLAGS_GBINDER = `pkg-config --libs --cflags libgbinder`
+LDFLAGS_HYBRIS = `pkg-config --libs --cflags libgbinder`
 CFLAGS_WMT = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 LDFLAGS_WMT = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 
@@ -12,21 +12,21 @@ TARGET = batman
 TARGET_HELPER = batman-helper
 TARGET_GUI = batman-gui
 TARGET_GOVERNOR = governor
-TARGET_LIB = libbatman-wrappers.so
-TARGET_LIBPOWER = batman-libpower
-TARGET_VR = batman-vr
+TARGET_WRAPPERS = libbatman-wrappers.so
+TARGET_GBINDER = libbatman-gbinder.so
+TARGET_HYBRIS = batman-hybris
 TARGET_NFCD = batman.so
 TARGET_WMT = batman-wmt
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
 SRC_GOVERNOR = src/governor.c src/wlrdisplay.c
-SRC_LIB = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
-SRC_LIBPOWER = src/batman-libpower.c
-SRC_VR = src/batman-vr.c
+SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
+SRC_GBINDER = src/batman-gbinder.c
+SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
 SRC_WMT = src/batman-wmt.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h
+HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h
 
 BINDIR = /usr/bin
 CONFIGDIR = /var/lib/batman
@@ -37,19 +37,19 @@ ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
 
 .PHONY: all
-all: $(TARGET) $(TARGET_LIBPOWER) $(TARGET_VR) $(TARGET_WMT) $(TARGET_NFCD)
+all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WMT) $(TARGET_NFCD)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
 	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
 	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
-	$(CC) -fPIC -shared $(CFLAGS) $(SRC_LIB) $(LDFLAGS) -o $(TARGET_LIB)
+	$(CC) -fPIC -shared $(CFLAGS) $(SRC_WRAPPERS) $(LDFLAGS) -o $(TARGET_WRAPPERS)
 
-$(TARGET_LIBPOWER):
-	$(CC) $(SRC_LIBPOWER) -o $(TARGET_LIBPOWER) $(LDFLAGS_LIBPOWER)
+$(TARGET_GBINDER):
+	$(CC) -fPIC -shared $(SRC_GBINDER) -o $(TARGET_GBINDER) $(LDFLAGS_GBINDER)
 
-$(TARGET_VR):
-	$(CC) $(SRC_VR) -o $(TARGET_VR) $(LDFLAGS_VR)
+$(TARGET_HYBRIS):
+	$(CC) $(SRC_HYBRIS) -o $(TARGET_HYBRIS) $(LDFLAGS_HYBRIS)
 
 $(TARGET_WMT):
 	$(CC) $(SRC_WMT) -o $(TARGET_WMT) $(CFLAGS_WMT) $(LDFLAGS_WMT)
@@ -69,9 +69,9 @@ install: $(TARGET)
 	cp $(TARGET_HELPER) $(BINDIR)
 	cp $(TARGET_GUI) $(BINDIR)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
-	cp $(TARGET_LIB) /usr/lib
-	cp $(TARGET_LIBPOWER) $(BINDIR)
-	cp $(TARGET_VR) $(BINDIR)
+	cp $(TARGET_WRAPPERS) /usr/lib
+	cp $(TARGET_GBINDER) /usr/lib
+	cp $(TARGET_HYBRIS) $(BINDIR)
 	cp $(TARGET_WMT) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
@@ -97,9 +97,9 @@ clean:
 	rm -f $(TARGET_HELPER)
 	rm -f $(TARGET_GUI)
 	rm -f $(TARGET_GOVERNOR)
-	rm -f $(TARGET_LIB)
-	rm -f $(TARGET_LIBPOWER)
-	rm -f $(TARGET_VR)
+	rm -f $(TARGET_WRAPPERS)
+	rm -f $(TARGET_GBINDER)
+	rm -f $(TARGET_HYBRIS)
 	rm -f $(TARGET_NFCD)
 	rm -f $(TARGET_WMT)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o

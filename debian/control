@@ -29,6 +29,9 @@ Depends: ${misc:Depends},
          batman-helper,
          batman-governor,
          libbatman-wrappers,
+Recommends: batman-wmt,
+            batman-hybris,
+            libbatman-gbinder
 Description: batman
  A battery management service for Linux phones
 
@@ -45,13 +48,6 @@ Architecture: any
 Depends: ${misc:Depends},
 Description: batman-helper
  A battery management service for Linux phones - helper program
-
-Package: batman-libpower
-Architecture: any
-Depends: ${misc:Depends},
-         libgbinder,
-Description: batman-helper
- A battery management service for Linux phones - libpower wrapper
 
 Package: batman-governor
 Architecture: any
@@ -90,9 +86,16 @@ Depends: ${misc:Depends}
 Description: batman-wmt
  A battery management service for Linux phones - wmt suspend
 
-Package: batman-vr
+Package: libbatman-gbinder
 Section: misc
 Architecture: any
 Depends: ${misc:Depends}
-Description: batman-vr
- A battery management service for Linux phones - vr boost
+Description: libbatman-gbinder
+ A battery management service for Linux phones - gbinder shared object
+
+Package: batman-hybris
+Architecture: any
+Depends: ${misc:Depends},
+         libgbinder,
+Description: batman-helper
+ A battery management service for Linux phones - hybris wrapper
