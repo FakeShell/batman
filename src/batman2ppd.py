@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 from dbus_next.aio import MessageBus
 from dbus_next.service import (ServiceInterface,
