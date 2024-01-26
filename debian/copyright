@@ -3,11 +3,11 @@ Upstream-Name: batman
 Source: https://github.com/FakeShell/batman.git
 
 Files: *
-Copyright: 2023 Bardia Moshiri <fakeshell@bardia.tech>
+Copyright: 2024 Bardia Moshiri <fakeshell@bardia.tech>
 License: GPL-2.0-only
 
 Files: debian/*
-Copyright: 2023 Bardia Moshiri <fakeshell@bardia.tech>
+Copyright: 2024 Bardia Moshiri <fakeshell@bardia.tech>
 License: BSD-3-clause
 
 License: BSD-3-clause

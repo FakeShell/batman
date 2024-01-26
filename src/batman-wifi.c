@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2018 Jolla Ltd
-// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include <net/if.h>
 #include <stdint.h>

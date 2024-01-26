@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #ifndef WLR_OUTPUT_MANAGEMENT_UNSTABLE_V1_CLIENT_PROTOCOL_H
 #define WLR_OUTPUT_MANAGEMENT_UNSTABLE_V1_CLIENT_PROTOCOL_H

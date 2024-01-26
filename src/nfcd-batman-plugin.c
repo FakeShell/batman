@@ -1,8 +1,8 @@
 /*
  * Copyright (C) 2020-2022 Jolla Ltd.
  * Copyright (C) 2020-2022 Slava Monich <slava.monich@jolla.com>
- * Copyright (C) 2023 Droidian Project
- * Copyright (C) 2023 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2024 Droidian Project
+ * Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
  *
  * You may use this file under the terms of BSD license as follows:
  *

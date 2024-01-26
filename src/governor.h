@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+
 #ifndef GOVERNOR_H
 #define GOVERNOR_H
 
