@@ -5,6 +5,8 @@ After=multi-user.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/batman/config
+EnvironmentFile=-/var/lib/batman/config
 ExecStart=/usr/bin/batman
 
 [Install]
