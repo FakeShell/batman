@@ -1,0 +1,13 @@
+[Unit]
+Description=Batman to power profiles daemon
+Conflicts=power-profiles-daemon.service
+Before=multi-user.target display-manager.target
+
+[Service]
+Type=dbus
+BusName=net.hadess.PowerProfiles
+ExecStart=/usr/bin/batman2ppd
+Restart=on-failure
+
+[Install]
+WantedBy=graphical.target

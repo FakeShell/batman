@@ -42,8 +42,12 @@ override_dh_auto_install:
 	install -D -m 0644 src/wlrdisplay.h debian/tmp/usr/include/batman/wlrdisplay.h
 	install -D -m 0644 src/batman-gbinder.h debian/tmp/usr/include/batman/batman-gbinder.h
 
+	install -D -m 0755 src/batman2ppd.py debian/tmp/usr/bin/batman2ppd
+	install -D -m 0755 src/powerprofilesctl.py debian/tmp/usr/bin/powerprofilesctl
+
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service
+	dh_installsystemd -pbatman2ppd --name=batman2ppd batman2ppd.service
 
 override_dh_dwz:
 override_dh_strip:

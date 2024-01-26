@@ -18,6 +18,7 @@ Build-Depends: debhelper (>= 10),
                libnl-3-dev,
                libnl-genl-3-dev,
                libnl-route-3-dev,
+               python3,
 Standards-Version: 4.5.0.3
 Vcs-Browser: https://github.com/FakeShell/batman
 Vcs-Git: https://github.com/FakeShell/batman.git
@@ -31,7 +32,9 @@ Depends: ${misc:Depends},
          libbatman-wrappers,
 Recommends: batman-wifi,
             batman-hybris,
-            libbatman-gbinder
+            libbatman-gbinder,
+            nfcd-batman-plugin,
+            batman2ppd,
 Description: batman
  A battery management service for Linux phones
 
@@ -99,3 +102,12 @@ Depends: ${misc:Depends},
          libgbinder,
 Description: batman-helper
  A battery management service for Linux phones - hybris wrapper
+
+Package: batman2ppd
+Architecture: any
+Depends: ${misc:Depends},
+         python3-dbus,
+         python3-gi,
+         python3-dbus-next,
+Description: batman2ppd
+ A battery management service for Linux phones - batman to power profiles daemon service
