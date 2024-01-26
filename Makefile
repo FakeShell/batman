@@ -17,6 +17,8 @@ TARGET_GBINDER = libbatman-gbinder.so
 TARGET_HYBRIS = batman-hybris
 TARGET_NFCD = batman.so
 TARGET_WIFI = batman-wifi
+TARGET_BATMAN2PPD = src/batman2ppd.py
+TARGET_PPDCLI = src/powerprofilesctl.py
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
@@ -29,6 +31,7 @@ SRC_WIFI = src/batman-wifi.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h
 
 BINDIR = /usr/bin
+LIBDIR = /usr/lib
 CONFIGDIR = /var/lib/batman
 SYSTEMD_DIR = /usr/lib/systemd/system
 OPENRC_DIR = /etc/init.d
@@ -39,7 +42,7 @@ INCLUDE_DIR = /usr/include/batman
 .PHONY: all
 all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD)
 
-$(TARGET): $(SRC)
+$(TARGET):
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
 	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
 	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
@@ -64,15 +67,17 @@ wlrdisplay.o: src/wlrdisplay.c
 	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
 
 .PHONY: install
-install: $(TARGET)
+install:
 	cp src/$(TARGET) $(BINDIR)
 	cp $(TARGET_HELPER) $(BINDIR)
 	cp $(TARGET_GUI) $(BINDIR)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
-	cp $(TARGET_WRAPPERS) /usr/lib
-	cp $(TARGET_GBINDER) /usr/lib
+	cp $(TARGET_WRAPPERS) $(LIBDIR)
+	cp $(TARGET_GBINDER) $(LIBDIR)
 	cp $(TARGET_HYBRIS) $(BINDIR)
 	cp $(TARGET_WIFI) $(BINDIR)
+	cp $(TARGET_BATMAN2PPD) $(BINDIR)/batman2ppd
+	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -86,6 +91,7 @@ install: $(TARGET)
 
 ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
 	cp data/batman.service $(SYSTEMD_DIR)
+	cp data/batman2ppd.service $(SYSTEMD_DIR)
 else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
 	cp data/batman.rc $(OPENRC_DIR)/batman
 else
