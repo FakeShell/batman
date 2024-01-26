@@ -44,6 +44,8 @@ override_dh_auto_install:
 
 	install -D -m 0755 src/batman2ppd.py debian/tmp/usr/bin/batman2ppd
 	install -D -m 0755 src/powerprofilesctl.py debian/tmp/usr/bin/powerprofilesctl
+	install -D -m 0644 data/net.hadess.PowerProfiles.policy debian/tmp/usr/share/polkit-1/actions/net.hadess.PowerProfiles.policy
+	install -D -m 0644 data/net.hadess.PowerProfiles.conf debian/tmp/usr/share/dbus-1/system.d/net.hadess.PowerProfiles.conf
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service

@@ -1,2 +1,4 @@
 usr/bin/batman2ppd
 usr/bin/powerprofilesctl
+usr/share/polkit-1/actions/net.hadess.PowerProfiles.policy
+usr/share/dbus-1/system.d/net.hadess.PowerProfiles.conf

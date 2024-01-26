@@ -38,6 +38,8 @@ OPENRC_DIR = /etc/init.d
 DESKTOP_DIR = /usr/share/applications
 ICON_DIR = /usr/share/icons
 INCLUDE_DIR = /usr/include/batman
+POLKIT_DIR = /usr/share/polkit-1/actions
+DBUS_DIR = /usr/share/dbus-1/system.d
 
 .PHONY: all
 all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD)
@@ -88,6 +90,12 @@ install:
 
 	mkdir -p $(INCLUDE_DIR)
 	cp $(HEADERS) $(INCLUDE_DIR)
+
+	mkdir -p $(POLKIT_DIR)
+	cp data/net.hadess.PowerProfiles.policy $(POLKIT_DIR)
+
+	mkdir -p $(DBUS_DIR)
+	cp data/net.hadess.PowerProfiles.conf $(DBUS_DIR)
 
 ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
 	cp data/batman.service $(SYSTEMD_DIR)
