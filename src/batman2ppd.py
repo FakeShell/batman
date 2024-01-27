@@ -10,6 +10,8 @@ from dbus_next import Variant, DBusError, BusType
 
 import subprocess
 import asyncio
+import time
+import os
 
 class PPDInterface(ServiceInterface):
     def __init__(self, loop, bus):
@@ -26,20 +28,50 @@ class PPDInterface(ServiceInterface):
         }
 
     @dbus_property(access=PropertyAccess.READWRITE)
-    def ActiveProfile(self) -> 's':
+    async def ActiveProfile(self) -> 's':
         return self.props['ActiveProfile'].value
 
     @ActiveProfile.setter
-    def ActiveProfile(self, val: 's'):
-        # this is mostly a placeholder until we come up with a proper "performance" and "power-saver" mode
-        if val == "performance":
+    async def ActiveProfile(self, profile: 's'):
+        if os.path.exists("/var/lib/batman/default_cpu_governor"):
+            with open("/var/lib/batman/default_cpu_governor", "r") as default_governor_file:
+                default_governor = default_governor_file.read()
+        else:
+            default_governor = ""
+
+        if profile == "performance":
             subprocess.Popen("batman-hybris vr 1", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        elif val == "balanced":
-            subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        elif val == "power-saver":
+
+            if default_governor:
+                with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
+                    f.write("performance\n")
+
+                    time.sleep(2)
+                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        elif profile == "balanced":
             subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-        self.props['ActiveProfile'] = Variant('s', val)
+            if default_governor:
+                with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
+                    f.write(default_governor)
+
+                    time.sleep(2)
+                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        elif profile == "power-saver":
+            subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+            if default_governor:
+                with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
+                    f.write(default_governor)
+
+                    time.sleep(2)
+                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        self.props['ActiveProfile'] = Variant('s', profile)
+
+    @dbus_property(access=PropertyAccess.READ)
+    def PerformanceInhibited(self) -> 's':
+        return self.props['PerformanceInhibited'].value
 
     @dbus_property(access=PropertyAccess.READ)
     def PerformanceDegraded(self) -> 's':
