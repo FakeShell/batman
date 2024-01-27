@@ -1,7 +1,7 @@
 [Unit]
 Description=Batman to power profiles daemon
 Conflicts=power-profiles-daemon.service
-Before=multi-user.target display-manager.target
+After=batman.service
 
 [Service]
 Type=dbus
