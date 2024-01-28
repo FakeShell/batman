@@ -345,6 +345,22 @@ if [ -d /sys/class/devfreq/ ]; then
    [ -d /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/ ] && CPU_LLCC_DDR_BW=true && DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR="$(</sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor)"
    [ -d /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/ ] && NPUDSP_NPU_DDR_BW=true && DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR="$(</sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor)"
    [ -d /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/ ] && NPU_NPU_DDR_BW=true && DEFAULT_NPU_NPU_DDR_BW_GOVERNOR="$(</sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor)"
+   [ -d /sys/class/devfreq/17000010.devfreq_mif/ ] && DEVFREQ_MIF=true && DEFAULT_DEVFREQ_MIF_GOVERNOR="$(</sys/class/devfreq/17000010.devfreq_mif/governor)"
+   [ -d /sys/class/devfreq/17000020.devfreq_int/ ] && DEVFREQ_INT=true && DEFAULT_DEVFREQ_INT_GOVERNOR="$(</sys/class/devfreq/17000020.devfreq_int/governor)"
+   [ -d /sys/class/devfreq/17000030.devfreq_intcam/ ] && DEVFREQ_INTCAM=true && DEFAULT_DEVFREQ_INTCAM_GOVERNOR="$(</sys/class/devfreq/17000030.devfreq_intcam/governor)"
+   [ -d /sys/class/devfreq/17000040.devfreq_disp/ ] && DEVFREQ_DISP=true && DEFAULT_DEVFREQ_DISP_GOVERNOR="$(</sys/class/devfreq/17000040.devfreq_disp/governor)"
+   [ -d /sys/class/devfreq/17000050.devfreq_cam/ ] && DEVFREQ_CAM=true && DEFAULT_DEVFREQ_CAM_GOVERNOR="$(</sys/class/devfreq/17000050.devfreq_cam/governor)"
+   [ -d /sys/class/devfreq/17000060.devfreq_tnr/ ] && DEVFREQ_TNR=true && DEFAULT_DEVFREQ_TNR_GOVERNOR="$(</sys/class/devfreq/17000060.devfreq_tnr/governor)"
+   [ -d /sys/class/devfreq/17000070.devfreq_mfc/ ] && DEVFREQ_MFC=true && DEFAULT_DEVFREQ_MFC_GOVERNOR="$(</sys/class/devfreq/17000070.devfreq_mfc/governor)"
+   [ -d /sys/class/devfreq/17000080.devfreq_bo/ ] && DEVFREQ_BO=true && DEFAULT_DEVFREQ_BO_GOVERNOR="$(</sys/class/devfreq/17000080.devfreq_bo/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu0_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU0=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU0_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu0_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu1_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU1=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU1_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu1_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu2_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU2=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU2_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu2_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu3_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU3=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU3_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu3_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu4_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU4=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU4_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu4_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU5=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU5_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU6=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU6_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/governor)"
+   [ -d /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/ ] && GS_MEMLAT_DEVFREQ_MIF_CPU7=true && DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU7_GOVERNOR="$(</sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/governor)"
 fi
 
 declare -A governors=(
@@ -381,6 +397,22 @@ declare -A governors=(
   ["CPU_LLCC_DDR_BW"]="${DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR}"
   ["NPUDSP_NPU_DDR_BW"]="${DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR}"
   ["NPU_NPU_DDR_BW"]="${DEFAULT_NPU_NPU_DDR_BW_GOVERNOR}"
+  ["DEVFREQ_MIF"]="${DEFAULT_DEVFREQ_MIF_GOVERNOR}"
+  ["DEVFREQ_INT"]="${DEFAULT_DEVFREQ_INT_GOVERNOR}"
+  ["DEVFREQ_INTCAM"]="${DEFAULT_DEVFREQ_INTCAM_GOVERNOR}"
+  ["DEVFREQ_DISP"]="${DEFAULT_DEVFREQ_DISP_GOVERNOR}"
+  ["DEVFREQ_CAM"]="${DEFAULT_DEVFREQ_CAM_GOVERNOR}"
+  ["DEVFREQ_TNR"]="${DEFAULT_DEVFREQ_TNR_GOVERNOR}"
+  ["DEVFREQ_MFC"]="${DEFAULT_DEVFREQ_MFC_GOVERNOR}"
+  ["DEVFREQ_BO"]="${DEFAULT_DEVFREQ_BO_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU0"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU0_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU1"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU1_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU2"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU2_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU3"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU3_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU4"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU4_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU5"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU5_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU6"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU6_GOVERNOR}"
+  ["GS_MEMLAT_DEVFREQ_MIF_CPU7"]="${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU7_GOVERNOR}"
 )
 
 # Copy default governor to a file to use it later on if the service gets restarted unexpectedly.
@@ -602,6 +634,22 @@ function bussave() {
       [ "${CPU_LLCC_DDR_BW}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
       [ "${NPUDSP_NPU_DDR_BW}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
       [ "${NPU_NPU_DDR_BW}" = "true" ] && echo "powersave" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+      [ "${DEVFREQ_MIF}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000010.devfreq_mif/governor
+      [ "${DEVFREQ_INT}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000020.devfreq_int/governor
+      [ "${DEVFREQ_INTCAM}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000030.devfreq_intcam/governor
+      [ "${DEVFREQ_DISP}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000040.devfreq_disp/governor
+      [ "${DEVFREQ_CAM}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000050.devfreq_cam/governor
+      [ "${DEVFREQ_TNR}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000060.devfreq_tnr/governor
+      [ "${DEVFREQ_MFC}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000070.devfreq_mfc/governor
+      [ "${DEVFREQ_BO}" = "true" ] && echo "powersave" > /sys/class/devfreq/17000080.devfreq_bo/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU0}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu0_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU1}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu1_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU2}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu2_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU3}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu3_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU4}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu4_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU5}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU6}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU7}" = "true" ] && echo "powersave" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/governor
    fi
 
    :
@@ -641,6 +689,22 @@ function busdefault() {
       [ "${CPU_LLCC_DDR_BW}" = "true" ] && echo "${DEFAULT_CPU_LLCC_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,cpu-llcc-ddr-bw/governor
       [ "${NPUDSP_NPU_DDR_BW}" = "true" ] && echo "${DEFAULT_NPUDSP_NPU_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,npudsp-npu-ddr-bw/governor
       [ "${NPU_NPU_DDR_BW}" = "true" ] && echo "${DEFAULT_NPU_NPU_DDR_BW_GOVERNOR}" > /sys/class/devfreq/soc:qcom,npu-npu-ddr-bw/governor
+      [ "${DEVFREQ_MIF}" = "true" ] && echo "${DEFAULT_DEVFREQ_MIF_GOVERNOR}" > /sys/class/devfreq/17000010.devfreq_mif/governor
+      [ "${DEVFREQ_INT}" = "true" ] && echo "${DEFAULT_DEVFREQ_INT_GOVERNOR}" > /sys/class/devfreq/17000020.devfreq_int/governor
+      [ "${DEVFREQ_INTCAM}" = "true" ] && echo "${DEFAULT_DEVFREQ_INTCAM_GOVERNOR}" > /sys/class/devfreq/17000030.devfreq_intcam/governor
+      [ "${DEVFREQ_DISP}" = "true" ] && echo "${DEFAULT_DEVFREQ_DISP_GOVERNOR}" > /sys/class/devfreq/17000040.devfreq_disp/governor
+      [ "${DEVFREQ_CAM}" = "true" ] && echo "${DEFAULT_DEVFREQ_CAM_GOVERNOR}" > /sys/class/devfreq/17000050.devfreq_cam/governor
+      [ "${DEVFREQ_TNR}" = "true" ] && echo "${DEFAULT_DEVFREQ_TNR_GOVERNOR}" > /sys/class/devfreq/17000060.devfreq_tnr/governor
+      [ "${DEVFREQ_MFC}" = "true" ] && echo "${DEFAULT_DEVFREQ_MFC_GOVERNOR}" > /sys/class/devfreq/17000070.devfreq_mfc/governor
+      [ "${DEVFREQ_BO}" = "true" ] && echo "${DEFAULT_DEVFREQ_BO_GOVERNOR}" > /sys/class/devfreq/17000080.devfreq_bo/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU0}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU0_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu0_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU1}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU1_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu1_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU2}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU2_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu2_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU3}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU3_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu3_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU4}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU4_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu4_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU5}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU5_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU6}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU6_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/governor
+      [ "${GS_MEMLAT_DEVFREQ_MIF_CPU7}" = "true" ] && echo "${DEFAULT_GS_MEMLAT_DEVFREQ_MIF_CPU7_GOVERNOR}" > /sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/governor
    fi
 
    :
