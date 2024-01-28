@@ -55,9 +55,45 @@ const char *paths[] = {
     "/sys/kernel/gpu/gpu_governor",
     "/sys/power/cpufreq_max_limit",
     "/sys/power/cpufreq_min_limit",
+    "/sys/class/devfreq/17000010.devfreq_mif/governor",
+    "/sys/class/devfreq/17000020.devfreq_int/governor",
+    "/sys/class/devfreq/17000030.devfreq_intcam/governor",
+    "/sys/class/devfreq/17000040.devfreq_disp/governor",
+    "/sys/class/devfreq/17000050.devfreq_cam/governor",
+    "/sys/class/devfreq/17000060.devfreq_tnr/governor",
+    "/sys/class/devfreq/17000070.devfreq_mfc/governor",
+    "/sys/class/devfreq/17000080.devfreq_bo/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu0_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu1_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu2_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu3_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu4_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu5_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu6_memlat@17000010/governor",
+    "/sys/class/devfreq/gs_memlat_devfreq:devfreq_mif_cpu7_memlat@17000010/governor",
+    "/proc/cpufreq/cpufreq_power_mode"
+    "/proc/cpufreq/cpufreq_cci_mode",
+    "/proc/cpufreq/cpufreq_sched_disable",
+    "/sys/devices/system/cpu/perf/enable",
+    "/sys/devices/system/cpu/sched/sched_boost",
+    "/proc/cpufreq/cpufreq_stress_test",
+    "/sys/module/ged/parameters/boost_gpu_enable",
+    "/sys/module/ged/parameters/boost_extra",
+    "/sys/module/ged/parameters/gx_game_mode",
+    "/sys/module/ged/parameters/gx_boost_on",
+    "/sys/kernel/gbe/gbe_enable1",
+    "/sys/kernel/gbe/gbe_enable2",
+    "/sys/kernel/gbe/gbe2_max_boost_cnt",
+    "/sys/kernel/gbe/gbe2_loading_th",
+    "/sys/module/ged/parameters/ged_force_mdp_enable",
+    "/sys/module/lpm_levels/parameters/sleep_disabled",
+    "/sys/module/lpm_levels/parameters/lpm_prediction",
+    "/sys/module/lpm_levels/parameters/lpm_ipi_prediction",
+    "/sys/kernel/debug/msm_vidc/fw_low_power_mode",
+    "/sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable",
+    "/sys/devices/platform/soc/1d84000.ufshc/clkgate_enable",
+    "/sys/devices/platform/soc/1d84000.ufshc/clkscale_enable",
 };
-
-// should exynos nodes be defined somewhere else? they're not in devfreq ^^
 
 // Signal handler to handle Ctrl+C
 void handle_sigint(int sig)
@@ -243,6 +279,7 @@ void get_system_info(int x86) {
     }
 
     for(size_t i = 0; i < n_paths; ++i) {
+//        printf("path: %s\n", paths[i]);
         file = fopen(paths[i], "r");
 
         if (file != NULL) {
