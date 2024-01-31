@@ -47,8 +47,22 @@ int main(int argc, char *argv[]) {
                 printf("Invalid Power state argument. Use 0 for non-interactive + powersave or 1 for interactive + performance.\n");
                 return 1;
             }
+        } else if (strcmp(feature, "tetheroffload") == 0) {
+            if (state == 0 || state == 1) {
+                int ret = init_tetheroffload_hidl(state);
+
+                if (ret != 0) {
+                    printf("None of the backends are available for tether offload. Exiting.\n");
+                    return 1;
+                } else {
+                    printf("Using tether offload HIDL backend\n");
+                }
+            } else {
+                printf("Invalid tether offload state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
+                return 1;
+            }
         } else {
-            printf("Invalid feature argument. Use 'vr' or 'power'.\n");
+            printf("Invalid feature argument. Use 'vr' or 'power' or 'tetheroffload'.\n");
             return 1;
         }
     } else if (argc == 4) {
@@ -72,11 +86,11 @@ int main(int argc, char *argv[]) {
                 printf("Using Radio AIDL backend\n");
             }
         } else {
-            printf("Invalid argument. Use <feature> (1: power save mode, 2: charging state, 3: low data expected) <state> (1 for on, 0 for off)\n");
+            printf("Invalid argument. Use <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off)\n");
             return 1;
         }
     } else {
-        printf("Usage: %s <feature> <state> for VR and Power OR %s <feature> (1: power save mode, 2: charging state, 3: low data expected) <state> for Radio\n", argv[0], argv[0]);
+        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'tetheroffload' OR %s <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off) for feature 'radio'\n", argv[0], argv[0]);
         return 1;
     }
 
