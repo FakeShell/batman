@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
                 int ret = init_vr_hidl(state);
 
                 if (ret != 0) {
-                    printf("None of the VR backends are available for VR. Exiting.\n");
+                    printf("None of the backends are available for VR. Exiting.\n");
                     return 1;
                 } else {
                     printf("Using VR HIDL backend\n");
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
                     ret = init_power_hidl(state);
 
                     if (ret != 0) {
-                        printf("None of the Power backends are available for power. Exiting.\n");
+                        printf("None of the backends are available for power. Exiting.\n");
                         return 1;
                     } else {
                         printf("Using Power HIDL backend\n");
