@@ -30,6 +30,7 @@ int init_power_hidl(const int mode);
 int init_vr_hidl(const int mode);
 int init_radio_hidl(const int type, const int mode);
 int init_radio_aidl(const int type, const int mode);
+int init_tetheroffload_hidl(const int mode);
 
 // these are called by init of each feature. should not be called directly
 // unless there is a custom interface that has to be called
@@ -38,5 +39,6 @@ void power_hidl(GBinderClient* client, const int interactive, const enum hints h
 void vr_hidl(GBinderClient* client, const int enabled);
 void radio_hidl(GBinderClient* client, const int type, const int enabled);
 void radio_aidl(GBinderClient* client, const int type, const int enabled);
+void tetheroffload_hidl(GBinderClient* client, const int enabled, GBinderLocalObject* callback_object);
 
 #endif // BATMAN_GBINDER_H

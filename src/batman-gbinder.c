@@ -233,3 +233,63 @@ int init_radio_aidl(const int type, const int mode) {
 
     return 0;
 }
+
+static GBinderLocalReply *
+tetheroffload_hidl_callback (GBinderLocalObject   *obj,
+                                       GBinderRemoteRequest *req,
+                                       guint                 code,
+                                       guint                 flags,
+                                       int                  *status,
+                                       void                 *user_data)
+{
+  /* Unused for now */
+
+  return NULL;
+}
+
+void tetheroffload_hidl(GBinderClient* client, const int enabled, GBinderLocalObject* callback_object) {
+    int status;
+    GBinderLocalRequest* req = gbinder_client_new_request(client);
+    GBinderWriter writer;
+
+    if (enabled == 1) {
+        gbinder_local_request_init_writer(req, &writer);
+        gbinder_local_request_append_local_object(req, callback_object); // required to call this method. unused but the function signature has it either way
+        gbinder_client_transact_sync_reply(client, 1, req, &status); // initOffload
+        gbinder_local_request_unref(req);
+    } else if (enabled == 0) {
+        gbinder_local_request_init_writer(req, &writer);
+        gbinder_client_transact_sync_reply(client, 2, req, &status); // stopOffload
+        gbinder_local_request_unref(req);
+    }
+}
+
+int init_tetheroffload_hidl(const int mode) {
+    GBinderServiceManager* sm = gbinder_servicemanager_new("/dev/hwbinder");
+    if (!sm) return 1;
+
+    GBinderRemoteObject* remote = gbinder_servicemanager_get_service_sync(sm, "android.hardware.tetheroffload.control@1.0::IOffloadControl/default", NULL);
+    if (!remote) {
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    GBinderClient* client = gbinder_client_new(remote, "android.hardware.tetheroffload.control@1.0::IOffloadControl");
+    if (!client) {
+        gbinder_remote_object_unref(remote);
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    GBinderLocalObject* callback_object = gbinder_servicemanager_new_local_object (sm,
+                                           "android.hardware.tetheroffload.control@1.0::ITetheringOffloadCallback",
+                                           tetheroffload_hidl_callback,
+                                           NULL);
+
+    tetheroffload_hidl(client, mode, callback_object);
+
+    gbinder_client_unref(client);
+    gbinder_remote_object_unref(remote);
+
+    return 0;
+}
