@@ -14,11 +14,7 @@ import time
 import os
 import configparser
 
-import gi
-gi.require_version('Gio', '2.0')
-from gi.repository import Gio
-gi.require_version('GTherm', '0.0')
-from gi.repository import GTherm
+THERMAL_SYSFS_PATH = "/sys/class/thermal"
 
 class PPDInterface(ServiceInterface):
     def __init__(self, loop, bus):
@@ -110,39 +106,6 @@ class PPDInterface(ServiceInterface):
     def InhibitDevice(self, uid: 's', inhibit: 'b'):
         pass
 
-    async def GetThermal(self):
-        i = 0
-        temp_total = 0
-        temp_avg = 0
-
-        os.seteuid(32011)
-        os.environ['DBUS_SESSION_BUS_ADDRESS'] = "unix:path=/run/user/32011/bus"
-
-        con = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-        manager = GTherm.Manager.new_sync(con, 0, None)
-
-        for d in manager.get_thermal_zones():
-            raw_temperature = d.get_temperature()
-            temperature_celsius = raw_temperature / 1000.0
-            # most devices (exynos chipsets being one of them) show a bunch of useless nodes under 10c
-            # the temperature reading here is incorrect. instead of going through each kernel one by one
-            # we know that anything below 5-10C is basically impossible under normal usage and environment.
-            # this is not a perfect solution but should be good enough for now.
-            if temperature_celsius > 10:
-                #print(d.get_type_())
-                #print(f"{temperature_celsius:.1f}C")
-                temp_total = temp_total + temperature_celsius
-                i += 1
-
-        if os.getuid() == 0:
-            os.seteuid(0)
-
-        del os.environ['DBUS_SESSION_BUS_ADDRESS']
-
-        temp_avg = temp_total / i
-        #print(f"Average sys temp: {temp_avg:.1f}C")
-        return temp_avg
-
     def UpdatePerformanceDegraded(self, temp_avg):
         if temp_avg > 50:
             self.props['PerformanceDegraded'] = Variant('s', 'high-operating-temperature')
@@ -201,7 +164,7 @@ class PPDInterface(ServiceInterface):
             config.set('State', 'Profile', profile)
             with open(file_path, 'w') as stateFile:
                 config.write(stateFile)
-    
+
     def GetProfile(self):
         directory = "/var/lib/power-profiles-daemon/"
         file_path = os.path.join(directory, "state.ini")
@@ -212,7 +175,56 @@ class PPDInterface(ServiceInterface):
             except configparser.NoSectionError:
                 profile = None
             return profile
-        
+
+### GTherm equivalent implementation ###
+
+def get_thermal_zones():
+    zones = []
+    for item in os.listdir(THERMAL_SYSFS_PATH):
+        if item.startswith("thermal_zone"):
+            zones.append(item)
+    return zones
+
+def read_sysfs_file(path):
+    try:
+        with open(path, 'r') as file:
+            return file.read().strip()
+    except IOError as e:
+        return None
+
+def get_zone_temp(zone):
+    temp_path = os.path.join(THERMAL_SYSFS_PATH, zone, "temp")
+    return read_sysfs_file(temp_path)
+
+def get_zone_type(zone):
+    type_path = os.path.join(THERMAL_SYSFS_PATH, zone, "type")
+    return read_sysfs_file(type_path)
+
+async def GetThermal():
+    i = 0
+    temp_total = 0
+    temp_avg = 0
+
+    zones = get_thermal_zones()
+    for zone in zones:
+        raw_temperature = get_zone_temp(zone)
+        if raw_temperature is not None:
+            temperature_celsius = int(raw_temperature) / 1000.0
+            # most devices (exynos chipsets being one of them) show a bunch of useless nodes under 10c
+            # the temperature reading here is incorrect. instead of going through each kernel one by one
+            # we know that anything below 5-10C is basically impossible under normal usage and environment.
+            # this is not a perfect solution but should be good enough for now.
+            if temperature_celsius > 10:
+                #print(f"{zone}: {temperature_celsius:.1f}C")
+                temp_total += temperature_celsius
+                i += 1
+
+    if i > 0:
+        temp_avg = temp_total / i
+
+    #print(f"Average sys temp: {temp_avg:.1f}C")
+    return temp_avg
+
 async def main():
     bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
     loop = asyncio.get_running_loop()
@@ -222,7 +234,7 @@ async def main():
 
     async def thermal_check():
         while True:
-            temp_avg = await ppd_interface.GetThermal()
+            temp_avg = await GetThermal()
             ppd_interface.UpdatePerformanceDegraded(temp_avg)
             await asyncio.sleep(5)
 
