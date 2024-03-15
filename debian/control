@@ -106,10 +106,7 @@ Description: batman-helper
 Package: batman2ppd
 Architecture: any
 Depends: ${misc:Depends},
-         python3-dbus,
-         python3-gi,
          python3-dbus-next,
-         gir1.2-gtherm-0.0,
 Conflicts: power-profiles-daemon
 Description: batman2ppd
  A battery management service for Linux phones - batman to power profiles daemon service
