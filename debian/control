@@ -107,6 +107,7 @@ Package: batman2ppd
 Architecture: any
 Depends: ${misc:Depends},
          python3-dbus-next,
-Conflicts: power-profiles-daemon
+Replaces: power-profiles-daemon
+Provides: power-profiles-daemon
 Description: batman2ppd
  A battery management service for Linux phones - batman to power profiles daemon service
