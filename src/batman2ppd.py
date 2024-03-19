@@ -21,6 +21,7 @@ class PPDInterface(ServiceInterface):
         super().__init__('net.hadess.PowerProfiles')
         self.loop = loop
         self.bus = bus
+        self.cookie = 0
         self.props = {
             'ActiveProfile': Variant('s', 'balanced'),
             'PerformanceInhibited': Variant('s', ''),
@@ -95,16 +96,17 @@ class PPDInterface(ServiceInterface):
         return self.props['ActiveProfileHolds'].value
 
     @method()
-    def HoldProfile(self, profile: 's', reason: 's', application_id: 's'):
+    def HoldProfile(self, profile: 's', reason: 's', application_id: 's') -> 'u':
         pass
 
     @method()
     def ReleaseProfile(self, cookie: 'u'):
-        pass
+        self.cookie = cookie
+        self.ProfileReleased()
 
-    @method()
-    def InhibitDevice(self, uid: 's', inhibit: 'b'):
-        pass
+    @signal()
+    def ProfileReleased(self) -> 'u':
+        return self.cookie
 
     def UpdatePerformanceDegraded(self, temp_avg):
         if temp_avg > 50:
