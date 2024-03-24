@@ -95,7 +95,9 @@ const char *paths[] = {
     "/sys/devices/platform/soc/1d84000.ufshc/clkscale_enable",
     "/proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode",
     "/proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode",
-    "/proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode"
+    "/proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode",
+    "/sys/module/ged/parameters/boost_amp",
+    "/proc/ppm/enabled"
 };
 
 // Signal handler to handle Ctrl+C
