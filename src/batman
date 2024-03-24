@@ -755,6 +755,8 @@ function tweakboost {
    [ -f /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode # spotted on mt6877
    [ -f /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode # spotted on mt6877
    [ -f /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /sys/module/ged/parameters/boost_amp ] && echo 1 > /sys/module/ged/parameters/boost_amp # spotted on mt6877
+   [ -f /proc/ppm/enabled ] && echo 0 > /proc/ppm/enabled # spotted on mt6877
 
    :
 }
@@ -786,6 +788,8 @@ function tweaksave {
    [ -f /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode # spotted on mt6877
    [ -f /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode # spotted on mt6877
    [ -f /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /sys/module/ged/parameters/boost_amp ] && echo 0 > /sys/module/ged/parameters/boost_amp # spotted on mt6877
+   [ -f /proc/ppm/enabled ] && echo 1 > /proc/ppm/enabled # spotted on mt6877
 
    :
 }
