@@ -93,6 +93,9 @@ const char *paths[] = {
     "/sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable",
     "/sys/devices/platform/soc/1d84000.ufshc/clkgate_enable",
     "/sys/devices/platform/soc/1d84000.ufshc/clkscale_enable",
+    "/proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode",
+    "/proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode",
+    "/proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode"
 };
 
 // Signal handler to handle Ctrl+C
