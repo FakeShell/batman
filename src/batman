@@ -752,6 +752,9 @@ function tweakboost {
    [ -f /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable # spotted on sm7125
    [ -f /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable # spotted on sm7125
    [ -f /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable ] && echo 0 > /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable # spotted on sm7125
+   [ -f /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode ] && echo 1 > /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode # spotted on mt6877
 
    :
 }
@@ -780,6 +783,9 @@ function tweaksave {
    [ -f /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/hibern8_on_idle_enable # spotted on sm7125
    [ -f /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/clkgate_enable # spotted on sm7125
    [ -f /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable ] && echo 1 > /sys/devices/platform/soc/1d84000.ufshc/clkscale_enable # spotted on sm7125
+   [ -f /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_CCI/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode # spotted on mt6877
+   [ -f /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode ] && echo 0 > /proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode # spotted on mt6877
 
    :
 }
