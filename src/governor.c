@@ -97,7 +97,12 @@ const char *paths[] = {
     "/proc/cpufreq/MT_CPU_DVFS_L/cpufreq_turbo_mode",
     "/proc/cpufreq/MT_CPU_DVFS_LL/cpufreq_turbo_mode",
     "/sys/module/ged/parameters/boost_amp",
-    "/proc/ppm/enabled"
+    "/proc/ppm/enabled",
+    "/proc/perfmgr/boost_ctrl/dram_ctrl/ddr",
+    "/sys/kernel/fpsgo/fstb/adopt_low_fps",
+    "/sys/kernel/fpsgo/fbt/boost_ta",
+    "/sys/kernel/fpsgo/common/gpu_block_boost",
+    "/sys/kernel/apusys/mnoc_apu_qos_boost"
 };
 
 // Signal handler to handle Ctrl+C
