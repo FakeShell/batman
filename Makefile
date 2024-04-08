@@ -7,6 +7,8 @@ LDFLAGS_GBINDER = `pkg-config --libs --cflags libgbinder`
 LDFLAGS_HYBRIS = `pkg-config --libs --cflags libgbinder`
 CFLAGS_WIFI = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 LDFLAGS_WIFI = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
+CFLAGS_WAYDROID = `pkg-config --cflags --libs gio-2.0`
+LDFLAGS_WAYDROID = `pkg-config --libs gio-2.0`
 
 TARGET = batman
 TARGET_HELPER = batman-helper
@@ -19,6 +21,8 @@ TARGET_NFCD = batman.so
 TARGET_WIFI = batman-wifi
 TARGET_BATMAN2PPD = src/batman2ppd.py
 TARGET_PPDCLI = src/powerprofilesctl.py
+TARGET_WAYDROID = libbatman-waydroid.so
+TARGET_WAYDROID_FREEZER = batman-waydroid-freezer
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
@@ -28,7 +32,9 @@ SRC_GBINDER = src/batman-gbinder.c
 SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
 SRC_WIFI = src/batman-wifi.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h
+SRC_WAYDROID = src/batman-waydroid.c
+SRC_WAYDROID_FREEZER = src/batman-waydroid-freezer.c src/batman-waydroid.c
+HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h
 
 BINDIR = /usr/bin
 LIBDIR = /usr/lib
@@ -42,7 +48,7 @@ POLKIT_DIR = /usr/share/polkit-1/actions
 DBUS_DIR = /usr/share/dbus-1/system.d
 
 .PHONY: all
-all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD)
+all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD) $(TARGET_WAYDROID)
 
 $(TARGET):
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
@@ -62,6 +68,10 @@ $(TARGET_WIFI):
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 	$(CC) $^ $(LDFLAGS_NFCD) -o $@
 
+$(TARGET_WAYDROID):
+	$(CC) -fPIC -shared $(SRC_WAYDROID) -o $(TARGET_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
+	$(CC) $(SRC_WAYDROID_FREEZER) -o $(TARGET_WAYDROID_FREEZER) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
+
 nfcd-batman-plugin.o: src/nfcd-batman-plugin.c
 	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
 
@@ -80,6 +90,8 @@ install:
 	cp $(TARGET_WIFI) $(BINDIR)
 	cp $(TARGET_BATMAN2PPD) $(BINDIR)/batman2ppd
 	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
+	cp $(TARGET_WAYDROID) $(LIBDIR)
+	cp $(TARGET_WAYDROID_FREEZER) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -116,4 +128,6 @@ clean:
 	rm -f $(TARGET_HYBRIS)
 	rm -f $(TARGET_NFCD)
 	rm -f $(TARGET_WIFI)
+	rm -f $(TARGET_WAYDROID)
+	rm -f $(TARGET_WAYDROID_FREEZER)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o
