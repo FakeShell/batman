@@ -10,10 +10,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef WITH_UPOWER
-#include <upower.h>
-#endif
-
 #ifdef WITH_WLRDISPLAY
 #include "wlrdisplay.h"
 #endif
