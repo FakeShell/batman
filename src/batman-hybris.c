@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
                     printf("None of the backends are available for VR. Exiting.\n");
                     return 1;
                 } else {
-                    printf("Using VR HIDL backend\n");
+                    //printf("Using VR HIDL backend\n");
                 }
             } else {
                 printf("Invalid VR state argument. Use 0 for VR mode off or 1 for VR mode on\n");
@@ -38,10 +38,10 @@ int main(int argc, char *argv[]) {
                         printf("None of the backends are available for power. Exiting.\n");
                         return 1;
                     } else {
-                        printf("Using Power HIDL backend\n");
+                        //printf("Using Power HIDL backend\n");
                     }
                 } else {
-                    printf("Using Power AIDL backend\n");
+                    //printf("Using Power AIDL backend\n");
                 }
             } else {
                 printf("Invalid Power state argument. Use 0 for non-interactive + powersave or 1 for interactive + performance.\n");
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
                     printf("None of the backends are available for tether offload. Exiting.\n");
                     return 1;
                 } else {
-                    printf("Using tether offload HIDL backend\n");
+                    //printf("Using tether offload HIDL backend\n");
                 }
             } else {
                 printf("Invalid tether offload state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
@@ -80,10 +80,10 @@ int main(int argc, char *argv[]) {
                     printf("None of the backends are available for radio. Exiting.\n");
                     return 1;
                 } else {
-                    printf("Using Radio HIDL backend\n");
+                    //printf("Using Radio HIDL backend\n");
                 }
             } else {
-                printf("Using Radio AIDL backend\n");
+                //printf("Using Radio AIDL backend\n");
             }
         } else {
             printf("Invalid argument. Use <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off)\n");
