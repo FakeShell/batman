@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
+CFLAGS = `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
 LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1 gio-2.0`
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client

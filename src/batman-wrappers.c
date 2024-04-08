@@ -10,13 +10,8 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef WITH_WLRDISPLAY
 #include "wlrdisplay.h"
-#endif
-
-#ifdef WITH_GETINFO
 #include "getinfo.h"
-#endif
 
 #define MEMINFO "/proc/meminfo"
 
@@ -28,7 +23,6 @@ struct meminfo {
     long long int sreclaimable;
 };
 
-#ifdef WITH_UPOWER
 const gchar *findBattery(UpClient *upower, gdouble *percentage) {
     UpDevice *device = NULL;
     const gchar *statelabel = NULL;
@@ -83,7 +77,6 @@ const gchar *findBattery(UpClient *upower, gdouble *percentage) {
 
     return statelabel;
 }
-#endif
 
 int readMemInfo(struct meminfo *mem) {
     if (mem == NULL) {
