@@ -1,6 +1,7 @@
 #include <batman/batman-wrappers.h>
 #include <batman/wlrdisplay.h>
 #include <batman/getinfo.h>
+#include <batman/batman-waydroid.h>
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {
@@ -41,6 +42,15 @@ int main(int argc, char *argv[]) {
         g_print("Battery status: %s\nBattery percentage: %.2f%%\n", statelabel, battery_percentage);
     } else {
         g_print("No battery found\n");
+    }
+
+    gchar *state = waydroid_get_state();
+
+    if (state) {
+        g_print("Waydroid State: %s\n", state);
+        g_free(state);
+    } else {
+        g_print("Failed to get Waydroid state.\n");
     }
 
     return 0;
