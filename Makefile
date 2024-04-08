@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO `pkg-config --cflags upower-glib gtk4 libadwaita-1`
-LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1`
+CFLAGS = -DWITH_UPOWER -DWITH_WLRDISPLAY -DWITH_GETINFO `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
+LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1 gio-2.0`
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
 LDFLAGS_GBINDER = `pkg-config --libs --cflags libgbinder`
@@ -24,7 +24,7 @@ TARGET_PPDCLI = src/powerprofilesctl.py
 TARGET_WAYDROID = libbatman-waydroid.so
 TARGET_WAYDROID_FREEZER = batman-waydroid-freezer
 
-SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c
+SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-waydroid.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
 SRC_GOVERNOR = src/governor.c src/wlrdisplay.c
 SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c

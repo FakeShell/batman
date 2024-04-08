@@ -2,6 +2,7 @@
 // Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include "batman-wrappers.h"
+#include "batman-waydroid.h"
 #include <stdio.h>
 
 #ifdef WITH_WLRDISPLAY
@@ -14,7 +15,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled]\n", argv[0]);
+        printf("Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled|waydroid_state]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -103,6 +104,15 @@ int main(int argc, char *argv[]) {
         printf("getinfo support is not enabled. Recompile with -DWITH_GETINFO to enable it.\n");
         return EXIT_FAILURE
         #endif
+    } else if (strcmp(argv[1], "waydroid_state") == 0) {
+        gchar *state = waydroid_get_state();
+
+        if (state) {
+            g_print("%s\n", state);
+            g_free(state);
+        } else {
+            g_print("Failed to get Waydroid state.\n");
+        }
     } else {
         printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled]\n", argv[0]);
         return EXIT_FAILURE;
