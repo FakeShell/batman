@@ -13,4 +13,6 @@
  */
 void waydroid_freezer(gboolean freeze);
 
+gchar* waydroid_get_state();
+
 #endif // BATMAN_WAYDROID_H
