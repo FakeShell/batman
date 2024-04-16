@@ -6,3 +6,6 @@ CHARGESAVE=true
 BUSSAVE=true
 GPUSAVE=true
 BTSAVE=true
+HYBRIS=true
+WIFI=true
+WAYDROID=true
