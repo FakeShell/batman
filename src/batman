@@ -261,12 +261,25 @@ if [ -z "${BTSAVE}" ]; then
    BTSAVE=true
 fi
 
-if which batman-hybris > /dev/null 2>&1; then
-   LIBPOWER=true
+if [ -z "${HYBRIS}" ]; then
+   if which batman-hybris > /dev/null 2>&1; then
+      echo "batman-hybris is available, setting the default value of LIBPOWER as true"
+      LIBPOWER=true
+   fi
 fi
 
-if which batman-wifi > /dev/null 2>&1; then
-   WIFI=true
+if [ -z "${WIFI}" ]; then
+   if which batman-wifi > /dev/null 2>&1; then
+      echo "batman-wifi is available, setting the default value of WIFI as true"
+      WIFI=true
+   fi
+fi
+
+if [ -z "${WAYDROID}" ]; then
+   if which batman-waydroid > /dev/null 2>&1; then
+      echo "batman-waydroid is available, setting the default value of WAYDROID as true"
+      WAYDROID=true
+   fi
 fi
 
 # Set up an array with the GPU governor file paths to check, can be extended later when more devices are added
@@ -870,6 +883,7 @@ do
           btsave
           tweaksave
 
+          [ "${WAYDROID}" == "true" ] && (batman-waydroid screen 0 &)
           [ "${LIBPOWER}" = "true" ] && batman-hybris power 0
           [ "${WIFI}" = "true" ] && batman-wifi suspend
        # if device is charging or fully charged and still plugged into the wall then set everything back to default. this behaviour can be changed by setting CHARGESAVE to true.
@@ -880,6 +894,7 @@ do
           btdefault
           tweakboost
 
+          [ "${WAYDROID}" == "true" ] && (batman-waydroid screen 1 &)
           [ "${LIBPOWER}" = "true" ] && batman-hybris power 1
           [ "${WIFI}" = "true" ] && batman-wifi resume
        # if screen is on (user using the device) set everything back to default.
@@ -890,6 +905,7 @@ do
           btdefault
           tweakboost
 
+          [ "${WAYDROID}" == "true" ] && (batman-waydroid screen 1 &)
           [ "${LIBPOWER}" = "true" ] && batman-hybris power 1
           [ "${WIFI}" = "true" ] && batman-wifi resume
        fi
