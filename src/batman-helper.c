@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled|waydroid_state]\n", argv[0]);
+        printf("Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled|waydroid_state|waydroid_screen]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -80,11 +80,17 @@ int main(int argc, char *argv[]) {
         if (state) {
             g_print("%s\n", state);
             g_free(state);
+            return EXIT_SUCCESS;
         } else {
             g_print("Failed to get Waydroid state.\n");
+            return EXIT_FAILURE;
         }
+    } else if (strcmp(argv[1], "waydroid_screen") == 0) {
+        gboolean is_asleep = waydroid_screen_status();
+        g_print("%s\n", is_asleep ? "False" : "True");
+        return 0;
     } else {
-        printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled]\n", argv[0]);
+        printf("Invalid option. Usage: %s [cpu|mem|wlrdisplay|battery|battery_percentage|batman_active|batman_enabled|waydroid_state|waydroid_screen]\n", argv[0]);
         return EXIT_FAILURE;
     }
 }

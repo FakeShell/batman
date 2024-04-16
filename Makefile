@@ -24,7 +24,7 @@ TARGET_WIFI = batman-wifi
 TARGET_BATMAN2PPD = src/batman2ppd.py
 TARGET_PPDCLI = src/powerprofilesctl.py
 TARGET_WAYDROID = libbatman-waydroid.so
-TARGET_WAYDROID_FREEZER = batman-waydroid-freezer
+TARGET_WAYDROID_CLI = batman-waydroid
 TARGET_EXAMPLES = batman-examples
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-waydroid.c
@@ -36,7 +36,7 @@ SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
 SRC_WIFI = src/batman-wifi.c
 SRC_WAYDROID = src/batman-waydroid.c
-SRC_WAYDROID_FREEZER = src/batman-waydroid-freezer.c src/batman-waydroid.c
+SRC_WAYDROID_CLI = src/batman-waydroid-cli.c src/batman-waydroid.c
 SRC_EXAMPLES = examples/batman-functions.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h
 
@@ -90,7 +90,7 @@ $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 waydroid: $(TARGET_WAYDROID)
 $(TARGET_WAYDROID):
 	$(CC) -fPIC -shared $(SRC_WAYDROID) -o $(TARGET_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
-	$(CC) $(SRC_WAYDROID_FREEZER) -o $(TARGET_WAYDROID_FREEZER) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
+	$(CC) $(SRC_WAYDROID_CLI) -o $(TARGET_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
 
 examples: $(TARGET_EXAMPLES)
 $(TARGET_EXAMPLES):
@@ -115,7 +115,7 @@ install:
 	cp $(TARGET_BATMAN2PPD) $(BINDIR)/batman2ppd
 	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
 	cp $(TARGET_WAYDROID) $(LIBDIR)
-	cp $(TARGET_WAYDROID_FREEZER) $(BINDIR)
+	cp $(TARGET_WAYDROID_CLI) $(BINDIR)
 
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
 	cp data/batman.png $(ICON_DIR)
@@ -153,6 +153,6 @@ clean:
 	rm -f $(TARGET_NFCD)
 	rm -f $(TARGET_WIFI)
 	rm -f $(TARGET_WAYDROID)
-	rm -f $(TARGET_WAYDROID_FREEZER)
+	rm -f $(TARGET_WAYDROID_CLI)
 	rm -f $(TARGET_EXAMPLES)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o

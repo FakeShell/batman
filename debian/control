@@ -122,9 +122,9 @@ Depends: ${misc:Depends}
 Description: libbatman-waydroid
  A battery management service for Linux phones - waydroid shared object
 
-Package: batman-waydroid-freezer
+Package: batman-waydroid
 Section: misc
 Architecture: any
 Depends: ${misc:Depends}
-Description: batman-waydroid-freezer
- A battery management service for Linux phones - waydroid freezer
+Description: batman-waydroid
+ A battery management service for Linux phones - waydroid wrapper

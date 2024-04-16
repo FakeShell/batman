@@ -15,7 +15,7 @@ override_dh_auto_build:
 	gcc src/batman-wifi.c `pkg-config --cflags --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o batman-wifi
 
 	gcc -fPIC -shared src/batman-waydroid.c `pkg-config --cflags --libs gio-2.0` `pkg-config --libs gio-2.0` -o libbatman-waydroid.so
-	gcc src/batman-waydroid-freezer.c src/batman-waydroid.c `pkg-config --cflags --libs gio-2.0` `pkg-config --libs gio-2.0` -o batman-waydroid-freezer
+	gcc src/batman-waydroid-cli.c src/batman-waydroid.c `pkg-config --cflags --libs gio-2.0` `pkg-config --libs gio-2.0` -o batman-waydroid
 
 	gcc -c src/nfcd-batman-plugin.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o nfcd-batman-plugin.o
 	gcc -c src/wlrdisplay.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o wlrdisplay.o
@@ -28,7 +28,7 @@ override_dh_auto_install:
 	install -D -m 0755 batman-gui debian/tmp/usr/bin/batman-gui
 	install -D -m 0755 batman-hybris debian/tmp/usr/bin/batman-hybris
 	install -D -m 0755 batman-wifi debian/tmp/usr/bin/batman-wifi
-	install -D -m 0755 batman-waydroid-freezer debian/tmp/usr/bin/batman-waydroid-freezer
+	install -D -m 0755 batman-waydroid debian/tmp/usr/bin/batman-waydroid
 
 	install -D -m 0644 data/config debian/tmp/var/lib/batman/config
 	install -D -m 0644 data/batman-gui.desktop debian/tmp/usr/share/applications/batman-gui.desktop
