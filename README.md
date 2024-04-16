@@ -10,8 +10,6 @@ It should be noted at this program has been tested on pmOS, Mobian, Droidian, Ma
 
 upower must provide a proper battery status on `/org/freedesktop/UPower/devices/DisplayDevice`
 
-It is currently available as a deb package (PKGBUILD and APKBUILD are outdated)
-
 # Building
 
 ```
