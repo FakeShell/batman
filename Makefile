@@ -40,42 +40,59 @@ SRC_WAYDROID_FREEZER = src/batman-waydroid-freezer.c src/batman-waydroid.c
 SRC_EXAMPLES = examples/batman-functions.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h
 
-BINDIR = /usr/bin
-LIBDIR = /usr/lib
-CONFIGDIR = /var/lib/batman
-SYSTEMD_DIR = /usr/lib/systemd/system
-OPENRC_DIR = /etc/init.d
-DESKTOP_DIR = /usr/share/applications
-ICON_DIR = /usr/share/icons
-INCLUDE_DIR = /usr/include/batman
-POLKIT_DIR = /usr/share/polkit-1/actions
-DBUS_DIR = /usr/share/dbus-1/system.d
+PREFIX ?= /usr
+LIBDIR ?= $(PREFIX)/lib
+BINDIR ?= $(PREFIX)/bin
+CONFIGDIR ?= /var/lib/batman
+SYSTEMD_DIR ?= $(LIBDIR)/systemd/system
+OPENRC_DIR ?= /etc/init.d
+DESKTOP_DIR ?= $(PREFIX)/share/applications
+ICON_DIR ?= $(PREFIX)/share/icons
+INCLUDE_DIR ?= $(PREFIX)/include/batman
+POLKIT_DIR ?= $(PREFIX)/share/polkit-1/actions
+DBUS_DIR ?= $(PREFIX)/share/dbus-1/system.d
 
 .PHONY: all
-all: $(TARGET) $(TARGET_GBINDER) $(TARGET_HYBRIS) $(TARGET_WIFI) $(TARGET_NFCD) $(TARGET_WAYDROID) $(TARGET_EXAMPLES)
+all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid
 
-$(TARGET):
+helper: $(TARGET_HELPER)
+$(TARGET_HELPER):
 	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
-	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
-	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
+
+wrappers: $(TARGET_WRAPPERS)
+$(TARGET_WRAPPERS):
 	$(CC) -fPIC -shared $(CFLAGS) $(SRC_WRAPPERS) $(LDFLAGS) -o $(TARGET_WRAPPERS)
 
+governor: $(TARGET_GOVERNOR)
+$(TARGET_GOVERNOR):
+	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
+
+gui: $(TARGET_GUI)
+$(TARGET_GUI):
+	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
+
+gbinder: $(TARGET_GBINDER)
 $(TARGET_GBINDER):
 	$(CC) -fPIC -shared $(SRC_GBINDER) -o $(TARGET_GBINDER) $(LDFLAGS_GBINDER)
 
+hybris: $(TARGET_HYBRIS)
 $(TARGET_HYBRIS):
 	$(CC) $(SRC_HYBRIS) -o $(TARGET_HYBRIS) $(LDFLAGS_HYBRIS)
 
+wifi: $(TARGET_WIFI)
 $(TARGET_WIFI):
 	$(CC) $(SRC_WIFI) -o $(TARGET_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI)
 
+nfcd: $(TARGET_NFCD)
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 	$(CC) $^ $(LDFLAGS_NFCD) -o $@
 
+waydroid: $(TARGET_WAYDROID)
 $(TARGET_WAYDROID):
 	$(CC) -fPIC -shared $(SRC_WAYDROID) -o $(TARGET_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
 	$(CC) $(SRC_WAYDROID_FREEZER) -o $(TARGET_WAYDROID_FREEZER) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
 
+examples: $(TARGET_EXAMPLES)
 $(TARGET_EXAMPLES):
 	$(CC) $(SRC_EXAMPLES) -o $(TARGET_EXAMPLES) $(CFLAGS_EXAMPLES) $(LDFLAGS_EXAMPLES)
 
