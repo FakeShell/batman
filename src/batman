@@ -748,7 +748,6 @@ function tweakboost {
    [ -f /sys/devices/system/cpu/perf/enable ] && echo 1 > /sys/devices/system/cpu/perf/enable # spotted on mt6769v
    [ -f /sys/devices/system/cpu/sched/sched_boost ] && echo 1 > /sys/devices/system/cpu/sched/sched_boost # spotted on mt6769v
    [ -f /proc/cpufreq/cpufreq_stress_test ] && echo 1 > /proc/cpufreq/cpufreq_stress_test # spotted on mt6769v
-   [ -f /proc/gpufreq/gpufreq_opp_stress_test ] && echo 1 > /proc/gpufreq/gpufreq_opp_stress_test # spotted on mt6769v
    [ -f /sys/module/ged/parameters/boost_gpu_enable ] && echo 1 > /sys/module/ged/parameters/boost_gpu_enable # spotted on mt6769v
    [ -f /sys/module/ged/parameters/boost_extra ] && echo 1 > /sys/module/ged/parameters/boost_extra # spotted on mt6769v
    [ -f /sys/module/ged/parameters/gx_game_mode ] && echo 1 > /sys/module/ged/parameters/gx_game_mode # spotted on mt6769v
@@ -786,7 +785,6 @@ function tweaksave {
    [ -f /sys/devices/system/cpu/perf/enable ] && echo 0 > /sys/devices/system/cpu/perf/enable # spotted on mt6769v
    [ -f /sys/devices/system/cpu/sched/sched_boost ] && echo 0 > /sys/devices/system/cpu/sched/sched_boost # spotted on mt6769v
    [ -f /proc/cpufreq/cpufreq_stress_test ] && echo 0 > /proc/cpufreq/cpufreq_stress_test # spotted on mt6769v
-   [ -f /proc/gpufreq/gpufreq_opp_stress_test ] && echo 0 > /proc/gpufreq/gpufreq_opp_stress_test # spotted on mt6769v
    [ -f /sys/module/ged/parameters/boost_gpu_enable ] && echo 0 > /sys/module/ged/parameters/boost_gpu_enable # spotted on mt6769v
    [ -f /sys/module/ged/parameters/boost_extra ] && echo 0 > /sys/module/ged/parameters/boost_extra # spotted on mt6769v
    [ -f /sys/module/ged/parameters/gx_game_mode ] && echo 0 > /sys/module/ged/parameters/gx_game_mode # spotted on mt6769v
