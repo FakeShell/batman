@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "batman-wrappers.h"
 #include "wlrdisplay.h"
 #include "governor.h"
 
@@ -150,23 +151,16 @@ void *update_cpu_usage(void *arg) {
     const int checks_per_interval = 10;
     const int sleep_time = sleep_interval_in_seconds / checks_per_interval;
 
-    for(int i = 0; i < sleep_interval_in_seconds; i += sleep_time) {
-        if(!keep_going) {
+    for (int i = 0; i < sleep_interval_in_seconds; i += sleep_time) {
+        if (!keep_going) {
             break;
         }
 
         if (i % sleep_interval_in_seconds == 0) {
-            FILE *fp = popen("batman-helper cpu", "r");
-            if (fp != NULL) {
-                char new_cpu_usage[1024];
-                if (fgets(new_cpu_usage, sizeof(new_cpu_usage), fp) != NULL) {
-                    pthread_mutex_lock(&cpu_usage_mutex);
-                    strncpy(cpu_usage, new_cpu_usage, sizeof(cpu_usage) - 1);
-                    pthread_mutex_unlock(&cpu_usage_mutex);
-                }
-
-                pclose(fp);
-            }
+            double current_cpu_usage = cpuUsage();
+            pthread_mutex_lock(&cpu_usage_mutex);
+            snprintf(cpu_usage, sizeof(cpu_usage), "%.lf\n", current_cpu_usage);
+            pthread_mutex_unlock(&cpu_usage_mutex);
         }
 
         sleep(sleep_time);

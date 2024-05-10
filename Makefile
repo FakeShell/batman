@@ -29,7 +29,7 @@ TARGET_EXAMPLES = batman-examples
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-waydroid.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
-SRC_GOVERNOR = src/governor.c src/wlrdisplay.c
+SRC_GOVERNOR = src/governor.c src/wlrdisplay.c src/batman-wrappers.c
 SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
 SRC_GBINDER = src/batman-gbinder.c
 SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
