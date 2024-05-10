@@ -19,6 +19,9 @@ typedef struct {
     gboolean bussave;
     gboolean gpusave;
     gboolean btsave;
+    gboolean hybrissave;
+    gboolean wifisave;
+    gboolean waydroidsave;
 } Config;
 
 Config read_config();
@@ -29,6 +32,9 @@ gboolean gpusave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer da
 gboolean chargesave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean bussave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean btsave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
+gboolean hybrissave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
+gboolean wifisave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
+gboolean waydroidsave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 void max_cpu_entry_apply(AdwEntryRow* sender, gpointer);
 
 #endif /* CONFIG_CONTROL_H */

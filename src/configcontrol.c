@@ -23,6 +23,9 @@ Config read_config() {
         config.bussave = g_key_file_get_boolean(keyfile, "Settings", "BUSSAVE", NULL);
         config.gpusave = g_key_file_get_boolean(keyfile, "Settings", "GPUSAVE", NULL);
         config.btsave = g_key_file_get_boolean(keyfile, "Settings", "BTSAVE", NULL);
+        config.hybrissave = g_key_file_get_boolean(keyfile, "Settings", "HYBRIS", NULL);
+        config.wifisave = g_key_file_get_boolean(keyfile, "Settings", "WIFI", NULL);
+        config.waydroidsave = g_key_file_get_boolean(keyfile, "Settings", "WAYDROID", NULL);
     }
 
     g_key_file_free(keyfile);
@@ -96,6 +99,18 @@ gboolean bussave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
 
 gboolean btsave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
     update_config_value("BTSAVE", state ? "true" : "false");
+}
+
+gboolean hybrissave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("HYBRIS", state ? "true" : "false");
+}
+
+gboolean wifisave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("WIFI", state ? "true" : "false");
+}
+
+gboolean waydroidsave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+    update_config_value("WAYDROID", state ? "true" : "false");
 }
 
 void max_cpu_entry_apply(AdwEntryRow* sender, gpointer) {

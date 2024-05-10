@@ -27,7 +27,7 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         "application-name", "Batman GUI",
         "application-icon", "batman",
         "version", "1.42",
-        "copyright", "© 2023 Bardia Moshiri, Erik Inkinen",
+        "copyright", "© 2024 Bardia Moshiri, Erik Inkinen",
         "issue-url", "https://github.com/fakeshell/batman/issues/new",
         "license-type", GTK_LICENSE_GPL_2_0_ONLY,
         "developers", developers,
@@ -87,7 +87,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     // main window
     GtkWidget *window = adw_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Batman");
-    gtk_window_set_default_size(GTK_WINDOW(window), 500, 600);
+    gtk_window_set_default_size(GTK_WINDOW(window), 400, 750);
 
     GtkWidget *wbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     GtkWidget *hdr_bar = adw_header_bar_new();
@@ -265,6 +265,51 @@ void activate(GtkApplication* app, gpointer user_data) {
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(btsave_action_row), btsave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), btsave_action_row);
+
+    // Config : Hybris save
+
+    GtkWidget *hybris_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hybris_action_row), "Hybris save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(hybris_action_row), "Allow batman to set Android services to powersave");
+
+    GtkWidget *hybris_switch = gtk_switch_new();
+    gtk_widget_set_valign(hybris_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(hybris_switch), config.hybrissave);
+    gtk_switch_set_active(GTK_SWITCH(hybris_switch), config.hybrissave);
+    g_signal_connect(hybris_switch, "state-set", G_CALLBACK(hybrissave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(hybris_action_row), hybris_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), hybris_action_row);
+
+    // Config : WiFi save
+
+    GtkWidget *wifi_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(wifi_action_row), "WiFi save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(wifi_action_row), "Allow batman to set the WiFi chip to powersave");
+
+    GtkWidget *wifi_switch = gtk_switch_new();
+    gtk_widget_set_valign(wifi_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(wifi_switch), config.wifisave);
+    gtk_switch_set_active(GTK_SWITCH(wifi_switch), config.wifisave);
+    g_signal_connect(wifi_switch, "state-set", G_CALLBACK(wifisave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(wifi_action_row), wifi_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), wifi_action_row);
+
+    // Config : Waydroid save
+
+    GtkWidget *waydroid_action_row = adw_action_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(waydroid_action_row), "Waydroid save");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(waydroid_action_row), "Allow batman to set Android container to powersave");
+
+    GtkWidget *waydroid_switch = gtk_switch_new();
+    gtk_widget_set_valign(waydroid_switch, GTK_ALIGN_CENTER);
+    gtk_switch_set_state(GTK_SWITCH(waydroid_switch), config.waydroidsave);
+    gtk_switch_set_active(GTK_SWITCH(waydroid_switch), config.waydroidsave);
+    g_signal_connect(waydroid_switch, "state-set", G_CALLBACK(waydroidsave_switch_state_set), NULL);
+
+    adw_action_row_add_suffix(ADW_ACTION_ROW(waydroid_action_row), waydroid_switch);
+    gtk_list_box_append(GTK_LIST_BOX(config_list_box), waydroid_action_row);
 
     // END : Config
 
