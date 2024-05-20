@@ -324,6 +324,11 @@ else
     fi
 fi
 
+if ! which waydroid &> /dev/null; then
+    echo "Waydroid is not available, disabling waydroid capabilities"
+    WAYDROID=false
+fi
+
 # Check for bus governor nodes, if available then we'll powersave them too!
 if [ -d /sys/class/devfreq/ ]; then
    [ -d /sys/class/devfreq/soc:qcom,cci/ ] && CCI=true && DEFAULT_CCI_GOVERNOR="$(</sys/class/devfreq/soc:qcom,cci/governor)"
