@@ -28,7 +28,8 @@ class PPDInterface(ServiceInterface):
             'PerformanceDegraded': Variant('s', ''),
             'Profiles': Variant('aa{sv}', [{'Profile': Variant('s', 'power-saver'), 'Driver': Variant('s', 'batman')}, {'Profile': Variant('s', 'balanced'), 'Driver': Variant('s', 'batman')}, {'Profile': Variant('s', 'performance'), 'Driver': Variant('s', 'batman')}]),
             'Actions': Variant('as', ['trickle_charge']),
-            'ActiveProfileHolds': Variant('aa{sv}', [])
+            'ActiveProfileHolds': Variant('aa{sv}', []),
+            'Version': Variant('s', '0.21')
         }
 
     @dbus_property(access=PropertyAccess.READWRITE)
@@ -74,7 +75,6 @@ class PPDInterface(ServiceInterface):
         self.props['ActiveProfile'] = Variant('s', profile)
         self.SetProfile(profile)
 
-
     @dbus_property(access=PropertyAccess.READ)
     def PerformanceInhibited(self) -> 's':
         return self.props['PerformanceInhibited'].value
@@ -107,6 +107,10 @@ class PPDInterface(ServiceInterface):
     @signal()
     def ProfileReleased(self) -> 'u':
         return self.cookie
+
+    @dbus_property(access=PropertyAccess.READ)
+    def Version(self) -> 's':
+        return self.props['Version'].value
 
     def UpdatePerformanceDegraded(self, temp_avg):
         if temp_avg > 50:
