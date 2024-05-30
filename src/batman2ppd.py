@@ -66,7 +66,7 @@ class PPDInterface(ServiceInterface):
 
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
-                    f.write(default_governor)
+                    f.write("powersave\n")
 
                     time.sleep(2)
                     subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
