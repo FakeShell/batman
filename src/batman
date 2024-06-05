@@ -483,6 +483,12 @@ if [ -f "/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR" ]; then
    echo "using ${DEFAULT_GOVERNOR} as default governor"
 fi
 
+if [ -f "/var/lib/batman/CUSTOM_LASTPOLCORE" ]; then
+   LASTPOLCORE="$(</var/lib/batman/CUSTOM_LASTPOLCORE)"
+   OFFLINE_COUNT="${LASTPOLCORE}"
+   echo "using ${LASTPOLCORE} as last policy core"
+fi
+
 # hotplug has to be disabled for cpu cores to be allowed to go offline on exynos chips (why? i don't know)
 if [ "${IS_EXYNOS}" = "true" ]; then
    if [ -f /sys/power/cpuhotplug/enabled ]; then
