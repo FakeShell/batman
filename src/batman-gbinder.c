@@ -293,3 +293,41 @@ int init_tetheroffload_hidl(const int mode) {
 
     return 0;
 }
+
+void mtkpower_hint_hidl(GBinderClient* client, const int choice) {
+    int status;
+    GBinderLocalRequest* req = gbinder_client_new_request(client);
+    GBinderWriter writer;
+
+    // mtkPowerHint
+    gbinder_local_request_init_writer(req, &writer);
+    gbinder_writer_append_int32(&writer, choice);
+    gbinder_writer_append_int32(&writer, 1);
+    gbinder_client_transact_sync_reply(client, 1, req, &status);
+    gbinder_local_request_unref(req);
+}
+
+int init_mtkpower_hidl(const int mode) {
+    GBinderServiceManager* sm = gbinder_servicemanager_new("/dev/hwbinder");
+    if (!sm) return 1;
+
+    GBinderRemoteObject* remote = gbinder_servicemanager_get_service_sync(sm, "vendor.mediatek.hardware.mtkpower@1.0::IMtkPower/default", NULL);
+    if (!remote) {
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    GBinderClient* client = gbinder_client_new(remote, "vendor.mediatek.hardware.mtkpower@1.0::IMtkPower");
+    if (!client) {
+        gbinder_remote_object_unref(remote);
+        gbinder_servicemanager_unref(sm);
+        return 1;
+    }
+
+    mtkpower_hint_hidl(client, mode);
+
+    gbinder_client_unref(client);
+    gbinder_remote_object_unref(remote);
+
+    return 0;
+}

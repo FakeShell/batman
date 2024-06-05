@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "batman-gbinder.h"
+#include "mtk.h"
 
 int main(int argc, char *argv[]) {
     // This is a weird way to handle it, we should do something about it
@@ -61,8 +62,22 @@ int main(int argc, char *argv[]) {
                 printf("Invalid tether offload state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
                 return 1;
             }
+        } else if (strcmp(feature, "mtkpower") == 0) {
+            if (state >= 21 && state <= 46) {
+                int ret = init_mtkpower_hidl(state);
+
+                if (ret != 0) {
+                    printf("None of the backends are available for MTK Power. Exiting.\n");
+                    return 1;
+                } else {
+                    //printf("Using MTK Power HIDL backend\n");
+                }
+            } else {
+                printf("Invalid MTK Power state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
+                return 1;
+            }
         } else {
-            printf("Invalid feature argument. Use 'vr' or 'power' or 'tetheroffload'.\n");
+            printf("Invalid feature argument. Use 'vr' or 'power' or 'tetheroffload' or 'mtkpower'.\n");
             return 1;
         }
     } else if (argc == 4) {
@@ -90,7 +105,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     } else {
-        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'tetheroffload' OR %s <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off) for feature 'radio'\n", argv[0], argv[0]);
+        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'tetheroffload' and 'mtkpower' OR %s <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off) for feature 'radio'\n", argv[0], argv[0]);
         return 1;
     }
 
