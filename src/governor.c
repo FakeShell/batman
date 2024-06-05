@@ -170,30 +170,23 @@ void *update_cpu_usage(void *arg) {
 }
 
 void get_system_info(int x86) {
-    static time_t last_cpu_update = 0;
-
-    time_t current_time = time(NULL);
-
     char buf[1024];
     FILE *file;
     int first_core = -1, last_core = -1, core;
     char *line = NULL;
     size_t len = 0;
-    ssize_t read;
     size_t n_paths = sizeof(paths) / sizeof(paths[0]);
-    char path[1035];
+    char path[1024];
 
-    char cmd[512];
     DIR *d;
     struct dirent *dir;
-    char dir_path[] = "/run/user";
     char uid_path[256];
 
-    d = opendir(dir_path);
+    d = opendir("/run/user");
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_type == DT_DIR && strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
-                snprintf(uid_path, sizeof(uid_path), "%s/%s", dir_path, dir->d_name);
+                snprintf(uid_path, sizeof(uid_path), "/run/user/%s", dir->d_name);
 
                 if(setenv("XDG_RUNTIME_DIR", uid_path, 1) != 0) {
                     printf("Could not set XDG_RUNTIME_DIR\n");
@@ -209,7 +202,7 @@ void get_system_info(int x86) {
 
         closedir(d);
     } else {
-        printf("Could not open directory %s\n", dir_path);
+        printf("Could not open directory /run/user\n");
         return;
     }
 
@@ -221,7 +214,7 @@ void get_system_info(int x86) {
     if (file == NULL) {
         printf("CPU Information: unknown\n");
     } else {
-        while ((read = getline(&line, &len, file)) != -1) {
+        while ((getline(&line, &len, file)) != -1) {
             if (sscanf(line, "processor : %d", &core) == 1) {
                 if (first_core == -1) first_core = core;
                 last_core = core;
@@ -233,53 +226,101 @@ void get_system_info(int x86) {
         line = NULL;
     }
 
-    const char *CPUFREQ;
+    const char *cpufreq_node;
     if (x86 == 1) {
-        CPUFREQ = "scaling_cur_freq";
+        cpufreq_node = "scaling_cur_freq";
     } else if (x86 == 0) {
-        CPUFREQ = "cpuinfo_cur_freq";
+        cpufreq_node = "cpuinfo_cur_freq";
     } else {
-        CPUFREQ= "unknown"; // Failed to get architecture
+        cpufreq_node = "unknown"; // Failed to get architecture
     }
 
     for(int i = first_core; i <= last_core; ++i) {
-        char path[1024];
+        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_governors", i);
+        file = fopen(path, "r");
+        char output_scaling[1024] = "cpufreq: ";
+
+        if (file != NULL) {
+            if (fgets(buf, sizeof(buf), file) != NULL) {
+                strtok(buf, "\n");
+                char node_name[1024];
+                strncpy(node_name, get_node_name(path), sizeof(node_name));
+                snprintf(output_scaling + strlen(output_scaling), sizeof(output_scaling) - strlen(output_scaling), "%s=\"%s\" ", "scaling_available_governors", buf);
+            }
+            fclose(file);
+        }
 
         sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", i);
         file = fopen(path, "r");
         if (file != NULL) {
-            if(fgets(buf, sizeof(buf), file) != NULL) {
-                char node_name[1024];
-                strncpy(node_name, get_node_name(path), sizeof(node_name));
-                printf("%s: %s", node_name, buf);
+            if (fgets(buf, sizeof(buf), file) != NULL) {
+                strtok(buf, "\n");
+                snprintf(output_scaling + strlen(output_scaling), sizeof(output_scaling) - strlen(output_scaling), "%s=%s", "scaling_governor", buf);
             }
-
             fclose(file);
         }
 
-        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/%s", i, CPUFREQ);
+        printf("%s\n", output_scaling);
+
+        char output_current[1024] = "";
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/cpufreq/%s", i, cpufreq_node);
+        file = fopen(path, "r");
+
+        if (file != NULL) {
+            if (fgets(buf, sizeof(buf), file) != NULL) {
+                strtok(buf, "\n");
+                snprintf(output_current + strlen(output_current), sizeof(output_current) - strlen(output_current), "%s=%s ", "cur_freq", buf);
+            }
+            fclose(file);
+        }
+
+        snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d/online", i);
         file = fopen(path, "r");
         if (file != NULL) {
-            if(fgets(buf, sizeof(buf), file) != NULL) {
-                char node_name[1024];
-                strncpy(node_name, get_node_name(path), sizeof(node_name));
-                printf("%s: %s", node_name, buf);
+            if (fgets(buf, sizeof(buf), file) != NULL) {
+                strtok(buf, "\n");
+                snprintf(output_current + strlen(output_current), sizeof(output_current) - strlen(output_current), "%s=%s ", "online", buf);
             }
-
             fclose(file);
         }
 
-        sprintf(path, "/sys/devices/system/cpu/cpu%d/online", i);
+        printf("%s\n", output_current);
+
+        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_min_freq", i);
+        file = fopen(path, "r");
+        char min_freq[128], max_freq[128], scaling_min[128], scaling_max[128];
+
+        if (file != NULL) {
+            fgets(min_freq, sizeof(min_freq), file);
+            fclose(file);
+            strtok(min_freq, "\n");
+        }
+
+        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
         file = fopen(path, "r");
         if (file != NULL) {
-            if(fgets(buf, sizeof(buf), file) != NULL) {
-                char node_name[1024];
-                strncpy(node_name, get_node_name(path), sizeof(node_name));
-                printf("%s: %s", node_name, buf);
-            }
-
+            fgets(max_freq, sizeof(max_freq), file);
             fclose(file);
+            strtok(max_freq, "\n");
         }
+
+        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_min_freq", i);
+        file = fopen(path, "r");
+        if (file != NULL) {
+            fgets(scaling_min, sizeof(scaling_min), file);
+            fclose(file);
+            strtok(scaling_min, "\n");
+        }
+
+        sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_max_freq", i);
+        file = fopen(path, "r");
+        if (file != NULL) {
+            fgets(scaling_max, sizeof(scaling_max), file);
+            fclose(file);
+            strtok(scaling_max, "\n");
+        }
+
+        printf("cpufreq: cpuinfo_min_freq=%s cpuinfo_max_freq=%s scaling_min_freq=%s scaling_max_freq=%s\n", min_freq, max_freq, scaling_min, scaling_max);
     }
 
     for(size_t i = 0; i < n_paths; ++i) {
