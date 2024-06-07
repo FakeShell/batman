@@ -13,6 +13,7 @@ import asyncio
 import time
 import os
 import configparser
+import multiprocessing
 
 THERMAL_SYSFS_PATH = "/sys/class/thermal"
 
@@ -22,6 +23,7 @@ class PPDInterface(ServiceInterface):
         self.loop = loop
         self.bus = bus
         self.cookie = 0
+        self.cores = os.cpu_count()
         self.props = {
             'ActiveProfile': Variant('s', 'balanced'),
             'PerformanceInhibited': Variant('s', ''),
@@ -47,30 +49,40 @@ class PPDInterface(ServiceInterface):
         if profile == "performance" and self.props['PerformanceDegraded'].value == "":
             subprocess.Popen("batman-hybris vr 1", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
+            if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
+                online_half(self.cores)
+                os.remove("/var/lib/batman/CUSTOM_FIRSTPOLCORE")
+
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write("performance\n")
 
-                    time.sleep(2)
-                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
         elif profile == "balanced":
             subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+            if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
+                online_half(self.cores)
+                os.remove("/var/lib/batman/CUSTOM_FIRSTPOLCORE")
 
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write(default_governor)
 
-                    time.sleep(2)
-                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
         elif profile == "power-saver":
             subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
             if default_governor:
-                with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
-                    f.write("powersave\n")
+                with open("/var/lib/batman/CUSTOM_FIRSTPOLCORE", "w+") as f:
+                    half_cores = self.cores // 2
+                    #print(half_cores)
+                    f.write(f'{half_cores}')
 
-                    time.sleep(2)
-                    subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            offline_half(self.cores)
 
         self.props['ActiveProfile'] = Variant('s', profile)
         self.SetProfile(profile)
@@ -181,6 +193,29 @@ class PPDInterface(ServiceInterface):
             except configparser.NoSectionError:
                 profile = None
             return profile
+
+def offline_half(cpu_count):
+    half_cpus = cpu_count // 2
+
+    for i in range(half_cpus):
+        cpu_path = f"/sys/devices/system/cpu/cpu{i}/online"
+        try:
+            with open(cpu_path, 'w') as f:
+                f.write('0')
+        except Exception as e:
+            print(f"Error disabling CPU {i}: {e}")
+
+def online_half(cpu_count):
+    half_cpus = cpu_count // 2
+
+    for i in range(half_cpus):
+        cpu_path = f"/sys/devices/system/cpu/cpu{i}/online"
+        try:
+            with open(cpu_path, 'w') as f:
+                f.write('1')
+            #print(f"Enabled CPU {i}")
+        except Exception as e:
+            print(f"Error enabling CPU {i}: {e}")
 
 ### GTherm equivalent implementation ###
 
