@@ -802,6 +802,7 @@ function tweakboost {
    [ -f /sys/kernel/fpsgo/fbt/boost_ta ] && echo 1 > /sys/kernel/fpsgo/fbt/boost_ta # spotted on mt6877
    [ -f /sys/kernel/fpsgo/common/gpu_block_boost ] && echo 101 > /sys/kernel/fpsgo/common/gpu_block_boost # spotted on mt6877
    [ -f /sys/kernel/apusys/mnoc_apu_qos_boost ] && echo 1 > /sys/kernel/apusys/mnoc_apu_qos_boost # spotted on mt6877
+   [ -f /proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost ] && echo 1 > /proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost # spotted on mt6877
 
    :
 }
@@ -838,6 +839,7 @@ function tweaksave {
    [ -f /sys/kernel/fpsgo/fbt/boost_ta ] && echo 0 > /sys/kernel/fpsgo/fbt/boost_ta # spotted on mt6877
    [ -f /sys/kernel/fpsgo/common/gpu_block_boost ] && echo 0 > /sys/kernel/fpsgo/common/gpu_block_boost # spotted on mt6877
    [ -f /sys/kernel/apusys/mnoc_apu_qos_boost ] && echo 0 > /sys/kernel/apusys/mnoc_apu_qos_boost # spotted on mt6877
+   [ -f /proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost ] && echo 0 > /proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost # spotted on mt6877
 
    :
 }
