@@ -503,6 +503,11 @@ fi
 
 [ "${CPUSAVEGOVERNOR}" = "exynos_cpu_limit" ] && RUNTIME_CUR_GOVERNOR="${DEFAULT_GOVERNOR}"
 
+if [ -e "/proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_deisolation" ] && [ -e "/proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_isolation" ]; then
+   echo "MTK isolation is available"
+   MTK_ISOLATION=true
+fi
+
 # on some (if not all) exynos chips powersave doesn't exist so we need an alternative ways of lowering clock speeds
 # like to set governor to userspace and set scaling_min_freq to scaling_setspeed to get the minimum frequency at idle.
 if [ "${CPUSAVEGOVERNOR}" = "powersave" ]; then
@@ -510,6 +515,10 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ]; then
         for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "${CPUSAVEGOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+
+            if [ "${MTK_ISOLATION}" = "true" ]; then
+                echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_isolation
+            fi
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "userspace" ]; then
@@ -544,6 +553,10 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ]; then
         for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "${DEFAULT_GOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+
+            if [ "${MTK_ISOLATION}" = "true" ]; then
+                echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_deisolation
+            fi
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "userspace" ]; then
