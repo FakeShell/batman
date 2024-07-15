@@ -128,3 +128,10 @@ Architecture: any
 Depends: ${misc:Depends}
 Description: batman-waydroid
  A battery management service for Linux phones - waydroid wrapper
+
+Package: batman-nicerdicer
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+Description: batman-nicerdicer
+ A battery management service for Linux phones - nicerdicer service
