@@ -20,7 +20,7 @@ LDFLAGS_WAYDROID = `pkg-config --libs gio-2.0`
 CFLAGS_NICERDICER = `pkg-config --cflags gio-2.0`
 LDFLAGS_NICERDICER = `pkg-config --libs gio-2.0`
 CFLAGS_EXAMPLES = `pkg-config --cflags upower-glib`
-LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-waydroid
+LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-waydroid -lwayland-client
 
 TARGET = batman
 TARGET_HELPER = batman-helper
