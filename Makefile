@@ -1,10 +1,18 @@
 CC = gcc
-CFLAGS = `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
-LDFLAGS = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1 gio-2.0`
+CFLAGS_HELPER = `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
+LDFLAGS_HELPER = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1 gio-2.0`
+CFLAGS_WRAPPERS = `pkg-config --cflags upower-glib`
+LDFLAGS_WRAPPERS = `pkg-config --libs upower-glib`
+CFLAGS_GOVERNOR = `pkg-config --cflags upower-glib`
+LDFLAGS_GOVERNOR = -lwayland-client `pkg-config --libs upower-glib`
+CFLAGS_GUI = `pkg-config --cflags gtk4 libadwaita-1`
+LDFLAGS_GUI = `pkg-config --libs gtk4 libadwaita-1`
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
 LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
-LDFLAGS_GBINDER = `pkg-config --libs --cflags libgbinder`
-LDFLAGS_HYBRIS = `pkg-config --libs --cflags libgbinder`
+CFLAGS_GBINDER = `pkg-config --cflags libgbinder`
+LDFLAGS_GBINDER = `pkg-config --libs libgbinder`
+CFLAGS_HYBRIS = `pkg-config --cflags libgbinder`
+LDFLAGS_HYBRIS = `pkg-config --libs libgbinder`
 CFLAGS_WIFI = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 LDFLAGS_WIFI = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 CFLAGS_WAYDROID = `pkg-config --cflags gio-2.0`
@@ -62,31 +70,31 @@ all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid nicerdicer
 
 helper: $(TARGET_HELPER)
 $(TARGET_HELPER):
-	$(CC) $(CFLAGS) $(SRC_HELPER) $(LDFLAGS) -o $(TARGET_HELPER)
+	$(CC) $(SRC_HELPER) $(CFLAGS_HELPER) $(LDFLAGS_HELPER) -o $(TARGET_HELPER)
 
 wrappers: $(TARGET_WRAPPERS)
 $(TARGET_WRAPPERS):
-	$(CC) -fPIC -shared $(CFLAGS) $(SRC_WRAPPERS) $(LDFLAGS) -o $(TARGET_WRAPPERS)
+	$(CC) -fPIC -shared $(SRC_WRAPPERS) $(CFLAGS_WRAPPERS) $(LDFLAGS_WRAPPERS) -o $(TARGET_WRAPPERS)
 
 governor: $(TARGET_GOVERNOR)
 $(TARGET_GOVERNOR):
-	$(CC) $(CFLAGS) $(SRC_GOVERNOR) $(LDFLAGS) -o $(TARGET_GOVERNOR)
+	$(CC) $(SRC_GOVERNOR) $(LDFLAGS_GOVERNOR) $(CFLAGS_GOVERNOR) -o $(TARGET_GOVERNOR)
 
 gui: $(TARGET_GUI)
 $(TARGET_GUI):
-	$(CC) $(CFLAGS) $(SRC_GUI) $(LDFLAGS) -o $(TARGET_GUI)
+	$(CC) $(SRC_GUI) $(CFLAGS_GUI) $(LDFLAGS_GUI) -o $(TARGET_GUI)
 
 gbinder: $(TARGET_GBINDER)
 $(TARGET_GBINDER):
-	$(CC) -fPIC -shared $(SRC_GBINDER) -o $(TARGET_GBINDER) $(LDFLAGS_GBINDER)
+	$(CC) -fPIC -shared $(SRC_GBINDER) $(CFLAGS_GBINDER) $(LDFLAGS_GBINDER) -o $(TARGET_GBINDER)
 
 hybris: $(TARGET_HYBRIS)
 $(TARGET_HYBRIS):
-	$(CC) $(SRC_HYBRIS) -o $(TARGET_HYBRIS) $(LDFLAGS_HYBRIS)
+	$(CC) $(SRC_HYBRIS) $(CFLAGS_HYBRIS) $(LDFLAGS_HYBRIS) -o $(TARGET_HYBRIS)
 
 wifi: $(TARGET_WIFI)
 $(TARGET_WIFI):
-	$(CC) $(SRC_WIFI) -o $(TARGET_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI)
+	$(CC) $(SRC_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI) -o $(TARGET_WIFI)
 
 nfcd: $(TARGET_NFCD)
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
@@ -94,16 +102,16 @@ $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 
 waydroid: $(TARGET_WAYDROID)
 $(TARGET_WAYDROID):
-	$(CC) -fPIC -shared $(SRC_WAYDROID) -o $(TARGET_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
-	$(CC) $(SRC_WAYDROID_CLI) -o $(TARGET_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)
+	$(CC) -fPIC -shared $(SRC_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID) -o $(TARGET_WAYDROID)
+	$(CC) $(SRC_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)-o $(TARGET_WAYDROID_CLI)
 
 nicerdicer: $(TARGET_NICERDICER)
 $(TARGET_NICERDICER):
-	$(CC) $(SRC_NICERDICER) -o $(TARGET_NICERDICER) $(CFLAGS_NICERDICER) $(LDFLAGS_NICERDICER)
+	$(CC) $(SRC_NICERDICER) $(CFLAGS_NICERDICER) $(LDFLAGS_NICERDICER) -o $(TARGET_NICERDICER)
 
 examples: $(TARGET_EXAMPLES)
 $(TARGET_EXAMPLES):
-	$(CC) $(SRC_EXAMPLES) -o $(TARGET_EXAMPLES) $(CFLAGS_EXAMPLES) $(LDFLAGS_EXAMPLES)
+	$(CC) $(SRC_EXAMPLES) $(CFLAGS_EXAMPLES) $(LDFLAGS_EXAMPLES) -o $(TARGET_EXAMPLES)
 
 nfcd-batman-plugin.o: src/nfcd-batman-plugin.c
 	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
