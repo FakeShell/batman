@@ -120,7 +120,7 @@ wlrdisplay.o: src/wlrdisplay.c
 	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
 
 .PHONY: install
-install:
+install: all
 	cp src/$(TARGET) $(BINDIR)
 	cp $(TARGET_HELPER) $(BINDIR)
 	cp $(TARGET_GUI) $(BINDIR)
