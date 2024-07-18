@@ -5,7 +5,7 @@
 
 override_dh_auto_build:
 	gcc src/batman-helper.c src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c src/batman-waydroid.c -lwayland-client `pkg-config --cflags --libs upower-glib gio-2.0` -o batman-helper
-	gcc -fPIC -shared src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c `pkg-config --cflags upower-glib` `pkg-config --libs upower-glib` -o libbatman-wrappers.so
+	gcc -fPIC -shared src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c `pkg-config --cflags upower-glib` `pkg-config --libs upower-glib` -lwayland-client -o libbatman-wrappers.so
 	gcc src/governor.c src/wlrdisplay.c src/batman-wrappers.c -lwayland-client `pkg-config --libs upower-glib` `pkg-config --cflags upower-glib` -o governor
 	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c `pkg-config --cflags gtk4 libadwaita-1` `pkg-config --libs gtk4 libadwaita-1` -o batman-gui
 
