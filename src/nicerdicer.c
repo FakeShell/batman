@@ -53,8 +53,25 @@ set_process_niceness (pid_t pid, gint niceness, const gchar *program_name)
 {
     if (setpriority (PRIO_PROCESS, pid, niceness) == -1)
         perror ("setpriority");
-    else
+    else {
         g_print ("Set niceness of program '%s' with PID %d to %d\n", program_name, pid, niceness);
+        gchar path[PATH_MAX];
+        g_snprintf (path, sizeof (path), "/proc/%d/task", pid);
+        DIR *task_dir = opendir (path);
+        if (task_dir) {
+            struct dirent *entry;
+            while ((entry = readdir (task_dir)) != NULL) {
+                if (entry->d_type != DT_DIR || !is_number (entry->d_name))
+                    continue;
+                pid_t tid = atoi (entry->d_name);
+                if (setpriority (PRIO_PROCESS, tid, niceness) == -1)
+                    perror ("setpriority");
+                else
+                    g_print ("Set niceness of thread %d of program '%s' with PID %d to %d\n", tid, program_name, pid, niceness);
+            }
+            closedir (task_dir);
+        }
+    }
 }
 
 static void
