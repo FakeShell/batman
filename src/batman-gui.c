@@ -22,8 +22,8 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         NULL
     };
 
-    adw_show_about_window(
-        gtk_application_get_active_window(app),
+    adw_show_about_dialog(
+        GTK_WIDGET(gtk_application_get_active_window(app)),
         "application-name", "Batman GUI",
         "application-icon", "batman",
         "version", "1.42",
