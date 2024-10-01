@@ -19,6 +19,8 @@ CFLAGS_WAYDROID = `pkg-config --cflags gio-2.0`
 LDFLAGS_WAYDROID = `pkg-config --libs gio-2.0`
 CFLAGS_NICERDICER = `pkg-config --cflags gio-2.0`
 LDFLAGS_NICERDICER = `pkg-config --libs gio-2.0`
+CFLAGS_POWERCONFIG = `pkg-config --cflags gio-2.0`
+LDFLAGS_POWERCONFIG = `pkg-config --libs gio-2.0`
 CFLAGS_EXAMPLES = `pkg-config --cflags upower-glib`
 LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-waydroid -lwayland-client
 
@@ -36,6 +38,7 @@ TARGET_PPDCLI = src/powerprofilesctl.py
 TARGET_WAYDROID = libbatman-waydroid.so
 TARGET_WAYDROID_CLI = batman-waydroid
 TARGET_NICERDICER = batman-nicerdicer
+TARGET_POWERCONFIG = batman-powerconfig
 TARGET_EXAMPLES = batman-examples
 
 SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-waydroid.c
@@ -49,6 +52,7 @@ SRC_WIFI = src/batman-wifi.c
 SRC_WAYDROID = src/batman-waydroid.c
 SRC_WAYDROID_CLI = src/batman-waydroid-cli.c src/batman-waydroid.c
 SRC_NICERDICER = src/nicerdicer.c
+SRC_POWERCONFIG = src/powerconfig.c
 SRC_EXAMPLES = examples/batman-functions.c
 HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h
 
@@ -66,7 +70,7 @@ POLKIT_DIR ?= $(PREFIX)/share/polkit-1/actions
 DBUS_DIR ?= $(PREFIX)/share/dbus-1/system.d
 
 .PHONY: all
-all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid nicerdicer
+all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid nicerdicer powerconfig
 
 helper: $(TARGET_HELPER)
 $(TARGET_HELPER):
@@ -109,6 +113,10 @@ nicerdicer: $(TARGET_NICERDICER)
 $(TARGET_NICERDICER):
 	$(CC) $(SRC_NICERDICER) $(CFLAGS_NICERDICER) $(LDFLAGS_NICERDICER) -o $(TARGET_NICERDICER)
 
+powerconfig: $(TARGET_POWERCONFIG)
+$(TARGET_POWERCONFIG):
+	$(CC) $(SRC_POWERCONFIG) $(CFLAGS_POWERCONFIG) $(LDFLAGS_POWERCONFIG) -o $(TARGET_POWERCONFIG)
+
 examples: $(TARGET_EXAMPLES)
 $(TARGET_EXAMPLES):
 	$(CC) $(SRC_EXAMPLES) $(CFLAGS_EXAMPLES) $(LDFLAGS_EXAMPLES) -o $(TARGET_EXAMPLES)
@@ -134,6 +142,7 @@ install: all
 	cp $(TARGET_WAYDROID) $(LIBDIR)
 	cp $(TARGET_WAYDROID_CLI) $(BINDIR)
 	cp $(TARGET_NICERDICER) $(SBINDIR)
+	cp $(TARGET_POWERCONFIG) $(SBINDIR)
 
 	mkdir -p $(DESKTOP_DIR)
 	cp data/batman-gui.desktop $(DESKTOP_DIR)
@@ -153,11 +162,13 @@ install: all
 	mkdir -p $(DBUS_DIR)
 	cp data/net.hadess.PowerProfiles.conf $(DBUS_DIR)
 	cp data/io.FuriOS.NicerDicer.conf $(DBUS_DIR)
+	cp data/io.FuriOS.BatmanPowerConfig.conf $(DBUS_DIR)
 
 ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
 	cp data/batman.service $(SYSTEMD_DIR)
 	cp data/batman2ppd.service $(SYSTEMD_DIR)
 	cp data/nicerdicer.service $(SYSTEMD_DIR)
+	cp data/powerconfig.service $(SYSTEMD_DIR)
 else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
 	cp data/batman.rc $(OPENRC_DIR)/batman
 else
@@ -180,4 +191,5 @@ clean:
 	rm -f $(TARGET_WAYDROID_CLI)
 	rm -f $(TARGET_NICERDICER)
 	rm -f $(TARGET_EXAMPLES)
+	rm -f $(TARGET_POWERCONFIG)
 	rm -f nfcd-batman-plugin.o wlrdisplay.o

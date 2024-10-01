@@ -1,0 +1,11 @@
+[Unit]
+Description=Manage USB port configuration
+Requires=batman.service
+
+[Service]
+Type=dbus
+BusName=io.FuriOS.BatmanPowerConfig
+ExecStart=/usr/sbin/batman-powerconfig
+
+[Install]
+WantedBy=graphical.target

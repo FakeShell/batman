@@ -1,0 +1,2 @@
+usr/sbin/batman-powerconfig
+usr/share/dbus-1/system.d/io.FuriOS.BatmanPowerConfig.conf

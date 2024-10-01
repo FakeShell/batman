@@ -135,3 +135,10 @@ Architecture: any
 Depends: ${misc:Depends}
 Description: batman-nicerdicer
  A battery management service for Linux phones - nicerdicer service
+
+Package: batman-powerconfig
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+Description: batman-powerconfig
+ A battery management service for Linux phones - powerconfig service
