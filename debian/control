@@ -37,7 +37,9 @@ Recommends: batman-wifi,
             nfcd-batman-plugin,
             batman2ppd,
             libbatman-waydroid,
-            batman-waydroid-freezer,
+            batman-waydroid,
+            batman-nicerdicer,
+            batman-powerconfig,
 Description: batman
  A battery management service for Linux phones
 
