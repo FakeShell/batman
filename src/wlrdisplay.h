@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
+// Copyright (c) 2019 Purism SPC
+// Copyright (c) 2019 The wlr-randr Contributors
 // Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #ifndef WLR_OUTPUT_MANAGEMENT_UNSTABLE_V1_CLIENT_PROTOCOL_H
@@ -121,6 +123,12 @@ zwlr_output_head_v1_add_listener(struct zwlr_output_head_v1 *zwlr_output_head_v1
 				     (void (**)(void)) listener, data);
 }
 
+static inline void
+zwlr_output_head_v1_destroy(struct zwlr_output_head_v1 *zwlr_output_head_v1)
+{
+        wl_proxy_destroy((struct wl_proxy *) zwlr_output_head_v1);
+}
+
 struct zwlr_output_mode_v1_listener {
 	void (*size)(void *data,
 		     struct zwlr_output_mode_v1 *zwlr_output_mode_v1,
@@ -144,6 +152,12 @@ zwlr_output_mode_v1_add_listener(struct zwlr_output_mode_v1 *zwlr_output_mode_v1
 {
 	return wl_proxy_add_listener((struct wl_proxy *) zwlr_output_mode_v1,
 				     (void (**)(void)) listener, data);
+}
+
+static inline void
+zwlr_output_mode_v1_destroy(struct zwlr_output_mode_v1 *zwlr_output_mode_v1)
+{
+        wl_proxy_destroy((struct wl_proxy *) zwlr_output_mode_v1);
 }
 
 struct zwlr_output_configuration_v1_listener {
