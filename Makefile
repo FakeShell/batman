@@ -68,6 +68,7 @@ ICON_DIR ?= $(PREFIX)/share/icons
 INCLUDE_DIR ?= $(PREFIX)/include/batman
 POLKIT_DIR ?= $(PREFIX)/share/polkit-1/actions
 DBUS_DIR ?= $(PREFIX)/share/dbus-1/system.d
+TRIPLET ?= $(shell $(CC) -dumpmachine)
 
 .PHONY: all
 all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid nicerdicer powerconfig
@@ -133,13 +134,13 @@ install: all
 	cp $(TARGET_HELPER) $(BINDIR)
 	cp $(TARGET_GUI) $(BINDIR)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
-	cp $(TARGET_WRAPPERS) $(LIBDIR)
-	cp $(TARGET_GBINDER) $(LIBDIR)
+	cp $(TARGET_WRAPPERS) $(LIBDIR)/$(TRIPLET)
+	cp $(TARGET_GBINDER) $(LIBDIR)/$(TRIPLET)
 	cp $(TARGET_HYBRIS) $(BINDIR)
 	cp $(TARGET_WIFI) $(BINDIR)
 	cp $(TARGET_BATMAN2PPD) $(BINDIR)/batman2ppd
 	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
-	cp $(TARGET_WAYDROID) $(LIBDIR)
+	cp $(TARGET_WAYDROID) $(LIBDIR)/$(TRIPLET)
 	cp $(TARGET_WAYDROID_CLI) $(BINDIR)
 	cp $(TARGET_NICERDICER) $(SBINDIR)
 	cp $(TARGET_POWERCONFIG) $(SBINDIR)
