@@ -12,6 +12,7 @@ import subprocess
 import asyncio
 import time
 import os
+import gbinder
 import configparser
 import multiprocessing
 
@@ -47,7 +48,7 @@ class PPDInterface(ServiceInterface):
             default_governor = ""
 
         if profile == "performance" and self.props['PerformanceDegraded'].value == "":
-            subprocess.Popen("batman-hybris vr 1", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            set_vr(True)
 
             if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
                 online_half(self.cores)
@@ -60,7 +61,7 @@ class PPDInterface(ServiceInterface):
             subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
         elif profile == "balanced":
-            subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            set_vr(False)
 
             if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
                 online_half(self.cores)
@@ -73,7 +74,7 @@ class PPDInterface(ServiceInterface):
             subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
         elif profile == "power-saver":
-            subprocess.Popen("batman-hybris vr 0", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            set_vr(False)
 
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_FIRSTPOLCORE", "w+") as f:
@@ -245,6 +246,21 @@ def online_half(cpu_count):
             #print(f"Enabled CPU {i}")
         except Exception as e:
             print(f"Error enabling CPU {i}: {e}")
+
+def set_vr(enabled):
+    available = find_hidl("android.hardware.vr@1.0::IVr/default")
+    if available:
+        vr_state = "1" if enabled else "0"
+        result = subprocess.run(f"batman-hybris vr {vr_state}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        return result.returncode == 0
+    return False
+
+def find_hidl(intf):
+    try:
+        sm = gbinder.ServiceManager("/dev/hwbinder")
+        return intf in sm.list_sync()
+    except:
+        return False
 
 ### GTherm equivalent implementation ###
 
