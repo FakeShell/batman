@@ -26,6 +26,7 @@
                             } while(false)
 
 #define WMTWIFI_DEVICE "/dev/wmtWifi"
+#define CAM_NODE "/proc/net/wlan/setCAM"
 #define TESTMODE_CMD_ID_SUSPEND 101
 #define WMTWIFI_SUSPEND_VALUE   (1)
 #define WMTWIFI_RESUME_VALUE    (0)
@@ -354,6 +355,36 @@ suspend_set_wmtwifi(
     }
 }
 
+/**
+ * @brief Set Mediatek CAM to powersave
+ *
+ * @param is_enable enable/disable state
+ */
+static
+void
+suspend_set_setcam(
+    bool is_enable)
+{
+    FILE *fp;
+
+    if (access(CAM_NODE, F_OK) != 0) {
+        printf("setCAM proc entry does not exist, skipping CAM setting\n");
+        return;
+    }
+
+    fp = fopen(CAM_NODE, "w");
+    if (fp == NULL) {
+        printf("Failed to open setCAM proc entry: %s\n", strerror(errno));
+        return;
+    }
+
+    if (fprintf(fp, "CAM %d\n", is_enable ? 1 : 0) < 0) {
+        printf("Failed to write to setCAM proc entry: %s\n", strerror(errno));
+    }
+
+    fclose(fp);
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         printf("Usage: %s [suspend|resume]\n", argv[0]);
@@ -363,19 +394,19 @@ int main(int argc, char *argv[]) {
     // Initialize netlink
     nl_socket = nl_socket_alloc();
     if (!nl_socket) {
-        //fprintf(stderr, "Failed to allocate netlink socket\n");
+        fprintf(stderr, "Failed to allocate netlink socket\n");
         return -1;
     }
 
     if (genl_connect(nl_socket)) {
-        //fprintf(stderr, "Failed to connect to generic netlink\n");
+        fprintf(stderr, "Failed to connect to generic netlink\n");
         nl_socket_free(nl_socket);
         return -1;
     }
 
     driver_id = genl_ctrl_resolve(nl_socket, "nl80211");
     if (driver_id < 0) {
-        //fprintf(stderr, "Could not resolve nl80211 driver id\n");
+        fprintf(stderr, "Could not resolve nl80211 driver id\n");
         nl_socket_free(nl_socket);
         return -1;
     }
@@ -383,13 +414,15 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "suspend") == 0) {
         suspend_set_powersave("wlan0", true);
         suspend_set_wmtwifi("wlan0", WMTWIFI_SUSPEND_VALUE);
+        suspend_set_setcam(true);
         //printf("Suspend and power save set for wlan0\n");
     } else if (strcmp(argv[1], "resume") == 0) {
         suspend_set_powersave("wlan0", false);
         suspend_set_wmtwifi("wlan0", WMTWIFI_RESUME_VALUE);
+        suspend_set_setcam(false);
         //printf("Resume and power save unset for wlan0\n");
     } else {
-        //fprintf(stderr, "Invalid argument. Use 'suspend' or 'resume'\n");
+        fprintf(stderr, "Invalid argument. Use 'suspend' or 'resume'\n");
         nl_socket_free(nl_socket);
         return -1;
     }
