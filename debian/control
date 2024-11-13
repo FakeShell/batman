@@ -112,6 +112,7 @@ Package: batman2ppd
 Architecture: any
 Depends: ${misc:Depends},
          python3-dbus-next,
+         python3-gbinder,
 Replaces: power-profiles-daemon
 Provides: power-profiles-daemon
 Description: batman2ppd
