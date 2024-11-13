@@ -49,6 +49,7 @@ class PPDInterface(ServiceInterface):
 
         if profile == "performance" and self.props['PerformanceDegraded'].value == "":
             set_vr(True)
+            set_mtkpower(45)
 
             if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
                 online_half(self.cores)
@@ -62,6 +63,7 @@ class PPDInterface(ServiceInterface):
 
         elif profile == "balanced":
             set_vr(False)
+            set_mtkpower(21) # PROCESS_CREATE, much less intensive than UX_MOVE_SCROLLING (45) which pushes everything up to 100
 
             if os.path.exists("/var/lib/batman/CUSTOM_FIRSTPOLCORE"):
                 online_half(self.cores)
@@ -75,6 +77,7 @@ class PPDInterface(ServiceInterface):
 
         elif profile == "power-saver":
             set_vr(False)
+            set_mtkpower(21) # PROCESS_CREATE, much less intensive than UX_MOVE_SCROLLING (45) which pushes everything up to 100
 
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_FIRSTPOLCORE", "w+") as f:
@@ -252,6 +255,13 @@ def set_vr(enabled):
     if available:
         vr_state = "1" if enabled else "0"
         result = subprocess.run(f"batman-hybris vr {vr_state}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        return result.returncode == 0
+    return False
+
+def set_mtkpower(state):
+    available = find_hidl("vendor.mediatek.hardware.mtkpower@1.0::IMtkPower/default")
+    if available:
+        result = subprocess.run(f"batman-hybris mtkpower {state}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         return result.returncode == 0
     return False
 
