@@ -81,7 +81,7 @@ class PPDInterface(ServiceInterface):
                     #print(half_cores)
                     f.write(f'{half_cores}')
 
-            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            await restart_service('batman')
             offline_half(self.cores)
 
         self.props['ActiveProfile'] = Variant('s', profile)
@@ -194,6 +194,35 @@ class PPDInterface(ServiceInterface):
                 profile = None
             return profile
 
+async def restart_service(service_name: str) -> bool:
+    try:
+        if not service_name.endswith('.service'):
+            service_name = f"{service_name}.service"
+
+        bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+
+        introspection = await bus.introspect(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1'
+        )
+
+        proxy_object = bus.get_proxy_object(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            introspection
+        )
+
+        systemd = proxy_object.get_interface('org.freedesktop.systemd1.Manager')
+
+        await systemd.call_restart_unit(service_name, 'replace')
+
+        bus.disconnect()
+
+        return True
+    except Exception as e:
+        print(f"Error restarting {service_name}: {e}")
+        return False
+
 def offline_half(cpu_count):
     half_cpus = cpu_count // 2
 
@@ -286,7 +315,6 @@ async def main():
         ppd_interface.ActiveProfile(profile)
 
     loop.create_task(thermal_check())
-
     await bus.wait_for_disconnect()
 
 asyncio.run(main())
