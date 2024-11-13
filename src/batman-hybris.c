@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } else if (strcmp(feature, "mtkpower") == 0) {
-            if (state >= 21 && state <= 46) {
+            if (state >= 20 && state <= 46) {
                 int ret = init_mtkpower_hidl(state);
 
                 if (ret != 0) {
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
                     //printf("Using MTK Power HIDL backend\n");
                 }
             } else {
-                printf("Invalid MTK Power state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
+                printf("Invalid MTK Power state argument. State must be between 20 and 46\n");
                 return 1;
             }
         } else {
