@@ -26,7 +26,7 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         GTK_WIDGET(gtk_application_get_active_window(app)),
         "application-name", "Batman GUI",
         "application-icon", "batman",
-        "version", "1.42",
+        "version", "2.0",
         "copyright", "© 2024 Bardia Moshiri, Erik Inkinen",
         "issue-url", "https://github.com/fakeshell/batman/issues/new",
         "license-type", GTK_LICENSE_GPL_2_0_ONLY,
@@ -51,21 +51,37 @@ void ctl_enabled_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
     g_object_unref(src_ctl);
 }
 
-gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
-    printf("%d\n", state);
-    if (state == bm_state.active) return FALSE;
+gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpointer user_data) {
+    g_autoptr(GError) error = NULL;
+    gboolean success;
 
-    const gchar* ctl_argv[] = {
-        "pkexec", "systemctl", (state) ? "start" : "stop", "batman", NULL
-    };
-    GSubprocess* ctl_proc = g_subprocess_newv(ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
-    g_subprocess_communicate_async(ctl_proc, NULL, NULL, ctl_active_cb, sender);
+    if (state == bm_state.active)
+        return FALSE;
+
+    if (state)
+        success = start_batman_service(&error);
+    else
+        success = stop_batman_service(&error);
+
+    if (!success) {
+        g_warning("Failed to change batman service state: %s",
+                  error ? error->message : "unknown error");
+        gtk_switch_set_active(sender, !state);
+        return FALSE;
+    }
+
+    gtk_switch_set_state(GTK_SWITCH(sender), state);
+    gtk_switch_set_active(GTK_SWITCH(sender), state);
+
+    // update bm_state
+    check_batman_active();
     return TRUE;
 }
 
+// switching this to the method in getinfo is not possible at the moment. polkit will complain
 gboolean service_enabled_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
-    printf("%d\n", state);
-    if (state == bm_state.enabled) return FALSE;
+    if (state == bm_state.enabled)
+        return FALSE;
 
     const gchar* ctl_argv[] = {
         "pkexec", "systemctl", (state) ? "enable" : "disable", "batman", NULL
@@ -165,7 +181,7 @@ void activate(GtkApplication* app, gpointer user_data) {
 
     GString *max_cpu_str = g_string_new(NULL);
     g_string_printf(max_cpu_str, "%d", config.max_cpu_usage);
-    printf("\"%s\", %d\n", max_cpu_str->str, config.max_cpu_usage);
+
     gtk_editable_set_text(GTK_EDITABLE(max_cpu_entry_row), max_cpu_str->str);
     g_string_free(max_cpu_str, TRUE);
 
@@ -202,8 +218,6 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(chargesave_action_row), chargesave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), chargesave_action_row);
 
-    //gtk_box_append(GTK_BOX(vbox), config_list_box);
-
     // Config : Offline
 
     GtkWidget *offline_action_row = adw_action_row_new();
@@ -233,8 +247,6 @@ void activate(GtkApplication* app, gpointer user_data) {
 
     adw_action_row_add_suffix(ADW_ACTION_ROW(gpusave_action_row), gpusave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), gpusave_action_row);
-
-    //gtk_box_append(GTK_BOX(vbox), config_list_box);
 
     // Config : Bus Save
 
@@ -328,12 +340,12 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
-            printf("batman-gui version: 1.43\n");
+            printf("batman-gui version: 2.0\n");
             return 0;
         }
     }
 
-    app = gtk_application_new("org.droidian.batman-gui", G_APPLICATION_DEFAULT_FLAGS);
+    app = gtk_application_new("tech.bardia.batman-gui", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
