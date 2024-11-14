@@ -6,9 +6,123 @@
 
 #include <upower.h>
 
+/**
+ * Battery state enumeration representing different possible states of the battery
+ */
+typedef enum {
+    BATMAN_NO_BATTERY = 0,      /** No battery present in the system */
+    BATMAN_CHARGING = 1,        /** Battery is currently charging */
+    BATMAN_DISCHARGING = 2,     /** Battery is currently discharging */
+    BATMAN_FULLY_CHARGED = 3,   /** Battery is fully charged */
+    BATMAN_UNKNOWN = 4          /** Battery state cannot be determined */
+} batman_state_t;
+
+/**
+ * Structure containing detailed memory information from /proc/meminfo
+ */
+struct meminfo {
+    long long int memtotal;      /** Total usable RAM */
+    long long int memfree;       /** Unused memory */
+    long long int buffers;       /** Temporary storage for raw disk blocks */
+    long long int cached;        /** Cached files in memory */
+    long long int sreclaimable; /** Reclaimable kernel memory */
+};
+
+/**
+ * Get complete battery information including state and percentage
+ * @param upower The UPower client instance
+ * @param percentage Pointer to store battery percentage (0-100)
+ * @return String representation of battery state ("charging", "discharging", "fully-charged") or NULL if no battery
+ */
+const gchar *get_battery_all(UpClient *upower, gdouble *percentage);
+
+/**
+ * Get only the battery percentage
+ * @param upower The UPower client instance
+ * @return Current battery percentage (0-100) or 0 if no battery
+ */
+gdouble get_battery_percentage(UpClient *upower);
+
+/**
+ * Get battery state as an enum value
+ * @param upower The UPower client instance
+ * @return Current battery state as batman_state_t enum
+ */
+batman_state_t get_battery_state(UpClient *upower);
+
+/**
+ * Read memory information from /proc/meminfo
+ * @param mem Pointer to meminfo structure to fill
+ * @return 1 on success, 0 on failure with errno set
+ */
+int read_mem_info(struct meminfo *mem);
+
+/**
+ * Calculate current memory usage as a percentage
+ * @return Memory usage percentage (0-100) or -1.0 on error
+ */
+long double mem_usage(void);
+
+/**
+ * Get total CPU time across all CPU states
+ * @return Total CPU time or -1 on error
+ */
+long long get_total_cpu_time(void);
+
+/**
+ * Get CPU idle time (idle + iowait)
+ * @return Idle CPU time or -1 on error
+ */
+long long get_idle_cpu_time(void);
+
+/**
+ * Calculate current CPU usage as a percentage
+ * @return CPU usage percentage (0-100) or 0.0 on error
+ */
+double get_cpu_usage(void);
+
+/* Backwards compatibility functions */
+
+/**
+ * Legacy function for get_battery_all()
+ * @see get_battery_all
+ */
 const gchar *findBattery(UpClient *upower, gdouble *percentage);
 
-double cpuUsage();
-long double memUsage();
+/**
+ * Legacy function for get_battery_all()
+ * @see get_battery_all
+ */
+const gchar *find_battery(UpClient *upower, gdouble *percentage);
+
+/**
+ * Legacy function for read_mem_info()
+ * @see read_mem_info
+ */
+int readMemInfo(struct meminfo *mem);
+
+/**
+ * Legacy function for get_total_cpu_time()
+ * @see get_total_cpu_time
+ */
+long long getTotalCPUTime(void);
+
+/**
+ * Legacy function for get_idle_cpu_time()
+ * @see get_idle_cpu_time
+ */
+long long getIdleCPUTime(void);
+
+/**
+ * Legacy function for cpu_usage()
+ * @see cpu_usage
+ */
+double cpuUsage(void);
+
+/**
+ * Legacy function for mem_usage()
+ * @see mem_usage
+ */
+long double memUsage(void);
 
 #endif // BATMAN_WRAPPER_H
