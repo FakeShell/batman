@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
-// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
 
 #ifndef GETINFO_H
 #define GETINFO_H
 
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <glob.h>
 #include <glib.h>
-#include <unistd.h>
-#include <libgen.h>
-#include <sys/sysinfo.h>
 
 typedef struct {
     gboolean active;
@@ -22,7 +13,16 @@ typedef struct {
 
 extern BatmanState bm_state;
 
-int check_batman_active();
-int check_batman_enabled();
+/**
+ * Check if the batman service is currently active using systemd D-Bus interface
+ * @return 0 on success, -1 on failure
+ */
+int check_batman_active(void);
 
-#endif /* GETINFO_H */
+/**
+ * Check if the batman service is enabled at boot using systemd D-Bus interface
+ * @return 0 on success, -1 on failure
+ */
+int check_batman_enabled(void);
+
+#endif // GETINFO_H
