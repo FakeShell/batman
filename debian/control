@@ -31,6 +31,7 @@ Depends: ${misc:Depends},
          batman-governor,
          libbatman-wrappers,
 Recommends: batman-wifi,
+            libbatman-wifi,
             batman-gui,
             batman-hybris,
             libbatman-gbinder,
@@ -93,6 +94,13 @@ Architecture: any
 Depends: ${misc:Depends}
 Description: batman-wifi
  A battery management service for Linux phones - wifi suspend
+
+Package: libbatman-wifi
+Section: misc
+Architecture: any
+Depends: ${misc:Depends}
+Description: libbatman-wifi
+ A battery management service for Linux phones - wifi shared object
 
 Package: libbatman-gbinder
 Section: misc
