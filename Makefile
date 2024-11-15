@@ -32,7 +32,8 @@ TARGET_WRAPPERS = libbatman-wrappers.so
 TARGET_GBINDER = libbatman-gbinder.so
 TARGET_HYBRIS = batman-hybris
 TARGET_NFCD = batman.so
-TARGET_WIFI = batman-wifi
+TARGET_WIFI = libbatman-wifi.so
+TARGET_WIFI_CLI = batman-wifi
 TARGET_BATMAN2PPD = src/batman2ppd.py
 TARGET_PPDCLI = src/powerprofilesctl.py
 TARGET_WAYDROID = libbatman-waydroid.so
@@ -49,12 +50,13 @@ SRC_GBINDER = src/batman-gbinder.c
 SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
 SRC_WIFI = src/batman-wifi.c
+SRC_WIFI_CLI = src/batman-wifi-cli.c src/batman-wifi.c
 SRC_WAYDROID = src/batman-waydroid.c
 SRC_WAYDROID_CLI = src/batman-waydroid-cli.c src/batman-waydroid.c
 SRC_NICERDICER = src/nicerdicer.c
 SRC_POWERCONFIG = src/powerconfig.c
 SRC_EXAMPLES = examples/batman-functions.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h
+HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h src/batman-wifi.h
 
 PREFIX ?= /usr
 LIBDIR ?= $(PREFIX)/lib
@@ -99,7 +101,8 @@ $(TARGET_HYBRIS):
 
 wifi: $(TARGET_WIFI)
 $(TARGET_WIFI):
-	$(CC) $(SRC_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI) -o $(TARGET_WIFI)
+	$(CC) -fPIC -shared $(SRC_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI) -o $(TARGET_WIFI)
+	$(CC) $(SRC_WIFI_CLI) $(CFLAGS_WIFI) -L. -lbatman-wifi $(LDFLAGS_WIFI) -o $(TARGET_WIFI_CLI)
 
 nfcd: $(TARGET_NFCD)
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
@@ -108,7 +111,7 @@ $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 waydroid: $(TARGET_WAYDROID)
 $(TARGET_WAYDROID):
 	$(CC) -fPIC -shared $(SRC_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID) -o $(TARGET_WAYDROID)
-	$(CC) $(SRC_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID)-o $(TARGET_WAYDROID_CLI)
+	$(CC) $(SRC_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID) -o $(TARGET_WAYDROID_CLI)
 
 nicerdicer: $(TARGET_NICERDICER)
 $(TARGET_NICERDICER):
@@ -137,7 +140,8 @@ install: all
 	cp $(TARGET_WRAPPERS) $(LIBDIR)/$(TRIPLET)
 	cp $(TARGET_GBINDER) $(LIBDIR)/$(TRIPLET)
 	cp $(TARGET_HYBRIS) $(BINDIR)
-	cp $(TARGET_WIFI) $(BINDIR)
+	cp $(TARGET_WIFI_LIB) $(LIBDIR)/$(TRIPLET)
+	cp $(TARGET_WIFI_CLI) $(BINDIR)
 	cp $(TARGET_BATMAN2PPD) $(BINDIR)/batman2ppd
 	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
 	cp $(TARGET_WAYDROID) $(LIBDIR)/$(TRIPLET)
@@ -188,6 +192,7 @@ clean:
 	rm -f $(TARGET_HYBRIS)
 	rm -f $(TARGET_NFCD)
 	rm -f $(TARGET_WIFI)
+	rm -f $(TARGET_WIFI_CLI)
 	rm -f $(TARGET_WAYDROID)
 	rm -f $(TARGET_WAYDROID_CLI)
 	rm -f $(TARGET_NICERDICER)
