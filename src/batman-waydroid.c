@@ -161,7 +161,6 @@ waydroid_screen_toggle () {
     g_object_unref (waydroid_proxy);
 }
 
-
 gboolean
 waydroid_screen_status () {
     GDBusProxy *waydroid_proxy;
@@ -199,7 +198,7 @@ waydroid_screen_status () {
 
     if (error) {
         g_print ("Error calling isAsleep on Waydroid: %s\n", error->message);
-        g_clear_error(&error);
+        g_clear_error (&error);
     } else {
         g_variant_get (result, "(b)", &is_asleep);
         g_variant_unref (result);
@@ -215,14 +214,60 @@ waydroid_screen (gboolean state) {
     gboolean is_asleep = waydroid_screen_status ();
 
     if (current_state != NULL) {
-        if (g_strcmp0(current_state, "RUNNING") == 0) {
+        if (g_strcmp0 (current_state, "RUNNING") == 0) {
             //g_print ("Waydroid is currently running.\n");
-            if ((state && is_asleep) || (!state && !is_asleep)) {
+            if ((state && is_asleep) || (!state && !is_asleep))
                 waydroid_screen_toggle ();
-            }
         }
         g_free (current_state);
     } else {
         //g_print ("Failed to get Waydroid state.\n");
     }
+}
+
+gboolean
+waydroid_app_open () {
+    GDBusProxy *waydroid_proxy;
+    GError *error = NULL;
+    GVariant *result;
+    gboolean app_open = FALSE;
+
+    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+        G_BUS_TYPE_SYSTEM,
+        G_DBUS_PROXY_FLAGS_NONE,
+        NULL,
+        WAYDROID_DBUS_NAME,
+        WAYDROID_DBUS_PATH,
+        WAYDROID_DBUS_INTERFACE,
+        NULL,
+        &error
+    );
+
+    if (error) {
+        g_print ("Error creating proxy: %s\n", error->message);
+        g_clear_error (&error);
+        g_object_unref (waydroid_proxy);
+        return app_open;
+    }
+
+    result = g_dbus_proxy_call_sync(
+        waydroid_proxy,
+        "OpenAppPresent",
+        NULL,
+        G_DBUS_CALL_FLAGS_NONE,
+        -1,
+        NULL,
+        &error
+    );
+
+    if (error) {
+        g_print ("Error calling OpenAppPresent on Waydroid: %s\n", error->message);
+        g_clear_error (&error);
+    } else {
+        g_variant_get (result, "(b)", &app_open);
+        g_variant_unref (result);
+    }
+
+    g_object_unref (waydroid_proxy);
+    return app_open;
 }
