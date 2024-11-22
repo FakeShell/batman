@@ -15,6 +15,8 @@
 
 #define MEMINFO "/proc/meminfo"
 #define STAT "/proc/stat"
+#define NUM_SAMPLES 3
+#define SAMPLE_INTERVAL_MS 100
 
 static void _get_battery_info(UpClient *upower, batman_state_t *state, gdouble *percentage, const gchar **statelabel) {
     UpDevice *device = NULL;
@@ -150,69 +152,64 @@ int readMemInfo(struct meminfo *mem) {
     return read_mem_info(mem);
 }
 
-long long get_total_cpu_time(void) {
-    FILE *fp;
-    char buffer[128];
-    long long user, nice, system, idle, iowait, irq, softirq, steal;
-
-    fp = fopen(STAT, "r");
-    if (fp == NULL) {
-        perror("Error opening /proc/stat");
+int read_cpu_stats(cpu_time_t *cpu_time) {
+    FILE *fp = fopen(STAT, "r");
+    if (!fp) {
+        fprintf(stderr, "Error opening %s: %s\n", STAT, strerror(errno));
         return -1;
     }
 
-    fgets(buffer, 128, fp);
-    fclose(fp);
-
-    sscanf(buffer, "cpu  %lld %lld %lld %lld %lld %lld %lld %lld",
-           &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal);
-    return user + nice + system + idle + iowait + irq + softirq + steal;
-}
-
-long long getTotalCPUTime(void) {
-    return get_total_cpu_time();
-}
-
-long long get_idle_cpu_time(void) {
-    FILE *fp;
-    char buffer[128];
-    long long user, nice, system, idle, iowait, irq, softirq, steal;
-
-    fp = fopen(STAT, "r");
-    if (fp == NULL) {
-        perror("Error opening /proc/stat");
+    char buffer[256];
+    if (!fgets(buffer, sizeof(buffer), fp)) {
+        fclose(fp);
         return -1;
     }
 
-    fgets(buffer, 128, fp);
     fclose(fp);
 
-    sscanf(buffer, "cpu  %lld %lld %lld %lld %lld %lld %lld %lld",
-           &user, &nice, &system, &idle, &iowait, &irq, &softirq, &steal);
-    return idle + iowait;
+    return sscanf(buffer, "cpu  %lld %lld %lld %lld %lld %lld %lld %lld",
+           &cpu_time->user, &cpu_time->nice, &cpu_time->system,
+           &cpu_time->idle, &cpu_time->iowait, &cpu_time->irq,
+           &cpu_time->softirq, &cpu_time->steal);
 }
 
-long long getIdleCPUTime(void) {
-    return get_idle_cpu_time();
+long long get_total_time(const cpu_time_t *cpu_time) {
+    return cpu_time->user + cpu_time->nice + cpu_time->system +
+           cpu_time->idle + cpu_time->iowait + cpu_time->irq +
+           cpu_time->softirq + cpu_time->steal;
+}
+
+long long get_idle_time(const cpu_time_t *cpu_time) {
+    return cpu_time->idle + cpu_time->iowait;
 }
 
 double get_cpu_usage(void) {
-    long long total_cpu_time_1 = get_total_cpu_time();
-    long long idle_cpu_time_1 = get_idle_cpu_time();
+    cpu_time_t samples[NUM_SAMPLES];
+    double usage_samples[NUM_SAMPLES - 1];
+    double total_usage = 0.0;
 
-    usleep(500000);
+    for (int i = 0; i < NUM_SAMPLES; i++) {
+        if (read_cpu_stats(&samples[i]) < 0)
+            return -1.0;
+        if (i < NUM_SAMPLES - 1)
+            usleep(SAMPLE_INTERVAL_MS * 1000);
+    }
 
-    long long total_cpu_time_2 = get_total_cpu_time();
-    long long idle_cpu_time_2 = get_idle_cpu_time();
+    for (int i = 0; i < NUM_SAMPLES - 1; i++) {
+        long long total_diff = get_total_time(&samples[i + 1]) -
+                               get_total_time(&samples[i]);
+        long long idle_diff = get_idle_time(&samples[i + 1]) -
+                              get_idle_time(&samples[i]);
 
-    double total_diff = (double)(total_cpu_time_2 - total_cpu_time_1);
-    double idle_diff = (double)(idle_cpu_time_2 - idle_cpu_time_1);
+        if (total_diff <= idle_diff || total_diff == 0)
+            usage_samples[i] = 0.0;
+        else
+            usage_samples[i] = 100.0 * (1.0 - (double)idle_diff / total_diff);
 
-    if (total_diff <= idle_diff)
-        return 0.0;
+        total_usage += usage_samples[i];
+    }
 
-    double usage = 100.0 * (1.0 - idle_diff / total_diff);
-    return usage;
+    return total_usage / (NUM_SAMPLES - 1);
 }
 
 double cpuUsage(void) {

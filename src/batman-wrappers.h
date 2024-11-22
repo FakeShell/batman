@@ -25,8 +25,23 @@ struct meminfo {
     long long int memfree;       /** Unused memory */
     long long int buffers;       /** Temporary storage for raw disk blocks */
     long long int cached;        /** Cached files in memory */
-    long long int sreclaimable; /** Reclaimable kernel memory */
+    long long int sreclaimable;  /** Reclaimable kernel memory */
 };
+
+
+/**
+ * Structure containing CPU time information
+ */
+typedef struct {
+    long long user;     /** Time spent in user mode */
+    long long nice;     /** Time spent in user mode with low priority */
+    long long system;   /** Time spent in system mode */
+    long long idle;     /** Time spent in idle task */
+    long long iowait;   /** Time waiting for I/O to complete */
+    long long irq;      /** Time servicing interrupts */
+    long long softirq;  /** Time servicing softirqs */
+    long long steal;    /** Stolen time */
+} cpu_time_t;
 
 /**
  * Get complete battery information including state and percentage
@@ -64,20 +79,29 @@ int read_mem_info(struct meminfo *mem);
 long double mem_usage(void);
 
 /**
- * Get total CPU time across all CPU states
- * @return Total CPU time or -1 on error
+ * Read CPU statistics from /proc/stat
+ * @param cpu_time Pointer to cpu_time_t structure to fill
+ * @return Number of fields successfully read or -1 on error
  */
-long long get_total_cpu_time(void);
+int read_cpu_stats(cpu_time_t *cpu_time);
 
 /**
- * Get CPU idle time (idle + iowait)
- * @return Idle CPU time or -1 on error
+ * Calculate total CPU time across all states
+ * @param cpu_time Pointer to cpu_time_t structure containing CPU stats
+ * @return Total CPU time as sum of all states
  */
-long long get_idle_cpu_time(void);
+long long get_total_time(const cpu_time_t *cpu_time);
 
 /**
- * Calculate current CPU usage as a percentage
- * @return CPU usage percentage (0-100) or 0.0 on error
+ * Calculate idle CPU time (idle + iowait)
+ * @param cpu_time Pointer to cpu_time_t structure containing CPU stats
+ * @return Sum of idle and iowait times
+ */
+long long get_idle_time(const cpu_time_t *cpu_time);
+
+/**
+ * Calculate current CPU usage as percentage based on multiple samples
+ * @return CPU usage percentage (0-100) or -1.0 on error
  */
 double get_cpu_usage(void);
 
@@ -100,18 +124,6 @@ const gchar *find_battery(UpClient *upower, gdouble *percentage);
  * @see read_mem_info
  */
 int readMemInfo(struct meminfo *mem);
-
-/**
- * Legacy function for get_total_cpu_time()
- * @see get_total_cpu_time
- */
-long long getTotalCPUTime(void);
-
-/**
- * Legacy function for get_idle_cpu_time()
- * @see get_idle_cpu_time
- */
-long long getIdleCPUTime(void);
 
 /**
  * Legacy function for cpu_usage()
