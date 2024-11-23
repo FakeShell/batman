@@ -183,24 +183,20 @@ long long get_idle_time(const cpu_time_t *cpu_time) {
     return cpu_time->idle + cpu_time->iowait;
 }
 
-double get_cpu_usage(void) {
-    cpu_time_t samples[NUM_SAMPLES];
-    double usage_samples[NUM_SAMPLES - 1];
-    double total_usage = 0.0;
-
-    for (int i = 0; i < NUM_SAMPLES; i++) {
+static double get_samples_average(cpu_time_t *samples, double *usage_samples, int start_idx, int num_samples) {
+    for (int i = start_idx; i < start_idx + num_samples; i++) {
         if (read_cpu_stats(&samples[i]) < 0)
             return -1.0;
-        if (i < NUM_SAMPLES - 1)
+        if (i < start_idx + num_samples - 1)
             usleep(SAMPLE_INTERVAL_MS * 1000);
     }
 
-    for (int i = 0; i < NUM_SAMPLES - 1; i++) {
+    double total_usage = 0.0;
+    for (int i = start_idx; i < start_idx + num_samples - 1; i++) {
         long long total_diff = get_total_time(&samples[i + 1]) -
                                get_total_time(&samples[i]);
         long long idle_diff = get_idle_time(&samples[i + 1]) -
                               get_idle_time(&samples[i]);
-
         if (total_diff <= idle_diff || total_diff == 0)
             usage_samples[i] = 0.0;
         else
@@ -209,7 +205,27 @@ double get_cpu_usage(void) {
         total_usage += usage_samples[i];
     }
 
-    return total_usage / (NUM_SAMPLES - 1);
+    return total_usage / (num_samples - 1);
+}
+
+double get_cpu_usage(void) {
+    cpu_time_t samples[NUM_SAMPLES * 2];
+    double usage_samples[NUM_SAMPLES * 2 - 1];
+
+    double initial_avg = get_samples_average(samples, usage_samples, 0, NUM_SAMPLES);
+    if (initial_avg < 0)
+        return -1.0;
+
+    // if cpu usage is over 80, get another set of samples. this can happen during switches between online and offline
+    if (initial_avg > 80.0) {
+        double additional_avg = get_samples_average(samples, usage_samples, NUM_SAMPLES, NUM_SAMPLES);
+        if (additional_avg < 0)
+            return -1.0;
+
+        return (initial_avg + additional_avg) / 2;
+    }
+
+    return initial_avg;
 }
 
 double cpuUsage(void) {
