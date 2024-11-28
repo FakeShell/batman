@@ -5,7 +5,7 @@
 # Basic help function
 help() {
   cat <<EOF
-batman, a battery management program originally intended for Droidian
+batman, a battery management program
 
 Usage: batman
 EOF
@@ -43,7 +43,6 @@ esac
 # LASTPOLCORE will get the last cpu core of policy group one.
 CORE_FIRST=$(awk '$1 == "processor" {print $3; exit}' /proc/cpuinfo)
 CORE_LAST=$(awk '$1 == "processor" {print $3}' /proc/cpuinfo | tail -1)
-UIDS=$(ls /run/user | head -1)
 ARCH=$(uname -m)
 
 # x86 cpus have powersave and performance governors, check architecture and set the governor accordingly.
@@ -62,7 +61,15 @@ else
    DEFAULT_GOVERNOR=$(</sys/devices/system/cpu/cpu"${CORE_FIRST}"/cpufreq/scaling_governor)
 fi
 
-AVUSER=$(ls /run/user | wc -l)
+if [ -f /var/lib/batman/CUSTOM_UID ]; then
+   AVUSER="1"
+   UIDS=$(</var/lib/batman/CUSTOM_UID)
+   echo "custom xdg runtime UID is ${UIDS}"
+else
+   AVUSER=$(ls /run/user | wc -l)
+   UIDS=$(ls /run/user | head -1)
+fi
+
 AVPOL=$(ls /sys/devices/system/cpu/cpufreq | grep -c policy)
 
 # Exynos chips require special configuration and governors, usually device tree has the chipset name in the model section.
