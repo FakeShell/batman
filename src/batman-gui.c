@@ -172,22 +172,6 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_list_box_set_selection_mode(GTK_LIST_BOX(config_list_box), GTK_SELECTION_NONE);
     gtk_widget_add_css_class(config_list_box, "boxed-list");
 
-    // Config : Max CPU
-
-    GtkWidget *max_cpu_entry_row = adw_entry_row_new();
-    adw_entry_row_set_show_apply_button(ADW_ENTRY_ROW(max_cpu_entry_row), TRUE);
-    adw_entry_row_set_input_purpose(ADW_ENTRY_ROW(max_cpu_entry_row), GTK_INPUT_PURPOSE_NUMBER);
-    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(max_cpu_entry_row), "CPU usage threshold to leave powersave");
-
-    GString *max_cpu_str = g_string_new(NULL);
-    g_string_printf(max_cpu_str, "%d", config.max_cpu_usage);
-
-    gtk_editable_set_text(GTK_EDITABLE(max_cpu_entry_row), max_cpu_str->str);
-    g_string_free(max_cpu_str, TRUE);
-
-    g_signal_connect(max_cpu_entry_row, "apply", G_CALLBACK(max_cpu_entry_apply), NULL);
-    gtk_list_box_append(GTK_LIST_BOX(config_list_box), max_cpu_entry_row);
-
     // Config : Powersave
 
     GtkWidget *powersave_action_row = adw_action_row_new();
