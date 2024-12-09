@@ -5,6 +5,8 @@
 #define BATMAN_WRAPPER_H
 
 #include <upower.h>
+#include <gio/gio.h>
+#include <glib.h>
 
 /**
  * Battery state enumeration representing different possible states of the battery
@@ -136,5 +138,10 @@ double cpuUsage(void);
  * @see mem_usage
  */
 long double memUsage(void);
+
+/**
+ * Block until device display configuration has been modified
+ */
+void block_display_changed(void);
 
 #endif // BATMAN_WRAPPER_H

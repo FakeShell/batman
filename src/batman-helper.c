@@ -7,13 +7,17 @@
 #include "wlrdisplay.h"
 #include "getinfo.h"
 
-static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open]";
+static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed]";
 
-static void print_usage(const char* program_name) {
+static void
+print_usage(const char* program_name)
+{
     printf("Usage: %s %s\n", program_name, USAGE);
 }
 
-static const char* get_battery_state_str(batman_state_t state) {
+static const char *
+get_battery_state_str(batman_state_t state)
+{
     switch (state) {
         case BATMAN_NO_BATTERY:
             return "no battery";
@@ -30,7 +34,9 @@ static const char* get_battery_state_str(batman_state_t state) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[])
+{
     if (argc != 2) {
         print_usage(argv[0]);
         return EXIT_FAILURE;
@@ -115,6 +121,11 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "waydroid_app_open") == 0) {
         gboolean app_open = waydroid_app_open();
         g_print("%s\n", app_open ? "False" : "True");
+        return EXIT_SUCCESS;
+    }
+
+    if (strcmp(argv[1], "block_display_changed") == 0) {
+        block_display_changed();
         return EXIT_SUCCESS;
     }
 

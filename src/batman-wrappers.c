@@ -18,7 +18,12 @@
 #define NUM_SAMPLES 3
 #define SAMPLE_INTERVAL_MS 100
 
-static void _get_battery_info(UpClient *upower, batman_state_t *state, gdouble *percentage, const gchar **statelabel) {
+static void
+_get_battery_info(UpClient *upower,
+                  batman_state_t *state,
+                  gdouble *percentage,
+                  const gchar **statelabel)
+{
     UpDevice *device = NULL;
     *state = BATMAN_NO_BATTERY;
     if (statelabel)
@@ -81,7 +86,10 @@ static void _get_battery_info(UpClient *upower, batman_state_t *state, gdouble *
         g_debug("no battery");
 }
 
-const gchar *get_battery_all(UpClient *upower, gdouble *percentage) {
+const gchar *
+get_battery_all(UpClient *upower,
+                gdouble *percentage)
+{
     batman_state_t state;
     const gchar *statelabel = NULL;
 
@@ -89,7 +97,9 @@ const gchar *get_battery_all(UpClient *upower, gdouble *percentage) {
     return statelabel;
 }
 
-gdouble get_battery_percentage(UpClient *upower) {
+gdouble
+get_battery_percentage(UpClient *upower)
+{
     batman_state_t state;
     gdouble percentage = 0.0;
 
@@ -97,22 +107,32 @@ gdouble get_battery_percentage(UpClient *upower) {
     return percentage;
 }
 
-batman_state_t get_battery_state(UpClient *upower) {
+batman_state_t
+get_battery_state(UpClient *upower)
+{
     batman_state_t state;
 
     _get_battery_info(upower, &state, NULL, NULL);
     return state;
 }
 
-const gchar *findBattery(UpClient *upower, gdouble *percentage) {
+const gchar *
+findBattery(UpClient *upower,
+            gdouble *percentage)
+{
     return get_battery_all(upower, percentage);
 }
 
-const gchar *find_battery(UpClient *upower, gdouble *percentage) {
+const gchar *
+find_battery(UpClient *upower,
+             gdouble *percentage)
+{
     return get_battery_all(upower, percentage);
 }
 
-int read_mem_info(struct meminfo *mem) {
+int
+read_mem_info(struct meminfo *mem)
+{
     if (mem == NULL) {
         errno = EINVAL;
         return 0;
@@ -148,11 +168,15 @@ int read_mem_info(struct meminfo *mem) {
     return 1;
 }
 
-int readMemInfo(struct meminfo *mem) {
+int
+readMemInfo(struct meminfo *mem)
+{
     return read_mem_info(mem);
 }
 
-int read_cpu_stats(cpu_time_t *cpu_time) {
+int
+read_cpu_stats(cpu_time_t *cpu_time)
+{
     FILE *fp = fopen(STAT, "r");
     if (!fp) {
         fprintf(stderr, "Error opening %s: %s\n", STAT, strerror(errno));
@@ -173,17 +197,26 @@ int read_cpu_stats(cpu_time_t *cpu_time) {
            &cpu_time->softirq, &cpu_time->steal);
 }
 
-long long get_total_time(const cpu_time_t *cpu_time) {
+long long
+get_total_time(const cpu_time_t *cpu_time)
+{
     return cpu_time->user + cpu_time->nice + cpu_time->system +
            cpu_time->idle + cpu_time->iowait + cpu_time->irq +
            cpu_time->softirq + cpu_time->steal;
 }
 
-long long get_idle_time(const cpu_time_t *cpu_time) {
+long long
+get_idle_time(const cpu_time_t *cpu_time)
+{
     return cpu_time->idle + cpu_time->iowait;
 }
 
-static double get_samples_average(cpu_time_t *samples, double *usage_samples, int start_idx, int num_samples) {
+static double
+get_samples_average(cpu_time_t *samples,
+                    double *usage_samples,
+                    int start_idx,
+                    int num_samples)
+{
     for (int i = start_idx; i < start_idx + num_samples; i++) {
         if (read_cpu_stats(&samples[i]) < 0)
             return -1.0;
@@ -208,7 +241,9 @@ static double get_samples_average(cpu_time_t *samples, double *usage_samples, in
     return total_usage / (num_samples - 1);
 }
 
-double get_cpu_usage(void) {
+double
+get_cpu_usage(void)
+{
     cpu_time_t samples[NUM_SAMPLES * 2];
     double usage_samples[NUM_SAMPLES * 2 - 1];
 
@@ -228,19 +263,22 @@ double get_cpu_usage(void) {
     return initial_avg;
 }
 
-double cpuUsage(void) {
+double
+cpuUsage(void)
+{
     return get_cpu_usage();
 }
 
-long double mem_usage(void) {
+long double
+mem_usage(void)
+{
     struct meminfo meminfo_new;
     memset(&meminfo_new, 0x00, sizeof(struct meminfo));
 
     if (!read_mem_info(&meminfo_new))
         return -1.0L;
 
-    long double used = meminfo_new.memtotal - meminfo_new.memfree -
-                      meminfo_new.buffers - meminfo_new.cached - meminfo_new.sreclaimable;
+    long double used = meminfo_new.memtotal - meminfo_new.memfree - meminfo_new.buffers - meminfo_new.cached - meminfo_new.sreclaimable;
     long double total = meminfo_new.memtotal;
 
     used /= 1000;
@@ -250,6 +288,64 @@ long double mem_usage(void) {
     return percentage;
 }
 
-long double memUsage(void) {
+long double
+memUsage(void)
+{
     return mem_usage();
+}
+
+static void
+on_display_signal(GDBusConnection *connection,
+                  const gchar     *sender_name,
+                  const gchar     *object_path,
+                  const gchar     *interface_name,
+                  const gchar     *signal_name,
+                  GVariant        *parameters,
+                  gpointer         user_data)
+{
+    GMainLoop *loop = (GMainLoop *)user_data;
+    g_debug("Signal received");
+
+    gchar *params_str = g_variant_print(parameters, TRUE);
+    g_debug("Parameters: %s", params_str);
+    g_free(params_str);
+
+    g_main_loop_quit(loop);
+}
+
+void
+block_display_changed(void)
+{
+    GDBusConnection *connection;
+    GError *error = NULL;
+    guint subscription_id;
+    GMainLoop *loop;
+
+    connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
+    if (error != NULL) {
+        g_print("Could not connect to system bus: %s\n", error->message);
+        g_error_free(error);
+        return;
+    }
+
+    loop = g_main_loop_new(NULL, FALSE);
+
+    subscription_id = g_dbus_connection_signal_subscribe(
+        connection,
+        "org.freedesktop.login1",
+        "org.freedesktop.DBus.Properties",
+        "PropertiesChanged",
+        "/org/freedesktop/login1",
+        NULL,
+        G_DBUS_SIGNAL_FLAGS_NONE,
+        on_display_signal,
+        loop,
+        NULL
+    );
+
+    g_main_loop_run(loop);
+
+    g_dbus_connection_signal_unsubscribe(connection, subscription_id);
+    g_object_unref(connection);
+    g_main_loop_unref(loop);
 }
