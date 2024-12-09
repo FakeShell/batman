@@ -159,13 +159,13 @@ fi
 if eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /var/lib/batman/wlrfirstcheck; then
    echo "using wlrdisplay for screen status"
    GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
-   WLR=true
+   WLRDISPLAY_AVAILABLE=true
 else
-   WLR=false
+   WLRDISPLAY_AVAILABLE=false
 fi
 
 # Check if system is using a wlroots based desktop environment.
-if [ "${WLR}" = "true" ]; then
+if [ "${WLRDISPLAY_AVAILABLE}" = "true" ]; then
    eval "${GET_SCREEN}" &> /var/lib/batman/wlrcheck
 
    if grep -q "compositor doesn't support" /var/lib/batman/wlrcheck || grep -q "wl_display_dispatch failed" /var/lib/batman/wlrcheck; then
@@ -187,18 +187,9 @@ if [ "${WLROOTS}" = "true" ]; then
          delay 10
       fi
    done
-# Check if system is using kwin
-elif [ "${WLROOTS}" = "false" ] && which kscreen-doctor > /dev/null 2>&1; then
-   if XDG_SESSION_TYPE=wayland XDG_RUNTIME_DIR=/run/user/"${UIDS}"/ kscreen-doctor -o 2>/dev/null | grep Output >/dev/null 2>&1; then
-      USERNAME=$(id -un "${UIDS}")
-      GET_SCREEN="sudo -u $USERNAME DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/$UIDS/bus' qdbus org.kde.screensaver /ScreenSaver org.freedesktop.ScreenSaver.GetActive"
-      KDE=true
-   else
-      KDE=false
-   fi
 fi
 
-if [ "${KDE}" = "false" ] && [ "${WLROOTS}" = "false" ]; then
+if [ "${WLROOTS}" = "false" ]; then
    echo "compositor not supported. exiting"
    exit 0
 fi
@@ -238,11 +229,6 @@ if [ -z "${POWERSAVE}" ]; then
    POWERSAVE=true
 fi
 
-if [ -z "${MAX_CPU_USAGE}" ]; then
-   echo "Setting the default value of MAX_CPU_USAGE as 60"
-   MAX_CPU_USAGE=60
-fi
-
 if [ -z "${CHARGESAVE}" ]; then
    echo "Setting the default value of CHARGESAVE as true"
    CHARGESAVE=true
@@ -256,11 +242,6 @@ fi
 if [ -z "${BUSSAVE}" ]; then
    echo "Setting the default value of BUSSAVE as true"
    BUSSAVE=true
-fi
-
-if ! [[ "${MAX_CPU_USAGE}" =~ ^[0-9]+$ ]] || [[ "${MAX_CPU_USAGE}" -lt 0 ]] || [[ "${MAX_CPU_USAGE}" -gt 100 ]]; then
-    echo "bad MAX_CPU_USAGE value. defaulting to 60"
-    MAX_CPU_USAGE=60
 fi
 
 if [ -z "${BTSAVE}" ]; then
@@ -859,17 +840,7 @@ while true
 do
     SCREEN_OLD="$(</var/lib/batman/screen)"
 
-    CPU_USAGE=$(batman-helper cpu)
-
     SCREEN=$(eval "${GET_SCREEN}")
-
-    if [ "${KDE}" = "true" ]; then
-        if [ "${SCREEN}" = "true" ]; then
-           SCREEN="no"
-        else
-           SCREEN="yes"
-        fi
-    fi
 
     if [ "${CHARGESAVE}" = "true" ]; then
         CHARGE="discharging"
@@ -962,11 +933,11 @@ do
     fi
 
     if [ "${OFFLINE}" = "true" ]; then
-       # if device is not plugged into a power source and screen is off and cpu usage is less than MAX_CPU_USAGE (default is 60) then set cpu to offline.
-       if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ] && [ "${CPU_USAGE}" -le "${MAX_CPU_USAGE}" ]; then
+       # if device is not plugged into a power source and screen is off then set cpu to offline.
+       if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ]; then
           offline
-       # if screen or on or current governor is the same as default governor or cpu usage is higher than MAX_CPU_USAGE (default is 60) set cpu cores to online.
-       elif [ "${SCREEN}" = "yes" ] || [ "${CUR_GOVERNOR}" = "${DEFAULT_GOVERNOR}" ] || [ "${CPU_USAGE}" -gt "${MAX_CPU_USAGE}" ]; then
+       # if screen is on or current governor is the same as default governor set cpu cores to online.
+       elif [ "${SCREEN}" = "yes" ] || [ "${CUR_GOVERNOR}" = "${DEFAULT_GOVERNOR}" ]; then
           online
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "${SCREEN_OLD}" = "${SCREEN}" ] && [ "${CUR_GOVERNOR}" = "powersave" ]; then
@@ -997,15 +968,6 @@ do
         fi
     fi
 
-    # To not do as many useless iterations wait here for some time when the screen is on or when user is using the device.
-    if [ "${SCREEN}" = "yes" ]; then
-       if [ "${SCREEN_OLD}" = "no" ]; then
-          delay 0.3
-       else
-          delay 10
-          source <(tail -n +2 "${CONFIG_FILE}")
-       fi
-    else
-       delay 0.3
-    fi
+    batman-helper block_display_changed
+    source <(tail -n +2 "${CONFIG_FILE}")
 done
