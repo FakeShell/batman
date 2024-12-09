@@ -1,7 +1,6 @@
 [Settings]
 OFFLINE=true
 POWERSAVE=true
-MAX_CPU_USAGE=80
 CHARGESAVE=true
 BUSSAVE=true
 GPUSAVE=true
