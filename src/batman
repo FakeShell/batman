@@ -503,10 +503,6 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ]; then
         for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "${CPUSAVEGOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
-
-            if [ "${MTK_ISOLATION}" = "true" ]; then
-                echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_isolation
-            fi
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "userspace" ]; then
@@ -541,10 +537,6 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ]; then
         for ((i=CORE_FIRST; i<=CORE_LAST; i++))
         do
             echo "${DEFAULT_GOVERNOR}" > /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
-
-            if [ "${MTK_ISOLATION}" = "true" ]; then
-                echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_deisolation
-            fi
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "userspace" ]; then
@@ -578,14 +570,14 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ] || [ "${CPUSAVEGOVERNOR}" = "userspace
     function offline() {
         for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
         do
-             echo "0" > /sys/devices/system/cpu/cpu$i/online
+            echo "0" > /sys/devices/system/cpu/cpu$i/online
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "exynos_cpu_limit" ]; then
     function offline() {
         for ((i=1; i<=LASTPOLCORE; i++))
         do
-             echo "0" > /sys/devices/system/cpu/cpu$i/online
+            echo "0" > /sys/devices/system/cpu/cpu$i/online
         done
     }
 else
@@ -599,7 +591,7 @@ if [ "${CPUSAVEGOVERNOR}" = "powersave" ] || [ "${CPUSAVEGOVERNOR}" = "userspace
     function online() {
         for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
         do
-             echo "1" > /sys/devices/system/cpu/cpu$i/online
+            echo "1" > /sys/devices/system/cpu/cpu$i/online
         done
     }
 elif [ "${CPUSAVEGOVERNOR}" = "exynos_cpu_limit" ]; then
@@ -607,7 +599,7 @@ elif [ "${CPUSAVEGOVERNOR}" = "exynos_cpu_limit" ]; then
         # hotplug is unstable on devices with exynos_cpu_limit. if 0 goes down the kernel crashes.
         for ((i=1; i<=LASTPOLCORE; i++))
         do
-             echo "1" > /sys/devices/system/cpu/cpu$i/online
+            echo "1" > /sys/devices/system/cpu/cpu$i/online
         done
     }
 else
@@ -832,6 +824,15 @@ function tweaksave {
    :
 }
 
+function mtkdeisolate {
+    if [ "${MTK_ISOLATION}" = "true" ]; then
+        for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
+        do
+            echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_deisolation
+        done
+    fi
+}
+
 echo "" > /var/lib/batman/screen
 
 chown -R "${UIDS}":"${UIDS}" /var/lib/batman
@@ -882,11 +883,11 @@ do
     if [ "${POWERSAVE}" = "true" ]; then
        # if screen is off and device is not charging then device will be set into powersave.
        if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ]; then
-          powersave
           gpusave
           bussave
           btsave
           tweaksave
+          powersave
 
           [ "${WAYDROID}" == "true" ] && (batman-waydroid screen 0 &)
           [ "${LIBPOWER}" = "true" ] && batman-hybris power 0
@@ -939,6 +940,7 @@ do
        # if screen is on or current governor is the same as default governor set cpu cores to online.
        elif [ "${SCREEN}" = "yes" ] || [ "${CUR_GOVERNOR}" = "${DEFAULT_GOVERNOR}" ]; then
           online
+          mtkdeisolate
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "${SCREEN_OLD}" = "${SCREEN}" ] && [ "${CUR_GOVERNOR}" = "powersave" ]; then
           offline
