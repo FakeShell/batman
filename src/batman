@@ -805,9 +805,9 @@ while true
 do
     XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper block_wlroots_available
 
-    SCREEN_OLD="$(</var/lib/batman/screen)"
-
     SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
+
+    source <(tail -n +2 "${CONFIG_FILE}")
 
     if [ "${CHARGESAVE}" = "true" ]; then
         CHARGE="discharging"
@@ -899,6 +899,12 @@ do
        CHARGE='discharging'
     fi
 
+    if ! [ "${ARCH}" = "x86_64" ] && ! [ "${ARCH}" = "i686" ]; then
+        if ! cat /proc/asound/card*/pcm*/sub*/status | grep -q RUNNING; then
+            LASTPOLCORE="${OFFLINE_COUNT}"
+        fi
+    fi
+
     if [ "${OFFLINE}" = "true" ]; then
        # if device is not plugged into a power source and screen is off then set cpu to offline.
        if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ]; then
@@ -928,14 +934,12 @@ do
 
     if [ "${SCREEN_OLD}" != "${SCREEN}" ]; then
        echo "${SCREEN}" > /var/lib/batman/screen
+       SCREEN_OLD="${SCREEN}"
     fi
 
-    if ! [ "${ARCH}" = "x86_64" ] && ! [ "${ARCH}" = "i686" ]; then
-        if ! cat /proc/asound/card*/pcm*/sub*/status | grep -q RUNNING; then
-            LASTPOLCORE="${OFFLINE_COUNT}"
-        fi
+    # if the screen state changes when device state was being changed from online to offline and viceversa, do one more iteration
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
+    if [ "${SCREEN}" == "${SCREEN_OLD}" ]; then
+        batman-helper block_display_changed
     fi
-
-    batman-helper block_display_changed
-    source <(tail -n +2 "${CONFIG_FILE}")
 done
