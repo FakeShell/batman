@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <unistd.h>
 #include "wlrdisplay.h"
 
 #ifndef __has_attribute
@@ -331,9 +332,9 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = registry_handle_global_remove,
 };
 
-int get_state(struct randr_state *state) {
+static int get_state(struct randr_state *state) {
     if (!state)
-        return 1;
+        return -1;
 
     int result = 1;
     struct randr_head *head;
@@ -348,13 +349,82 @@ int get_state(struct randr_state *state) {
     return result;
 }
 
-int wlrdisplay(int argc, char *argv[]) {
-    int result = EXIT_FAILURE;
+static void cleanup_wlroots(struct randr_state *state, struct wl_registry *registry, struct wl_display *display) {
+    struct randr_head *head, *tmp_head;
+    wl_list_for_each_safe(head, tmp_head, &state->heads, link) {
+        struct randr_mode *mode, *tmp_mode;
+        wl_list_for_each_safe(mode, tmp_mode, &head->modes, link) {
+            zwlr_output_mode_v1_destroy(mode->wlr_mode);
+            free(mode);
+        }
+
+        zwlr_output_head_v1_destroy(head->wlr_head);
+        free(head->name);
+        free(head->description);
+        free(head);
+    }
+
+    if (state->output_manager)
+        zwlr_output_manager_v1_destroy(state->output_manager);
+    if (registry)
+        wl_registry_destroy(registry);
+    if (display)
+        wl_display_disconnect(display);
+}
+
+int block_wlroots_available(void) {
+    struct wl_display *display = NULL;
+    struct wl_registry *registry = NULL;
+    struct randr_state state = { .running = true, .output_manager = NULL };
+    int available = 0;
+
+    while (!available) {
+        wl_list_init(&state.heads);
+
+        display = wl_display_connect(NULL);
+        if (!display) {
+            cleanup_wlroots(&state, NULL, NULL);
+            goto retry;
+        }
+
+        registry = wl_display_get_registry(display);
+        if (!registry) {
+            cleanup_wlroots(&state, NULL, display);
+            goto retry;
+        }
+
+        if (wl_registry_add_listener(registry, &registry_listener, &state) < 0) {
+            cleanup_wlroots(&state, registry, display);
+            goto retry;
+        }
+
+        if (wl_display_roundtrip(display) < 0) {
+            cleanup_wlroots(&state, registry, display);
+            goto retry;
+        }
+
+        if (state.output_manager == NULL) {
+            cleanup_wlroots(&state, registry, display);
+            goto retry;
+        }
+
+        available = 1;
+        cleanup_wlroots(&state, registry, display);
+
+retry:
+        if (!available)
+            sleep(2);
+    }
+
+    return 1;
+}
+
+int get_wlroots_screen_status(void) {
+    int result = -1;
     struct wl_display *display = NULL;
     struct wl_registry *registry = NULL;
     struct randr_state state = { .running = true };
 
-    state.running = true;
     wl_list_init(&state.heads);
 
     display = wl_display_connect(NULL);
@@ -387,38 +457,17 @@ int wlrdisplay(int argc, char *argv[]) {
     while (!state.has_serial) {
         if (wl_display_dispatch(display) < 0) {
             fprintf(stderr, "wl_display_dispatch failed\n");
-            result = EXIT_FAILURE;
+            result = -1;
             break;
         }
     }
 
     result = get_state(&state);
-
     while (state.running && wl_display_dispatch(display) != -1) {
         // Left blank intentionally
     }
 
 cleanup:
-
-    struct randr_head *head, *tmp_head;
-    wl_list_for_each_safe(head, tmp_head, &state.heads, link) {
-        struct randr_mode *mode, *tmp_mode;
-        wl_list_for_each_safe(mode, tmp_mode, &head->modes, link) {
-            zwlr_output_mode_v1_destroy(mode->wlr_mode);
-            free(mode);
-        }
-        zwlr_output_head_v1_destroy(head->wlr_head);
-        free(head->name);
-        free(head->description);
-        free(head);
-    }
-
-    if (state.output_manager)
-        zwlr_output_manager_v1_destroy(state.output_manager);
-    if (registry)
-        wl_registry_destroy(registry);
-    if (display)
-        wl_display_disconnect(display);
-
+    cleanup_wlroots(&state, registry, display);
     return result;
 }

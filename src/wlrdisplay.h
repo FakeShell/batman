@@ -179,7 +179,10 @@ zwlr_output_configuration_v1_add_listener(struct zwlr_output_configuration_v1 *z
 				     (void (**)(void)) listener, data);
 }
 
-int wlrdisplay(int argc, char *argv[]);
+int block_wlroots_available(void);
+int get_wlroots_screen_status(void);
+
+#define wlrdisplay(...) get_wlroots_screen_status()
 
 #ifdef  __cplusplus
 }

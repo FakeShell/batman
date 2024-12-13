@@ -7,7 +7,7 @@
 #include "wlrdisplay.h"
 #include "getinfo.h"
 
-static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed]";
+static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed|block_wlroots_available]";
 
 static void
 print_usage(const char* program_name)
@@ -53,7 +53,7 @@ main(int argc, char *argv[])
     }
 
     if (strcmp(argv[1], "wlrdisplay") == 0) {
-        int result = wlrdisplay(argc, argv);
+        int result = wlrdisplay();
         printf(result == 0 ? "yes\n" : "no\n");
         return EXIT_SUCCESS;
     }
@@ -126,6 +126,11 @@ main(int argc, char *argv[])
 
     if (strcmp(argv[1], "block_display_changed") == 0) {
         block_display_changed();
+        return EXIT_SUCCESS;
+    }
+
+    if (strcmp(argv[1], "block_wlroots_available") == 0) {
+        block_wlroots_available();
         return EXIT_SUCCESS;
     }
 
