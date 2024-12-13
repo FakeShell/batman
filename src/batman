@@ -151,49 +151,6 @@ elif [ -z "${CPUSAVEGOVERNOR}" ]; then
    fi
 fi
 
-if ! which batman-helper > /dev/null 2>&1; then
-   echo "batman-helper is not available. exiting"
-   exit 0
-fi
-
-if eval "XDG_RUNTIME_DIR=/run/user/\$UIDS/ $(which batman-helper) wlrdisplay" &> /var/lib/batman/wlrfirstcheck; then
-   echo "using wlrdisplay for screen status"
-   GET_SCREEN="XDG_RUNTIME_DIR=/run/user/\$UIDS/ batman-helper wlrdisplay"
-   WLRDISPLAY_AVAILABLE=true
-else
-   WLRDISPLAY_AVAILABLE=false
-fi
-
-# Check if system is using a wlroots based desktop environment.
-if [ "${WLRDISPLAY_AVAILABLE}" = "true" ]; then
-   eval "${GET_SCREEN}" &> /var/lib/batman/wlrcheck
-
-   if grep -q "compositor doesn't support" /var/lib/batman/wlrcheck || grep -q "wl_display_dispatch failed" /var/lib/batman/wlrcheck; then
-      WLROOTS=false
-   else
-      WLROOTS=true
-   fi
-else
-   WLROOTS=false
-fi
-
-# Check if wlroots based environment has started. if not wait a bit and retry.
-if [ "${WLROOTS}" = "true" ]; then
-   while true
-   do
-      if eval "${GET_SCREEN}" &> /dev/null; then
-         break
-      else
-         delay 10
-      fi
-   done
-fi
-
-if [ "${WLROOTS}" = "false" ]; then
-   echo "compositor not supported. exiting"
-   exit 0
-fi
-
 # make sure only one active user session exists.
 if [ "${AVUSER}" -gt "1" ]; then
    echo "more than one user active. waiting for the other user profile to disappear"
@@ -207,6 +164,13 @@ if [ "${AVUSER}" -gt "1" ]; then
          break
       fi
    done
+fi
+
+if ! which -s batman-helper; then
+   echo "batman-helper is not available. exiting"
+   exit 0
+else
+   XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper block_wlroots_available
 fi
 
 if [ -z "$(batman-helper battery)" ]; then
@@ -250,21 +214,21 @@ if [ -z "${BTSAVE}" ]; then
 fi
 
 if [ -z "${HYBRIS}" ]; then
-   if which batman-hybris > /dev/null 2>&1; then
+   if which -s batman-hybris; then
       echo "batman-hybris is available, setting the default value of LIBPOWER as true"
       LIBPOWER=true
    fi
 fi
 
 if [ -z "${WIFI}" ]; then
-   if which batman-wifi > /dev/null 2>&1; then
+   if which -s batman-wifi; then
       echo "batman-wifi is available, setting the default value of WIFI as true"
       WIFI=true
    fi
 fi
 
 if [ -z "${WAYDROID}" ]; then
-   if which batman-waydroid > /dev/null 2>&1; then
+   if which -s batman-waydroid; then
       echo "batman-waydroid is available, setting the default value of WAYDROID as true"
       WAYDROID=true
    fi
@@ -301,7 +265,7 @@ if [ "${CAN_GPUSAVE}" = "true" ]; then
    fi
 fi
 
-if ! which bluetoothctl &> /dev/null; then
+if ! which -s bluetoothctl; then
     echo "bluetoothctl does not exist, setting BTSAVE to false"
     BTSAVE=false
 else
@@ -312,7 +276,7 @@ else
     fi
 fi
 
-if ! which waydroid &> /dev/null; then
+if ! which -s waydroid; then
     echo "Waydroid is not available, disabling waydroid capabilities"
     WAYDROID=false
 fi
@@ -839,9 +803,11 @@ chown -R "${UIDS}":"${UIDS}" /var/lib/batman
 
 while true
 do
+    XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper block_wlroots_available
+
     SCREEN_OLD="$(</var/lib/batman/screen)"
 
-    SCREEN=$(eval "${GET_SCREEN}")
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
 
     if [ "${CHARGESAVE}" = "true" ]; then
         CHARGE="discharging"
