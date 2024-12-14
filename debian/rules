@@ -64,10 +64,10 @@ override_dh_auto_install:
 	install -D -m 0644 data/io.FuriOS.BatmanPowerConfig.conf debian/tmp/usr/share/dbus-1/system.d/io.FuriOS.BatmanPowerConfig.conf
 
 override_dh_installsystemd:
-	dh_installsystemd -pbatman --name=batman batman.service
-	dh_installsystemd -pbatman2ppd --name=batman2ppd batman2ppd.service
-	dh_installsystemd -pbatman-nicerdicer --name=nicerdicer nicerdicer.service
-	dh_installsystemd -pbatman-powerconfig --name=powerconfig powerconfig.service
+	dh_installsystemd -pbatman --name=batman batman.service --no-stop-on-upgrade
+	dh_installsystemd -pbatman2ppd --name=batman2ppd batman2ppd.service --no-stop-on-upgrade
+	dh_installsystemd -pbatman-nicerdicer --name=nicerdicer nicerdicer.service --no-stop-on-upgrade
+	dh_installsystemd -pbatman-powerconfig --name=powerconfig powerconfig.service --no-stop-on-upgrade
 
 override_dh_dwz:
 override_dh_strip:
