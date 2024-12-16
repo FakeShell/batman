@@ -182,7 +182,7 @@ zwlr_output_configuration_v1_add_listener(struct zwlr_output_configuration_v1 *z
 int block_wlroots_available(void);
 int get_wlroots_screen_status(void);
 
-#define wlrdisplay(...) get_wlroots_screen_status()
+int wlrdisplay(int argc, char *argv[]);
 
 #ifdef  __cplusplus
 }

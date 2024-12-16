@@ -471,3 +471,7 @@ cleanup:
     cleanup_wlroots(&state, registry, display);
     return result;
 }
+
+int wlrdisplay(int argc, char *argv[]) {
+    return get_wlroots_screen_status();
+}

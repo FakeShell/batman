@@ -53,7 +53,7 @@ main(int argc, char *argv[])
     }
 
     if (strcmp(argv[1], "wlrdisplay") == 0) {
-        int result = wlrdisplay();
+        int result = wlrdisplay(0, NULL);
         printf(result == 0 ? "yes\n" : "no\n");
         return EXIT_SUCCESS;
     }
