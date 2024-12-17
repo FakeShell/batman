@@ -27,47 +27,46 @@ Package: batman
 Architecture: any
 Depends: ${misc:Depends},
          bash,
-         batman-helper,
-         batman-governor,
-         libbatman-wrappers,
-Recommends: batman-wifi,
-            libbatman-wifi,
-            batman-gui,
-            batman-hybris,
-            libbatman-gbinder,
-            nfcd-batman-plugin,
-            batman2ppd,
-            libbatman-waydroid,
-            batman-waydroid,
-            batman-nicerdicer,
-            batman-powerconfig,
+         batman-helper (= ${binary:Version}),
+         batman-governor (= ${binary:Version}),
+         libbatman-wrappers (= ${binary:Version}),
+Recommends: batman-wifi (= ${binary:Version}),
+            batman-gui (= ${binary:Version}),
+            batman-hybris (= ${binary:Version}),
+            nfcd-batman-plugin (= ${binary:Version}),
+            batman2ppd (= ${binary:Version}),
+            batman-waydroid (= ${binary:Version}),
+            batman-nicerdicer (= ${binary:Version}),
+            batman-powerconfig (= ${binary:Version}),
 Description: batman
  A battery management service for Linux phones
 
 Package: batman-gui
 Architecture: any
-Depends: ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
          batman (= ${binary:Version}),
-         libgtk-4-1,
 Description: batman-gui
  A battery management service for Linux phones - GUI front-end
 
 Package: batman-helper
 Architecture: any
-Depends: ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-helper
  A battery management service for Linux phones - helper program
 
 Package: batman-governor
 Architecture: any
-Depends: ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-governor
  A battery management service for Linux phones - governor info
 
 Package: batman-dev
 Architecture: any
 Depends: ${misc:Depends},
-         libbatman-wrappers,
+         libbatman-wrappers (= ${binary:Version}),
+         libbatman-waydroid (= ${binary:Version}),
+         libbatman-wifi (= ${binary:Version}),
+         libbatman-gbinder (= ${binary:Version}),
          libwayland-dev,
          libupower-glib-dev,
 Description: batman-dev
@@ -75,43 +74,41 @@ Description: batman-dev
 
 Package: libbatman-wrappers
 Architecture: any
-Depends: ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: libbatman-wrappers
  A battery management service for Linux phones - wrapper shared object
 
 Package: nfcd-batman-plugin
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
-         libncicore,
-         libnciplugin,
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: nfcd-batman-plugin
  state switching plugin for the NFC daemon
 
 Package: batman-wifi
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-wifi
  A battery management service for Linux phones - wifi suspend
 
 Package: libbatman-wifi
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: libbatman-wifi
  A battery management service for Linux phones - wifi shared object
 
 Package: libbatman-gbinder
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: libbatman-gbinder
  A battery management service for Linux phones - gbinder shared object
 
 Package: batman-hybris
 Architecture: any
-Depends: ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
          libgbinder,
 Description: batman-helper
  A battery management service for Linux phones - hybris wrapper
@@ -129,27 +126,27 @@ Description: batman2ppd
 Package: libbatman-waydroid
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: libbatman-waydroid
  A battery management service for Linux phones - waydroid shared object
 
 Package: batman-waydroid
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-waydroid
  A battery management service for Linux phones - waydroid wrapper
 
 Package: batman-nicerdicer
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-nicerdicer
  A battery management service for Linux phones - nicerdicer service
 
 Package: batman-powerconfig
 Section: misc
 Architecture: any
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-powerconfig
  A battery management service for Linux phones - powerconfig service
