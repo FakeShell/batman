@@ -1,67 +1,7 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --without=makefile
-
-override_dh_auto_build:
-	gcc src/batman-helper.c src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c src/batman-waydroid.c -lwayland-client `pkg-config --cflags --libs upower-glib gio-2.0` -o batman-helper
-	gcc -fPIC -shared src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c `pkg-config --cflags upower-glib` `pkg-config --libs upower-glib` -lwayland-client -o libbatman-wrappers.so
-	gcc src/governor.c src/wlrdisplay.c src/batman-wrappers.c -lwayland-client `pkg-config --libs upower-glib` `pkg-config --cflags upower-glib` -o governor
-	gcc src/batman-gui.c src/configcontrol.c src/getinfo.c `pkg-config --cflags gtk4 libadwaita-1` `pkg-config --libs gtk4 libadwaita-1` -o batman-gui
-
-	gcc -fPIC -shared src/batman-gbinder.c `pkg-config --cflags libgbinder` `pkg-config --libs libgbinder` -o libbatman-gbinder.so
-	gcc src/batman-hybris.c src/batman-gbinder.c `pkg-config --cflags libgbinder` `pkg-config --libs libgbinder` -o batman-hybris
-
-	gcc -fPIC -shared src/batman-wifi.c `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o libbatman-wifi.so
-	gcc src/batman-wifi-cli.c src/batman-wifi.c `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -L. -lbatman-wifi `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -o batman-wifi
-
-	gcc -fPIC -shared src/batman-waydroid.c `pkg-config --cflags gio-2.0` `pkg-config --libs gio-2.0` -o libbatman-waydroid.so
-	gcc src/batman-waydroid-cli.c src/batman-waydroid.c `pkg-config --cflags gio-2.0` `pkg-config --libs gio-2.0`-o batman-waydroid
-
-	gcc src/nicerdicer.c `pkg-config --cflags gio-2.0` `pkg-config --libs gio-2.0` -o batman-nicerdicer
-
-	gcc src/powerconfig.c `pkg-config --cflags gio-2.0` `pkg-config --libs gio-2.0` -o batman-powerconfig
-
-	gcc -c src/nfcd-batman-plugin.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o nfcd-batman-plugin.o
-	gcc -c src/wlrdisplay.c -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0` -O2 -o wlrdisplay.o
-	gcc nfcd-batman-plugin.o wlrdisplay.o -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client -o batman.so
-
-override_dh_auto_install:
-	install -D -m 0755 src/batman debian/tmp/usr/bin/batman
-	install -D -m 0755 batman-helper debian/tmp/usr/bin/batman-helper
-	install -D -m 0755 governor debian/tmp/usr/bin/governor
-	install -D -m 0755 batman-gui debian/tmp/usr/bin/batman-gui
-	install -D -m 0755 batman-hybris debian/tmp/usr/bin/batman-hybris
-	install -D -m 0755 batman-wifi debian/tmp/usr/bin/batman-wifi
-	install -D -m 0755 batman-waydroid debian/tmp/usr/bin/batman-waydroid
-	install -D -m 0755 batman-nicerdicer debian/tmp/usr/sbin/batman-nicerdicer
-	install -D -m 0755 batman-powerconfig debian/tmp/usr/sbin/batman-powerconfig
-
-	install -D -m 0644 data/config debian/tmp/var/lib/batman/config
-	install -D -m 0644 data/batman-gui.desktop debian/tmp/usr/share/applications/batman-gui.desktop
-	install -D -m 0644 data/batman.png debian/tmp/usr/share/icons/batman.png
-
-	install -D -m 0755 batman.so debian/tmp/usr/lib/nfcd/plugins/batman.so
-	install -D -m 0644 libbatman-gbinder.so debian/libbatman-gbinder/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-gbinder.so
-	install -D -m 0644 libbatman-wrappers.so debian/libbatman-wrappers/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-wrappers.so
-	install -D -m 0644 libbatman-waydroid.so debian/libbatman-waydroid/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-waydroid.so
-	install -D -m 0644 libbatman-wifi.so debian/libbatman-wifi/usr/lib/$(DEB_HOST_MULTIARCH)/libbatman-wifi.so
-
-	install -D -m 0644 src/batman-wrappers.h debian/tmp/usr/include/batman/batman-wrappers.h
-	install -D -m 0644 src/getinfo.h debian/tmp/usr/include/batman/getinfo.h
-	install -D -m 0644 src/wlrdisplay.h debian/tmp/usr/include/batman/wlrdisplay.h
-	install -D -m 0644 src/batman-gbinder.h debian/tmp/usr/include/batman/batman-gbinder.h
-	install -D -m 0644 src/batman-waydroid.h debian/tmp/usr/include/batman/batman-waydroid.h
-
-	install -D -m 0755 src/batman2ppd.py debian/tmp/usr/bin/batman2ppd
-	install -D -m 0755 src/powerprofilesctl.py debian/tmp/usr/bin/powerprofilesctl
-	install -D -m 0644 data/net.hadess.PowerProfiles.policy debian/tmp/usr/share/polkit-1/actions/net.hadess.PowerProfiles.policy
-	install -D -m 0644 data/net.hadess.PowerProfiles.conf debian/tmp/usr/share/dbus-1/system.d/net.hadess.PowerProfiles.conf
-
-	install -D -m 0644 data/io.FuriOS.NicerDicer.conf debian/tmp/usr/share/dbus-1/system.d/io.FuriOS.NicerDicer.conf
-	install -D -m 0644 data/nicerdicer.conf debian/tmp/etc/nicerdicer.conf
-
-	install -D -m 0644 data/io.FuriOS.BatmanPowerConfig.conf debian/tmp/usr/share/dbus-1/system.d/io.FuriOS.BatmanPowerConfig.conf
+	dh $@
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service --no-stop-on-upgrade
