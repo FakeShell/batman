@@ -805,8 +805,6 @@ while true
 do
     XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper block_wlroots_available
 
-    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
-
     source <(tail -n +2 "${CONFIG_FILE}")
 
     if [ "${CHARGESAVE}" = "true" ]; then
@@ -814,6 +812,8 @@ do
     else
         CHARGE=$(batman-helper battery)
     fi
+
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
 
     # an attempt to fix choppy audio when system goes to sleep by lowering the number of cores that go offline if there is an audio playing
     if ! [ "${ARCH}" = "x86_64" ] && ! [ "${ARCH}" = "i686" ]; then
@@ -938,7 +938,7 @@ do
     fi
 
     # if the screen state changes when device state was being changed from online to offline and viceversa, do one more iteration
-    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper wlrdisplay)
+    SCREEN=$(XDG_RUNTIME_DIR=/run/user/$UIDS/ batman-helper retry_wlroots_changed "${SCREEN}" 1000 10)
     if [ "${SCREEN}" == "${SCREEN_OLD}" ]; then
         batman-helper block_display_changed
     fi
