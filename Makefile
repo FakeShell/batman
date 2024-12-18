@@ -56,20 +56,23 @@ SRC_WAYDROID_CLI = src/batman-waydroid-cli.c src/batman-waydroid.c
 SRC_NICERDICER = src/nicerdicer.c
 SRC_POWERCONFIG = src/powerconfig.c
 SRC_EXAMPLES = examples/batman-functions.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/governor.h src/batman-gbinder.h src/batman-waydroid.h src/batman-wifi.h
+HEADERS = src/batman-wrappers.h src/getinfo.h src/wlrdisplay.h src/batman-gbinder.h src/batman-waydroid.h src/batman-wifi.h
 
 PREFIX ?= /usr
-LIBDIR ?= $(PREFIX)/lib
-BINDIR ?= $(PREFIX)/bin
-SBINDIR ?= $(PREFIX)/sbin
-CONFIGDIR ?= /var/lib/batman
-SYSTEMD_DIR ?= $(LIBDIR)/systemd/system
-OPENRC_DIR ?= /etc/init.d
-DESKTOP_DIR ?= $(PREFIX)/share/applications
-ICON_DIR ?= $(PREFIX)/share/icons
-INCLUDE_DIR ?= $(PREFIX)/include/batman
-POLKIT_DIR ?= $(PREFIX)/share/polkit-1/actions
-DBUS_DIR ?= $(PREFIX)/share/dbus-1/system.d
+LIBDIR ?= $(DESTDIR)$(PREFIX)/lib
+BINDIR ?= $(DESTDIR)$(PREFIX)/bin
+SBINDIR ?= $(DESTDIR)$(PREFIX)/sbin
+ETCDIR ?= $(DESTDIR)/etc
+VARDIR ?= $(DESTDIR)/var
+CONFIGDIR ?= $(VARDIR)/lib/batman
+SYSTEMDDIR ?= $(LIBDIR)/systemd/system
+INITDIR ?= $(ETCDIR)/init.d
+DESKTOPDIR ?= $(DESTDIR)$(PREFIX)/share/applications
+ICONDIR ?= $(DESTDIR)$(PREFIX)/share/icons
+INCLUDEDIR ?= $(DESTDIR)$(PREFIX)/include/batman
+POLKITDIR ?= $(DESTDIR)$(PREFIX)/share/polkit-1/actions
+DBUSDIR ?= $(DESTDIR)$(PREFIX)/share/dbus-1/system.d
+NFCDDIR ?= $(LIBDIR)/nfcd/plugins
 TRIPLET ?= $(shell $(CC) -dumpmachine)
 
 .PHONY: all
@@ -133,7 +136,10 @@ wlrdisplay.o: src/wlrdisplay.c
 
 .PHONY: install
 install: all
-	cp src/$(TARGET) $(BINDIR)
+	install -d $(LIBDIR) $(BINDIR) $(SBINDIR) $(ETCDIR) $(VARDIR) $(CONFIGDIR) $(SYSTEMDDIR) $(INITDIR) $(DESKTOPDIR)
+	install -d $(ICONDIR) $(INCLUDEDIR) $(POLKITDIR) $(DBUSDIR) $(LIBDIR)/$(TRIPLET) $(NFCDDIR)
+
+	cp src/$(TARGET) $(BINDIR)/
 	cp $(TARGET_HELPER) $(BINDIR)
 	cp $(TARGET_GUI) $(BINDIR)
 	cp $(TARGET_GOVERNOR) $(BINDIR)
@@ -148,39 +154,32 @@ install: all
 	cp $(TARGET_WAYDROID_CLI) $(BINDIR)
 	cp $(TARGET_NICERDICER) $(SBINDIR)
 	cp $(TARGET_POWERCONFIG) $(SBINDIR)
+	cp $(TARGET_NFCD) $(NFCDDIR)
 
-	mkdir -p $(DESKTOP_DIR)
-	cp data/batman-gui.desktop $(DESKTOP_DIR)
+	cp $(HEADERS) $(INCLUDEDIR)
 
-	mkdir -p $(ICON_DIR)
-	cp data/batman.png $(ICON_DIR)
-
-	mkdir -p $(CONFIGDIR)
+	cp data/batman-gui.desktop $(DESKTOPDIR)
+	cp data/batman.png $(ICONDIR)
 	cp data/config $(CONFIGDIR)
 
-	mkdir -p $(INCLUDE_DIR)
-	cp $(HEADERS) $(INCLUDE_DIR)
+	cp data/net.hadess.PowerProfiles.policy $(POLKITDIR)
+	cp data/net.hadess.PowerProfiles.conf $(DBUSDIR)
 
-	mkdir -p $(POLKIT_DIR)
-	cp data/net.hadess.PowerProfiles.policy $(POLKIT_DIR)
+	cp data/io.FuriOS.NicerDicer.conf $(DBUSDIR)
+	cp data/io.FuriOS.BatmanPowerConfig.conf $(DBUSDIR)
 
-	mkdir -p $(DBUS_DIR)
-	cp data/net.hadess.PowerProfiles.conf $(DBUS_DIR)
-	cp data/io.FuriOS.NicerDicer.conf $(DBUS_DIR)
-	cp data/io.FuriOS.BatmanPowerConfig.conf $(DBUS_DIR)
-
-ifeq ($(shell test -d $(SYSTEMD_DIR) && echo 1),1)
-	cp data/batman.service $(SYSTEMD_DIR)
-	cp data/batman2ppd.service $(SYSTEMD_DIR)
-	cp data/nicerdicer.service $(SYSTEMD_DIR)
-	cp data/powerconfig.service $(SYSTEMD_DIR)
+ifeq ($(shell test -d $(SYSTEMDDIR) && echo 1),1)
+	cp data/batman.service $(SYSTEMDDIR)
+	cp data/batman2ppd.service $(SYSTEMDDIR)
+	cp data/nicerdicer.service $(SYSTEMDDIR)
+	cp data/powerconfig.service $(SYSTEMDDIR)
 else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
-	cp data/batman.rc $(OPENRC_DIR)/batman
+	cp data/batman.rc $(INITDIR)/batman
 else
-	cp data/batman-init $(OPENRC_DIR)/batman
+	cp data/batman-init $(INITDIR)/batman
 endif
 
-	cp data/nicerdicer.conf /etc/nicerdicer.conf
+	cp data/nicerdicer.conf $(ETCDIR)/nicerdicer.conf
 
 .PHONY: clean
 clean:
