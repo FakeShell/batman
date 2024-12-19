@@ -181,6 +181,7 @@ zwlr_output_configuration_v1_add_listener(struct zwlr_output_configuration_v1 *z
 
 int block_wlroots_available(void);
 int get_wlroots_screen_status(void);
+int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value);
 
 int wlrdisplay(int argc, char *argv[]);
 

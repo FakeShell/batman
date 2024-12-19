@@ -472,6 +472,25 @@ cleanup:
     return result;
 }
 
+int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value) {
+    if (retry_count <= 0 || delay_ms < 0)
+        return -1;
+
+    unsigned int delay_us = delay_ms * 1000;
+
+    for (int i = 0; i < retry_count; i++) {
+        int current_status = get_wlroots_screen_status();
+
+        // return if there is an error or if status has changed
+        if (current_status != initial_value || current_status == -1)
+            return current_status;
+        if (i < retry_count - 1)
+            usleep(delay_us);
+    }
+
+    return initial_value;
+}
+
 int wlrdisplay(int argc, char *argv[]) {
     return get_wlroots_screen_status();
 }

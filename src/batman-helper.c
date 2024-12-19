@@ -7,7 +7,7 @@
 #include "wlrdisplay.h"
 #include "getinfo.h"
 
-static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed|block_wlroots_available]";
+static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed|block_wlroots_available|retry_wlroots_changed yes/no delay_ms retry_count]";
 
 static void
 print_usage(const char* program_name)
@@ -37,7 +37,7 @@ get_battery_state_str(batman_state_t state)
 int
 main(int argc, char *argv[])
 {
-    if (argc != 2) {
+    if (argc < 2) {
         print_usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -131,6 +131,41 @@ main(int argc, char *argv[])
 
     if (strcmp(argv[1], "block_wlroots_available") == 0) {
         block_wlroots_available();
+        return EXIT_SUCCESS;
+    }
+
+    if (strcmp(argv[1], "retry_wlroots_changed") == 0) {
+        if (argc != 5) {
+            printf("Usage: %s retry_wlroots_changed yes/no delay_ms retry_count\n", argv[0]);
+            return EXIT_FAILURE;
+        }
+
+        int initial_value;
+        if (strcasecmp(argv[2], "yes") == 0) {
+            initial_value = 0;
+        } else if (strcasecmp(argv[2], "no") == 0) {
+            initial_value = 1;
+        } else {
+            printf("Initial value must be 'yes' or 'no'\n");
+            return EXIT_FAILURE;
+        }
+
+        char *delay_end;
+        long delay_ms = strtol(argv[3], &delay_end, 10);
+        if (*delay_end != '\0' || delay_ms < 0) {
+            printf("Invalid delay value\n");
+            return EXIT_FAILURE;
+        }
+
+        char *retry_end;
+        long retry_count = strtol(argv[4], &retry_end, 10);
+        if (*retry_end != '\0' || retry_count <= 0) {
+            printf("Invalid retry count\n");
+            return EXIT_FAILURE;
+        }
+
+        int result = retry_wlroots_changed(retry_count, delay_ms, initial_value);
+        printf(result == 0 ? "yes\n" : "no\n");
         return EXIT_SUCCESS;
     }
 
