@@ -28,9 +28,6 @@ enum boost {
 int init_power_aidl(const int mode);
 int init_power_hidl(const int mode);
 int init_vr_hidl(const int mode);
-int init_radio_hidl(const int type, const int mode);
-int init_radio_aidl(const int type, const int mode);
-int init_tetheroffload_hidl(const int mode);
 int init_mtkpower_hidl(const int mode);
 
 // these are called by init of each feature. should not be called directly
@@ -38,9 +35,6 @@ int init_mtkpower_hidl(const int mode);
 void power_aidl(GBinderClient* client, const int interactive, const enum hints hint);
 void power_hidl(GBinderClient* client, const int interactive, const enum hints hint);
 void vr_hidl(GBinderClient* client, const int enabled);
-void radio_hidl(GBinderClient* client, const int type, const int enabled);
-void radio_aidl(GBinderClient* client, const int type, const int enabled);
-void tetheroffload_hidl(GBinderClient* client, const int enabled, GBinderLocalObject* callback_object);
 void mtkpower_hint_hidl(GBinderClient* client, const int enabled);
 
 #endif // BATMAN_GBINDER_H

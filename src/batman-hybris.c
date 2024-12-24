@@ -48,20 +48,6 @@ int main(int argc, char *argv[]) {
                 printf("Invalid Power state argument. Use 0 for non-interactive + powersave or 1 for interactive + performance.\n");
                 return 1;
             }
-        } else if (strcmp(feature, "tetheroffload") == 0) {
-            if (state == 0 || state == 1) {
-                int ret = init_tetheroffload_hidl(state);
-
-                if (ret != 0) {
-                    printf("None of the backends are available for tether offload. Exiting.\n");
-                    return 1;
-                } else {
-                    //printf("Using tether offload HIDL backend\n");
-                }
-            } else {
-                printf("Invalid tether offload state argument. Use 0 for tether offload stop or 1 for tether offload init.\n");
-                return 1;
-            }
         } else if (strcmp(feature, "mtkpower") == 0) {
             if (state >= 20 && state <= 46) {
                 int ret = init_mtkpower_hidl(state);
@@ -77,35 +63,11 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
         } else {
-            printf("Invalid feature argument. Use 'vr' or 'power' or 'tetheroffload' or 'mtkpower'.\n");
-            return 1;
-        }
-    } else if (argc == 4) {
-        int feature = atoi(argv[2]);
-        int state = atoi(argv[1]);
-        int ret;
-
-        if ((state == 0 || state == 1) && (feature == 1 || feature == 2 || feature == 3)) {
-            ret = init_radio_aidl(feature, state);
-
-            if (ret != 0) {
-                ret = init_radio_hidl(feature, state);
-
-                if (ret != 0) {
-                    printf("None of the backends are available for radio. Exiting.\n");
-                    return 1;
-                } else {
-                    //printf("Using Radio HIDL backend\n");
-                }
-            } else {
-                //printf("Using Radio AIDL backend\n");
-            }
-        } else {
-            printf("Invalid argument. Use <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off)\n");
+            printf("Invalid feature argument. Use 'vr' or 'power' or 'mtkpower'.\n");
             return 1;
         }
     } else {
-        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'tetheroffload' and 'mtkpower' OR %s <feature> <mode> (1: power save mode, 2: charging state, 3: low data expected) <state> (1: for on, 0 for off) for feature 'radio'\n", argv[0], argv[0]);
+        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'mtkpower'\n", argv[0]);
         return 1;
     }
 
