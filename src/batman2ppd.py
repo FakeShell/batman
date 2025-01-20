@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
-from dbus_next.aio import MessageBus
-from dbus_next.service import (ServiceInterface,
+from dbus_fast.aio import MessageBus
+from dbus_fast.service import (ServiceInterface,
                                method, dbus_property, signal)
-from dbus_next.constants import PropertyAccess
-from dbus_next import Variant, DBusError, BusType
+from dbus_fast.constants import PropertyAccess
+from dbus_fast import Variant, DBusError, BusType
 
 import subprocess
 import asyncio
