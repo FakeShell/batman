@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-2.0-only
-# Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+# Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
 from dbus_next.aio import MessageBus
 from dbus_next.service import (ServiceInterface,
@@ -113,7 +113,19 @@ class PPDInterface(ServiceInterface):
 
     @method()
     def HoldProfile(self, profile: 's', reason: 's', application_id: 's') -> 'u':
-        pass
+        self.cookie += 1
+        hold = {
+            'Profile': Variant('s', profile),
+            'Reason': Variant('s', reason),
+            'ApplicationId': Variant('s', application_id),
+            'Cookie': Variant('u', self.cookie)
+        }
+
+        current_holds = self.props['ActiveProfileHolds'].value
+        current_holds.append(hold)
+        self.props['ActiveProfileHolds'] = Variant('aa{sv}', current_holds)
+
+        return self.cookie
 
     @method()
     def ReleaseProfile(self, cookie: 'u'):
