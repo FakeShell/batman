@@ -116,7 +116,7 @@ Description: batman-helper
 Package: batman2ppd
 Architecture: any
 Depends: ${misc:Depends},
-         python3-dbus-next,
+         python3-dbus-fast,
          python3-gbinder,
 Replaces: power-profiles-daemon
 Provides: power-profiles-daemon
