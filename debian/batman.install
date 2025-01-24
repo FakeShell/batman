@@ -1,2 +1,2 @@
-usr/bin/batman
+usr/sbin/batman
 var/lib/batman/config

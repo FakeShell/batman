@@ -6,7 +6,7 @@ After=batman.service
 [Service]
 Type=dbus
 BusName=net.hadess.PowerProfiles
-ExecStart=/usr/bin/batman2ppd
+ExecStart=/usr/sbin/batman2ppd
 Restart=on-failure
 
 [Install]

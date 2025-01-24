@@ -7,7 +7,7 @@ After=multi-user.target
 Type=simple
 EnvironmentFile=-/etc/batman/config
 EnvironmentFile=-/var/lib/batman/config
-ExecStart=/usr/bin/batman
+ExecStart=/usr/sbin/batman
 
 [Install]
 WantedBy=graphical.target
