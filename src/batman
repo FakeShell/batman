@@ -932,6 +932,14 @@ do
        fi
     fi
 
+    if [ -f "/usr/lib/systemd/system/irqbalance.service" ]; then
+       if [ "${SCREEN}" = "yes" ]; then
+          (systemctl start irqbalance &)
+       else
+          (systemctl stop irqbalance &)
+       fi
+    fi
+
     if [ "${SCREEN_OLD}" != "${SCREEN}" ]; then
        echo "${SCREEN}" > /var/lib/batman/screen
        SCREEN_OLD="${SCREEN}"
