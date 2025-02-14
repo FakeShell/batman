@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include "batman-waydroid.h"
 #include <stdio.h>
@@ -9,8 +9,9 @@
 #define WAYDROID_DBUS_PATH          "/ContainerManager"
 #define WAYDROID_DBUS_INTERFACE     "id.waydro.ContainerManager"
 
-gchar*
-waydroid_get_state () {
+gchar *
+waydroid_get_state ()
+{
     GDBusProxy *waydroid_proxy;
     GError *error = NULL;
     GVariant *result;
@@ -28,7 +29,7 @@ waydroid_get_state () {
     );
 
     if (error) {
-        g_print ("Error creating proxy: %s\n", error->message);
+        g_debug ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
         return NULL;
     }
@@ -44,7 +45,7 @@ waydroid_get_state () {
     );
 
     if (error) {
-        g_print ("Error calling GetSession: %s\n", error->message);
+        g_debug ("Error calling GetSession: %s", error->message);
         g_clear_error (&error);
     } else {
         GVariant *inner_dict;
@@ -76,7 +77,8 @@ waydroid_get_state () {
 }
 
 void
-waydroid_freezer (gboolean state) {
+waydroid_freezer (gboolean state)
+{
     GDBusProxy *waydroid_proxy;
     GError *error = NULL;
 
@@ -92,7 +94,7 @@ waydroid_freezer (gboolean state) {
     );
 
     if (error) {
-        g_print ("Error creating proxy: %s\n", error->message);
+        g_print ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
         return;
     }
@@ -110,17 +112,18 @@ waydroid_freezer (gboolean state) {
     );
 
     if (error) {
-        g_debug ("Error calling %s: %s\n", method, error->message);
+        g_debug ("Error calling %s: %s", method, error->message);
         g_clear_error (&error);
     } else {
-        g_debug ("Successfully called %s on Waydroid.\n", method);
+        g_debug ("Successfully called %s on Waydroid.", method);
     }
 
     g_object_unref (waydroid_proxy);
 }
 
 void
-waydroid_screen_toggle () {
+waydroid_screen_toggle ()
+{
     GDBusProxy *waydroid_proxy;
     GError *error = NULL;
 
@@ -136,7 +139,7 @@ waydroid_screen_toggle () {
     );
 
     if (error) {
-        g_print ("Error creating proxy: %s\n", error->message);
+        g_print ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
         return;
     }
@@ -152,17 +155,18 @@ waydroid_screen_toggle () {
     );
 
     if (error) {
-        g_debug ("Error calling Screen: %s\n", error->message);
+        g_debug ("Error calling Screen: %s", error->message);
         g_clear_error (&error);
     } else {
-        g_debug ("Successfully called Screen on Waydroid.\n");
+        g_debug ("Successfully called Screen on Waydroid.");
     }
 
     g_object_unref (waydroid_proxy);
 }
 
 gboolean
-waydroid_screen_status () {
+waydroid_screen_status ()
+{
     GDBusProxy *waydroid_proxy;
     GError *error = NULL;
     GVariant *result;
@@ -180,7 +184,7 @@ waydroid_screen_status () {
     );
 
     if (error) {
-        g_print ("Error creating proxy: %s\n", error->message);
+        g_print ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
         g_object_unref (waydroid_proxy);
         return is_asleep;
@@ -197,7 +201,7 @@ waydroid_screen_status () {
     );
 
     if (error) {
-        g_print ("Error calling isAsleep on Waydroid: %s\n", error->message);
+        g_debug ("Error calling isAsleep on Waydroid: %s", error->message);
         g_clear_error (&error);
     } else {
         g_variant_get (result, "(b)", &is_asleep);
@@ -209,24 +213,80 @@ waydroid_screen_status () {
 }
 
 void
-waydroid_screen (gboolean state) {
+waydroid_setprop (const gchar* propname, const gchar* propvalue)
+{
+    GDBusProxy *waydroid_proxy;
+    GError *error = NULL;
+    GVariant *parameters;
+
+    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+        G_BUS_TYPE_SYSTEM,
+        G_DBUS_PROXY_FLAGS_NONE,
+        NULL,
+        WAYDROID_DBUS_NAME,
+        WAYDROID_DBUS_PATH,
+        WAYDROID_DBUS_INTERFACE,
+        NULL,
+        &error
+    );
+
+    if (error) {
+        g_debug ("Error creating proxy: %s", error->message);
+        g_clear_error (&error);
+        return;
+    }
+
+    parameters = g_variant_new ("(ss)", propname, propvalue);
+
+    g_dbus_proxy_call_sync(
+        waydroid_proxy,
+        "Setprop",
+        parameters,
+        G_DBUS_CALL_FLAGS_NONE,
+        -1,
+        NULL,
+        &error
+    );
+
+    if (error) {
+        g_debug ("Error calling Setprop: %s", error->message);
+        g_clear_error (&error);
+    }
+
+    g_object_unref (waydroid_proxy);
+}
+
+void
+waydroid_screen (gboolean state)
+{
     gchar *current_state = waydroid_get_state ();
     gboolean is_asleep = waydroid_screen_status ();
 
     if (current_state != NULL) {
         if (g_strcmp0 (current_state, "RUNNING") == 0) {
-            //g_print ("Waydroid is currently running.\n");
-            if ((state && is_asleep) || (!state && !is_asleep))
-                waydroid_screen_toggle ();
+            g_debug ("Waydroid is currently running.");
+            if ((state && is_asleep) || (!state && !is_asleep)) {
+                g_debug ("Screen state transition: %s -> %s",
+                         is_asleep ? "asleep" : "awake",
+                         state ? "awake" : "asleep");
+                if (!state) { // Screen going off
+                    waydroid_setprop ("furios.screen_off", "true");
+                    waydroid_screen_toggle ();
+                } else { // Screen going on
+                    waydroid_screen_toggle ();
+                    waydroid_setprop ("furios.screen_off", "false");
+                }
+            }
         }
         g_free (current_state);
     } else {
-        //g_print ("Failed to get Waydroid state.\n");
+        g_debug ("Failed to get Waydroid state.");
     }
 }
 
 gboolean
-waydroid_app_open () {
+waydroid_app_open ()
+{
     GDBusProxy *waydroid_proxy;
     GError *error = NULL;
     GVariant *result;
@@ -244,7 +304,7 @@ waydroid_app_open () {
     );
 
     if (error) {
-        g_print ("Error creating proxy: %s\n", error->message);
+        g_debug ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
         g_object_unref (waydroid_proxy);
         return app_open;
@@ -261,7 +321,7 @@ waydroid_app_open () {
     );
 
     if (error) {
-        g_print ("Error calling OpenAppPresent on Waydroid: %s\n", error->message);
+        g_debug ("Error calling OpenAppPresent on Waydroid: %s", error->message);
         g_clear_error (&error);
     } else {
         g_variant_get (result, "(b)", &app_open);

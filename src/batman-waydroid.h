@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+// Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
 #ifndef BATMAN_WAYDROID_H
 #define BATMAN_WAYDROID_H
@@ -56,5 +56,14 @@ waydroid_screen (gboolean state);
  */
 gboolean
 waydroid_app_open ();
+
+/**
+ * Sets a system property in the Waydroid container via D-Bus.
+ *
+ * @param propname The name of the property to set.
+ * @param propvalue The value to set the property to.
+ */
+void
+waydroid_setprop (const gchar* propname, const gchar* propvalue);
 
 #endif // BATMAN_WAYDROID_H
