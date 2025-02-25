@@ -271,9 +271,11 @@ waydroid_screen (gboolean state)
                          state ? "awake" : "asleep");
                 if (!state) { // Screen going off
                     waydroid_setprop ("furios.screen_off", "true");
+                    sleep(1);
                     waydroid_screen_toggle ();
                 } else { // Screen going on
                     waydroid_screen_toggle ();
+                    sleep(1);
                     waydroid_setprop ("furios.screen_off", "false");
                 }
             }
