@@ -20,7 +20,6 @@ typedef struct {
     gboolean btsave;
     gboolean hybrissave;
     gboolean wifisave;
-    gboolean waydroidsave;
 } Config;
 
 Config read_config();
@@ -33,6 +32,5 @@ gboolean bussave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer da
 gboolean btsave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean hybrissave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 gboolean wifisave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
-gboolean waydroidsave_switch_state_set(GtkSwitch* sender, gboolean state, gpointer data);
 
 #endif /* CONFIG_CONTROL_H */

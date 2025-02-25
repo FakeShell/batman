@@ -292,21 +292,6 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(wifi_action_row), wifi_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), wifi_action_row);
 
-    // Config : Waydroid save
-
-    GtkWidget *waydroid_action_row = adw_action_row_new();
-    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(waydroid_action_row), "Waydroid save");
-    adw_action_row_set_subtitle(ADW_ACTION_ROW(waydroid_action_row), "Allow batman to set Android container to powersave");
-
-    GtkWidget *waydroid_switch = gtk_switch_new();
-    gtk_widget_set_valign(waydroid_switch, GTK_ALIGN_CENTER);
-    gtk_switch_set_state(GTK_SWITCH(waydroid_switch), config.waydroidsave);
-    gtk_switch_set_active(GTK_SWITCH(waydroid_switch), config.waydroidsave);
-    g_signal_connect(waydroid_switch, "state-set", G_CALLBACK(waydroidsave_switch_state_set), NULL);
-
-    adw_action_row_add_suffix(ADW_ACTION_ROW(waydroid_action_row), waydroid_switch);
-    gtk_list_box_append(GTK_LIST_BOX(config_list_box), waydroid_action_row);
-
     // END : Config
 
     gtk_box_append(GTK_BOX(vbox), config_list_box);
