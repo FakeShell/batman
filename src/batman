@@ -785,6 +785,15 @@ function mtkdeisolate {
     fi
 }
 
+function mtkisolate {
+    if [ "${MTK_ISOLATION}" = "true" ]; then
+        for ((i=FIRSTPOLCORE; i<=LASTPOLCORE; i++))
+        do
+            echo $i > /proc/perfmgr/boost_ctrl/eas_ctrl/set_sched_isolation
+        done
+    fi
+}
+
 echo "" > /var/lib/batman/screen
 
 chown -R "${UIDS}":"${UIDS}" /var/lib/batman
@@ -893,6 +902,7 @@ do
     if [ "${OFFLINE}" = "true" ]; then
        # if device is not plugged into a power source and screen is off then set cpu to offline.
        if [ "${SCREEN_OLD}" != "${SCREEN}" ] && [ "${CHARGE}" = "discharging" ] && [ "${SCREEN}" = "no" ]; then
+          mtkisolate
           offline
        # if screen is on or current governor is the same as default governor set cpu cores to online.
        elif [ "${SCREEN}" = "yes" ] || [ "${CUR_GOVERNOR}" = "${DEFAULT_GOVERNOR}" ]; then
@@ -900,6 +910,7 @@ do
           mtkdeisolate
        # if device is powersave (which means device is sleeping) then set cpu cores to offline.
        elif [ "${SCREEN_OLD}" = "${SCREEN}" ] && [ "${CUR_GOVERNOR}" = "powersave" ]; then
+          mtkisolate
           offline
        fi
     fi
