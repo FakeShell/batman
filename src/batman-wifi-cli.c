@@ -21,12 +21,12 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "suspend") == 0) {
         wifi_set_powersave("wlan0", true);
         wifi_set_wmtwifi("wlan0", WMTWIFI_SUSPEND_VALUE);
-        wifi_set_setcam(true);
+        //wifi_set_setcam(true);
         //printf("Suspend and power save set for wlan0\n");
     } else if (strcmp(argv[1], "resume") == 0) {
         wifi_set_powersave("wlan0", false);
         wifi_set_wmtwifi("wlan0", WMTWIFI_RESUME_VALUE);
-        wifi_set_setcam(false);
+        //wifi_set_setcam(false);
         //printf("Resume and power save unset for wlan0\n");
     } else {
         fprintf(stderr, "Invalid argument. Use 'suspend' or 'resume'\n");
