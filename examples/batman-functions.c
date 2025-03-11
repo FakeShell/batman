@@ -1,7 +1,7 @@
 #include <batman/batman-wrappers.h>
 #include <batman/wlrdisplay.h>
 #include <batman/getinfo.h>
-#include <batman/batman-waydroid.h>
+#include <batman/batman-andromeda.h>
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {
@@ -41,11 +41,11 @@ int main(int argc, char *argv[]) {
     else
         g_print("No battery found\n");
 
-    g_autofree gchar *waydroid_state = waydroid_get_state();
-    if (waydroid_state)
-        g_print("Waydroid State: %s\n", waydroid_state);
+    g_autofree gchar *andromeda_state = andromeda_get_state();
+    if (andromeda_state)
+        g_print("Andromeda State: %s\n", andromeda_state);
     else
-        g_print("Failed to get Waydroid state.\n");
+        g_print("Failed to get Andromeda state.\n");
 
     return 0;
 }

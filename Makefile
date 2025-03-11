@@ -15,14 +15,14 @@ CFLAGS_HYBRIS = `pkg-config --cflags libgbinder`
 LDFLAGS_HYBRIS = `pkg-config --libs libgbinder`
 CFLAGS_WIFI = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
 LDFLAGS_WIFI = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
-CFLAGS_WAYDROID = `pkg-config --cflags gio-2.0`
-LDFLAGS_WAYDROID = `pkg-config --libs gio-2.0`
+CFLAGS_ANDROMEDA = `pkg-config --cflags gio-2.0`
+LDFLAGS_ANDROMEDA = `pkg-config --libs gio-2.0`
 CFLAGS_NICERDICER = `pkg-config --cflags gio-2.0`
 LDFLAGS_NICERDICER = `pkg-config --libs gio-2.0`
 CFLAGS_POWERCONFIG = `pkg-config --cflags gio-2.0`
 LDFLAGS_POWERCONFIG = `pkg-config --libs gio-2.0`
 CFLAGS_EXAMPLES = `pkg-config --cflags upower-glib`
-LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-waydroid -lwayland-client
+LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-andromeda -lwayland-client
 
 TARGET = batman
 TARGET_HELPER = batman-helper
@@ -36,13 +36,13 @@ TARGET_WIFI = libbatman-wifi.so
 TARGET_WIFI_CLI = batman-wifi
 TARGET_BATMAN2PPD = src/batman2ppd.py
 TARGET_PPDCLI = src/powerprofilesctl.py
-TARGET_WAYDROID = libbatman-waydroid.so
-TARGET_WAYDROID_CLI = batman-waydroid
+TARGET_ANDROMEDA = libbatman-andromeda.so
+TARGET_ANDROMEDA_CLI = batman-andromeda
 TARGET_NICERDICER = batman-nicerdicer
 TARGET_POWERCONFIG = batman-powerconfig
 TARGET_EXAMPLES = batman-examples
 
-SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-waydroid.c
+SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-andromeda.c
 SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
 SRC_GOVERNOR = src/governor.c src/wlrdisplay.c src/batman-wrappers.c
 SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
@@ -51,12 +51,12 @@ SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
 SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
 SRC_WIFI = src/batman-wifi.c
 SRC_WIFI_CLI = src/batman-wifi-cli.c src/batman-wifi.c
-SRC_WAYDROID = src/batman-waydroid.c
-SRC_WAYDROID_CLI = src/batman-waydroid-cli.c src/batman-waydroid.c
+SRC_ANDROMEDA = src/batman-andromeda.c
+SRC_ANDROMEDA_CLI = src/batman-andromeda-cli.c src/batman-andromeda.c
 SRC_NICERDICER = src/nicerdicer.c
 SRC_POWERCONFIG = src/powerconfig.c
 SRC_EXAMPLES = examples/batman-functions.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/wlrdisplay.h src/batman-gbinder.h src/batman-waydroid.h src/batman-wifi.h
+HEADERS = src/batman-wrappers.h src/getinfo.h src/wlrdisplay.h src/batman-gbinder.h src/batman-andromeda.h src/batman-wifi.h
 
 PREFIX ?= /usr
 LIBDIR ?= $(DESTDIR)$(PREFIX)/lib
@@ -76,7 +76,7 @@ NFCDDIR ?= $(LIBDIR)/nfcd/plugins
 TRIPLET ?= $(shell $(CC) -dumpmachine)
 
 .PHONY: all
-all: helper wrappers governor gui gbinder hybris wifi nfcd waydroid nicerdicer powerconfig
+all: helper wrappers governor gui gbinder hybris wifi nfcd andromeda nicerdicer powerconfig
 
 helper: $(TARGET_HELPER)
 $(TARGET_HELPER):
@@ -111,10 +111,10 @@ nfcd: $(TARGET_NFCD)
 $(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
 	$(CC) $^ $(LDFLAGS_NFCD) -o $@
 
-waydroid: $(TARGET_WAYDROID)
-$(TARGET_WAYDROID):
-	$(CC) -fPIC -shared $(SRC_WAYDROID) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID) -o $(TARGET_WAYDROID)
-	$(CC) $(SRC_WAYDROID_CLI) $(CFLAGS_WAYDROID) $(LDFLAGS_WAYDROID) -o $(TARGET_WAYDROID_CLI)
+andromeda: $(TARGET_ANDROMEDA)
+$(TARGET_ANDROMEDA):
+	$(CC) -fPIC -shared $(SRC_ANDROMEDA) $(CFLAGS_ANDROMEDA) $(LDFLAGS_ANDROMEDA) -o $(TARGET_ANDROMEDA)
+	$(CC) $(SRC_ANDROMEDA_CLI) $(CFLAGS_ANDROMEDA) $(LDFLAGS_ANDROMEDA) -o $(TARGET_ANDROMEDA_CLI)
 
 nicerdicer: $(TARGET_NICERDICER)
 $(TARGET_NICERDICER):
@@ -150,8 +150,8 @@ install: all
 	cp $(TARGET_WIFI_CLI) $(BINDIR)
 	cp $(TARGET_BATMAN2PPD) $(SBINDIR)/batman2ppd
 	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
-	cp $(TARGET_WAYDROID) $(LIBDIR)/$(TRIPLET)
-	cp $(TARGET_WAYDROID_CLI) $(BINDIR)
+	cp $(TARGET_ANDROMEDA) $(LIBDIR)/$(TRIPLET)
+	cp $(TARGET_ANDROMEDA_CLI) $(BINDIR)
 	cp $(TARGET_NICERDICER) $(SBINDIR)
 	cp $(TARGET_POWERCONFIG) $(SBINDIR)
 	cp $(TARGET_NFCD) $(NFCDDIR)
@@ -192,8 +192,8 @@ clean:
 	rm -f $(TARGET_NFCD)
 	rm -f $(TARGET_WIFI)
 	rm -f $(TARGET_WIFI_CLI)
-	rm -f $(TARGET_WAYDROID)
-	rm -f $(TARGET_WAYDROID_CLI)
+	rm -f $(TARGET_ANDROMEDA)
+	rm -f $(TARGET_ANDROMEDA_CLI)
 	rm -f $(TARGET_NICERDICER)
 	rm -f $(TARGET_EXAMPLES)
 	rm -f $(TARGET_POWERCONFIG)

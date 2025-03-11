@@ -2,5 +2,5 @@ usr/include/batman/batman-wrappers.h
 usr/include/batman/getinfo.h
 usr/include/batman/wlrdisplay.h
 usr/include/batman/batman-gbinder.h
-usr/include/batman/batman-waydroid.h
+usr/include/batman/batman-andromeda.h
 usr/include/batman/batman-wifi.h

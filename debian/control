@@ -35,7 +35,7 @@ Recommends: batman-wifi (= ${binary:Version}),
             batman-hybris (= ${binary:Version}),
             nfcd-batman-plugin (= ${binary:Version}),
             batman2ppd (= ${binary:Version}),
-            batman-waydroid (= ${binary:Version}),
+            batman-andromeda (= ${binary:Version}),
             batman-nicerdicer (= ${binary:Version}),
             batman-powerconfig (= ${binary:Version}),
 Description: batman
@@ -64,7 +64,7 @@ Package: batman-dev
 Architecture: any
 Depends: ${misc:Depends},
          libbatman-wrappers (= ${binary:Version}),
-         libbatman-waydroid (= ${binary:Version}),
+         libbatman-andromeda (= ${binary:Version}),
          libbatman-wifi (= ${binary:Version}),
          libbatman-gbinder (= ${binary:Version}),
          libwayland-dev,
@@ -123,19 +123,19 @@ Provides: power-profiles-daemon
 Description: batman2ppd
  A battery management service for Linux phones - batman to power profiles daemon service
 
-Package: libbatman-waydroid
+Package: libbatman-andromeda
 Section: misc
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends},
-Description: libbatman-waydroid
- A battery management service for Linux phones - waydroid shared object
+Description: libbatman-andromeda
+ A battery management service for Linux phones - Andromeda shared object
 
-Package: batman-waydroid
+Package: batman-andromeda
 Section: misc
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends},
-Description: batman-waydroid
- A battery management service for Linux phones - waydroid wrapper
+Description: batman-andromeda
+ A battery management service for Linux phones - Andromeda wrapper
 
 Package: batman-nicerdicer
 Section: misc

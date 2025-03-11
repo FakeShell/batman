@@ -2,7 +2,7 @@
 // Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include <stdio.h>
-#include "batman-waydroid.h"
+#include "batman-andromeda.h"
 
 // yes this is stupid, once batman is rewritten this will be dropped
 int main(int argc, char *argv[]) {
@@ -14,9 +14,9 @@ int main(int argc, char *argv[]) {
     gboolean state = g_strcmp0(argv[2], "1") == 0;
 
     if (g_strcmp0(argv[1], "freeze") == 0) {
-        waydroid_freezer(state);
+        andromeda_freezer(state);
     } else if (g_strcmp0(argv[1], "screen") == 0) {
-        waydroid_screen(state);
+        andromeda_screen(state);
     } else {
         g_print("Unsupported operation\n");
         return 1;

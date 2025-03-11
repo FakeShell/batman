@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
-#include "batman-waydroid.h"
+#include "batman-andromeda.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WAYDROID_DBUS_NAME          "id.waydro.Container"
-#define WAYDROID_DBUS_PATH          "/ContainerManager"
-#define WAYDROID_DBUS_INTERFACE     "id.waydro.ContainerManager"
+#define ANDROMEDA_DBUS_NAME          "io.furios.Andromeda.Container"
+#define ANDROMEDA_DBUS_PATH          "/ContainerManager"
+#define ANDROMEDA_DBUS_INTERFACE     "io.furios.Andromeda.ContainerManager"
 
 gchar *
-waydroid_get_state ()
+andromeda_get_state ()
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
     GVariant *result;
     gchar *state = NULL;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -35,7 +35,7 @@ waydroid_get_state ()
     }
 
     result = g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         "GetSession",
         NULL,
         G_DBUS_CALL_FLAGS_NONE,
@@ -71,24 +71,24 @@ waydroid_get_state ()
         g_variant_unref (result);
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
 
     return state;
 }
 
 void
-waydroid_freezer (gboolean state)
+andromeda_freezer (gboolean state)
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -102,7 +102,7 @@ waydroid_freezer (gboolean state)
     const char *method = state ? "Freeze" : "Unfreeze";
 
     g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         method,
         NULL,
         G_DBUS_CALL_FLAGS_NONE,
@@ -115,25 +115,25 @@ waydroid_freezer (gboolean state)
         g_debug ("Error calling %s: %s", method, error->message);
         g_clear_error (&error);
     } else {
-        g_debug ("Successfully called %s on Waydroid.", method);
+        g_debug ("Successfully called %s on Andromeda.", method);
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
 }
 
 void
-waydroid_screen_toggle ()
+andromeda_screen_toggle ()
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -145,7 +145,7 @@ waydroid_screen_toggle ()
     }
 
     g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         "Screen",
         NULL,
         G_DBUS_CALL_FLAGS_NONE,
@@ -158,27 +158,27 @@ waydroid_screen_toggle ()
         g_debug ("Error calling Screen: %s", error->message);
         g_clear_error (&error);
     } else {
-        g_debug ("Successfully called Screen on Waydroid.");
+        g_debug ("Successfully called Screen on Andromeda.");
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
 }
 
 gboolean
-waydroid_screen_status ()
+andromeda_screen_status ()
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
     GVariant *result;
     gboolean is_asleep = FALSE;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -186,12 +186,12 @@ waydroid_screen_status ()
     if (error) {
         g_print ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
-        g_object_unref (waydroid_proxy);
+        g_object_unref (andromeda_proxy);
         return is_asleep;
     }
 
     result = g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         "isAsleep",
         NULL,
         G_DBUS_CALL_FLAGS_NONE,
@@ -201,31 +201,31 @@ waydroid_screen_status ()
     );
 
     if (error) {
-        g_debug ("Error calling isAsleep on Waydroid: %s", error->message);
+        g_debug ("Error calling isAsleep on Andromeda: %s", error->message);
         g_clear_error (&error);
     } else {
         g_variant_get (result, "(b)", &is_asleep);
         g_variant_unref (result);
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
     return is_asleep;
 }
 
 void
-waydroid_setprop (const gchar* propname, const gchar* propvalue)
+andromeda_setprop (const gchar* propname, const gchar* propvalue)
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
     GVariant *parameters;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -239,7 +239,7 @@ waydroid_setprop (const gchar* propname, const gchar* propvalue)
     parameters = g_variant_new ("(ss)", propname, propvalue);
 
     g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         "Setprop",
         parameters,
         G_DBUS_CALL_FLAGS_NONE,
@@ -253,54 +253,54 @@ waydroid_setprop (const gchar* propname, const gchar* propvalue)
         g_clear_error (&error);
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
 }
 
 void
-waydroid_screen (gboolean state)
+andromeda_screen (gboolean state)
 {
-    gchar *current_state = waydroid_get_state ();
-    gboolean is_asleep = waydroid_screen_status ();
+    gchar *current_state = andromeda_get_state ();
+    gboolean is_asleep = andromeda_screen_status ();
 
     if (current_state != NULL) {
         if (g_strcmp0 (current_state, "RUNNING") == 0) {
-            g_debug ("Waydroid is currently running.");
+            g_debug ("Andromeda is currently running.");
             if ((state && is_asleep) || (!state && !is_asleep)) {
                 g_debug ("Screen state transition: %s -> %s",
                          is_asleep ? "asleep" : "awake",
                          state ? "awake" : "asleep");
                 if (!state) { // Screen going off
-                    waydroid_setprop ("furios.screen_off", "true");
+                    andromeda_setprop ("furios.screen_off", "true");
                     sleep(1);
-                    waydroid_screen_toggle ();
+                    andromeda_screen_toggle ();
                 } else { // Screen going on
-                    waydroid_screen_toggle ();
+                    andromeda_screen_toggle ();
                     sleep(1);
-                    waydroid_setprop ("furios.screen_off", "false");
+                    andromeda_setprop ("furios.screen_off", "false");
                 }
             }
         }
         g_free (current_state);
     } else {
-        g_debug ("Failed to get Waydroid state.");
+        g_debug ("Failed to get Andromeda state.");
     }
 }
 
 gboolean
-waydroid_app_open ()
+andromeda_app_open ()
 {
-    GDBusProxy *waydroid_proxy;
+    GDBusProxy *andromeda_proxy;
     GError *error = NULL;
     GVariant *result;
     gboolean app_open = FALSE;
 
-    waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    andromeda_proxy = g_dbus_proxy_new_for_bus_sync(
         G_BUS_TYPE_SYSTEM,
         G_DBUS_PROXY_FLAGS_NONE,
         NULL,
-        WAYDROID_DBUS_NAME,
-        WAYDROID_DBUS_PATH,
-        WAYDROID_DBUS_INTERFACE,
+        ANDROMEDA_DBUS_NAME,
+        ANDROMEDA_DBUS_PATH,
+        ANDROMEDA_DBUS_INTERFACE,
         NULL,
         &error
     );
@@ -308,12 +308,12 @@ waydroid_app_open ()
     if (error) {
         g_debug ("Error creating proxy: %s", error->message);
         g_clear_error (&error);
-        g_object_unref (waydroid_proxy);
+        g_object_unref (andromeda_proxy);
         return app_open;
     }
 
     result = g_dbus_proxy_call_sync(
-        waydroid_proxy,
+        andromeda_proxy,
         "OpenAppPresent",
         NULL,
         G_DBUS_CALL_FLAGS_NONE,
@@ -323,13 +323,13 @@ waydroid_app_open ()
     );
 
     if (error) {
-        g_debug ("Error calling OpenAppPresent on Waydroid: %s", error->message);
+        g_debug ("Error calling OpenAppPresent on Andromeda: %s", error->message);
         g_clear_error (&error);
     } else {
         g_variant_get (result, "(b)", &app_open);
         g_variant_unref (result);
     }
 
-    g_object_unref (waydroid_proxy);
+    g_object_unref (andromeda_proxy);
     return app_open;
 }

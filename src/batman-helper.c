@@ -2,12 +2,12 @@
 // Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
 
 #include "batman-wrappers.h"
-#include "batman-waydroid.h"
+#include "batman-andromeda.h"
 #include <stdio.h>
 #include "wlrdisplay.h"
 #include "getinfo.h"
 
-static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|waydroid_state|waydroid_screen|waydroid_app_open|block_display_changed|block_wlroots_available|retry_wlroots_changed yes/no delay_ms retry_count]";
+static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|andromeda_state|andromeda_screen|andromeda_app_open|block_display_changed|block_wlroots_available|retry_wlroots_changed yes/no delay_ms retry_count]";
 
 static void
 print_usage(const char* program_name)
@@ -101,25 +101,25 @@ main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "waydroid_state") == 0) {
-        gchar *state = waydroid_get_state();
+    if (strcmp(argv[1], "andromeda_state") == 0) {
+        gchar *state = andromeda_get_state();
         if (state) {
             g_print("%s\n", state);
             g_free(state);
             return EXIT_SUCCESS;
         }
-        g_print("Failed to get Waydroid state.\n");
+        g_print("Failed to get Andromeda state.\n");
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "waydroid_screen") == 0) {
-        gboolean is_asleep = waydroid_screen_status();
+    if (strcmp(argv[1], "andromeda_screen") == 0) {
+        gboolean is_asleep = andromeda_screen_status();
         g_print("%s\n", is_asleep ? "False" : "True");
         return EXIT_SUCCESS;
     }
 
-    if (strcmp(argv[1], "waydroid_app_open") == 0) {
-        gboolean app_open = waydroid_app_open();
+    if (strcmp(argv[1], "andromeda_app_open") == 0) {
+        gboolean app_open = andromeda_app_open();
         g_print("%s\n", app_open ? "False" : "True");
         return EXIT_SUCCESS;
     }

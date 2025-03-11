@@ -5,5 +5,5 @@
 to build batman-functions:
 
 ```
-gcc batman-functions.c `pkg-config --cflags --libs upower-glib` -lbatman-wrappers -lbatman-waydroid
+gcc batman-functions.c `pkg-config --cflags --libs upower-glib` -lbatman-wrappers -lbatman-andromeda
 ```
