@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 import argparse
 import os
@@ -7,9 +7,9 @@ import subprocess
 import sys
 from gi.repository import Gio, GLib
 
-PP_NAME = "net.hadess.PowerProfiles"
-PP_PATH = "/net/hadess/PowerProfiles"
-PP_IFACE = "net.hadess.PowerProfiles"
+PP_NAME = "org.freedesktop.UPower.PowerProfiles"
+PP_PATH = "/org/freedesktop/UPower/PowerProfiles"
+PP_IFACE = "org.freedesktop.UPower.PowerProfiles"
 PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
 
 
@@ -38,13 +38,21 @@ def command(func):
 
 @command
 def _version(_args):
-    client_version = "0.21"
+    client_version = "0.30"
     try:
         proxy = get_proxy()
         daemon_ver = proxy.Get("(ss)", PP_IFACE, "Version")
     except GLib.Error:
         daemon_ver = "unknown"
     print(f"client: {client_version}\ndaemon: {daemon_ver}")
+
+
+@command
+def _set_profile(args):
+    proxy = get_proxy()
+    proxy.Set(
+        "(ssv)", PP_IFACE, "ActiveProfile", GLib.Variant.new_string(args.profile[0])
+    )
 
 
 @command
@@ -55,16 +63,28 @@ def _get(_args):
 
 
 @command
-def _set(args):
+def _set_battery_aware(args):
+    enable = args.enable
+    disable = args.disable
+    if enable is False and disable is True:
+        raise ValueError("enable or disable is required")
+    if enable is True and disable is False:
+        raise ValueError("can't set both enable and disable")
+    enable = enable if enable is not None else not disable
     proxy = get_proxy()
-    proxy.Set(
-        "(ssv)", PP_IFACE, "ActiveProfile", GLib.Variant.new_string(args.profile[0])
-    )
+    proxy.Set("(ssv)", PP_IFACE, "BatteryAware", GLib.Variant.new_boolean(enable))
 
 
 def get_profiles_property(prop):
     proxy = get_proxy()
     return proxy.Get("(ss)", PP_IFACE, prop)
+
+
+def get_profile_choices():
+    try:
+        return [profile["Profile"] for profile in get_profiles_property("Profiles")]
+    except GLib.Error:
+        return []
 
 
 @command
@@ -159,6 +179,43 @@ def _launch(args):
     sys.exit(ret)
 
 
+@command
+def _query_battery_aware(_args):
+    result = get_profiles_property("BatteryAware")
+    print(f"Dynamic changes from charger and battery events: {result}")
+
+
+@command
+def _list_actions(_args):
+    actions = get_profiles_property("ActionsInfo")
+    for action in actions:
+        for key in action:
+            print(f"{key}: {action[key]}")
+        if action != actions[-1]:
+            print("")
+
+
+@command
+def _configure_action(args):
+    action = args.action[0]
+    enable = args.enable
+    disable = args.disable
+    if enable is False and disable is True:
+        raise argparse.ArgumentError(
+            argument="action", message="enable or disable is required"
+        )
+    if enable is True and disable is False:
+        raise argparse.ArgumentError(
+            argument="action", message="can't set both enable and disable"
+        )
+    print(f"action: {action}, enable: {enable}")
+    bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+    proxy = Gio.DBusProxy.new_sync(
+        bus, Gio.DBusProxyFlags.NONE, None, PP_NAME, PP_PATH, PP_IFACE, None
+    )
+    proxy.SetActionEnabled("(sb)", action, enable)
+
+
 def get_parser():
     parser = argparse.ArgumentParser(
         epilog="Use “powerprofilesctl COMMAND --help” to get detailed help for individual commands",
@@ -170,6 +227,10 @@ def get_parser():
         "list-holds", help="List current power profile holds"
     )
     parser_list_holds.set_defaults(func=_list_holds)
+    parser_list_actions = subparsers.add_parser(
+        "list-actions", help="List available power profile actions"
+    )
+    parser_list_actions.set_defaults(func=_list_actions)
     parser_get = subparsers.add_parser(
         "get", help="Print the currently active power profile"
     )
@@ -181,12 +242,52 @@ def get_parser():
         "profile",
         nargs=1,
         help="Profile to use for set command",
+        choices=get_profile_choices(),
     )
-    parser_set.set_defaults(func=_set)
+    parser_set.set_defaults(func=_set_profile)
+    parser_set_action = subparsers.add_parser(
+        "configure-action", help="Configure the action to be taken for the profile"
+    )
+    parser_set_action.add_argument(
+        "action",
+        nargs=1,
+        help="action to change for configure-action",
+    )
+    parser_set_action.add_argument(
+        "--enable",
+        action="store_true",
+        help="enable action",
+    )
+    parser_set_action.add_argument(
+        "--disable",
+        action="store_false",
+        help="disable action",
+    )
+    parser_set_action.set_defaults(func=_configure_action)
+    parser_set_battery_aware = subparsers.add_parser(
+        "configure-battery-aware",
+        help="Turn on or off dynamic changes from battery level or power adapter",
+    )
+    parser_set_battery_aware.add_argument(
+        "--enable",
+        action="store_true",
+        help="enable battery aware",
+    )
+    parser_set_battery_aware.add_argument(
+        "--disable",
+        action="store_false",
+        help="disable battery aware",
+    )
+    parser_set_battery_aware.set_defaults(func=_set_battery_aware)
+    parser_query_battery_aware = subparsers.add_parser(
+        "query-battery-aware",
+        help="Query if dynamic changes from battery level or power adapter are enabled",
+    )
+    parser_query_battery_aware.set_defaults(func=_query_battery_aware)
     parser_launch = subparsers.add_parser(
         "launch",
         help="Launch a command while holding a power profile",
-        description="Launch the command while holding a power profile,"
+        description="Launch the command while holding a power profile, "
         "either performance, or power-saver. By default, the profile hold "
         "is for the performance profile, but it might not be available on "
         "all systems. See the list command for a list of available profiles.",
