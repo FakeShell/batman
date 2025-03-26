@@ -2,19 +2,17 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
 
-from dbus_fast.aio import MessageBus
-from dbus_fast.service import (ServiceInterface,
-                               method, dbus_property, signal)
-from dbus_fast.constants import PropertyAccess
-from dbus_fast import Variant, DBusError, BusType
-
+import configparser
 import subprocess
 import asyncio
+import gbinder
 import time
 import os
-import gbinder
-import configparser
-import multiprocessing
+
+from dbus_fast.aio import MessageBus
+from dbus_fast.service import ServiceInterface, method, dbus_property, signal
+from dbus_fast.constants import PropertyAccess
+from dbus_fast import Variant, BusType
 
 THERMAL_SYSFS_PATH = "/sys/class/thermal"
 
@@ -29,11 +27,47 @@ class PPDInterface(ServiceInterface):
             'ActiveProfile': Variant('s', 'balanced'),
             'PerformanceInhibited': Variant('s', ''),
             'PerformanceDegraded': Variant('s', ''),
-            'Profiles': Variant('aa{sv}', [{'Profile': Variant('s', 'power-saver'), 'Driver': Variant('s', 'batman')}, {'Profile': Variant('s', 'balanced'), 'Driver': Variant('s', 'batman')}, {'Profile': Variant('s', 'performance'), 'Driver': Variant('s', 'batman')}]),
+            'Profiles': Variant('aa{sv}', [
+                {
+                    'Profile': Variant('s', 'power-saver'),
+                    'Driver': Variant('s', 'batman')
+                },
+                {
+                    'Profile': Variant('s', 'balanced'),
+                    'Driver': Variant('s', 'batman')
+                },
+                {
+                    'Profile': Variant('s', 'performance'),
+                    'Driver': Variant('s', 'batman')
+                }
+             ]),
             'Actions': Variant('as', ['trickle_charge']),
+            'ActionsInfo': Variant('aa{sv}', [
+                {
+                    'Name': Variant('s', 'trickle_charge'),
+                    'Description': Variant('s', 'Configure power supply to trickle charge'),
+                    'Enabled': Variant('b', True)
+                }
+            ]),
             'ActiveProfileHolds': Variant('aa{sv}', []),
-            'Version': Variant('s', '0.21')
+            'Version': Variant('s', '0.30'),
+            'BatteryAware': Variant('b', True)
         }
+
+        self.loop.create_task(self.initialize_profile())
+
+    async def thermal_check(self):
+        while True:
+            await self.update_performance_degraded()
+            await asyncio.sleep(5)
+
+    async def initialize_profile(self):
+        self.create_state_file()
+        profile = self.get_profile()
+        if profile:
+            await self.set_active_profile(profile)
+
+        self.loop.create_task(self.thermal_check())
 
     @dbus_property(access=PropertyAccess.READWRITE)
     async def ActiveProfile(self) -> 's':
@@ -41,6 +75,9 @@ class PPDInterface(ServiceInterface):
 
     @ActiveProfile.setter
     async def ActiveProfile(self, profile: 's'):
+        await self.set_active_profile(profile)
+
+    async def set_active_profile(self, profile):
         if os.path.exists("/var/lib/batman/default_cpu_governor"):
             with open("/var/lib/batman/default_cpu_governor", "r") as default_governor_file:
                 default_governor = default_governor_file.read()
@@ -59,8 +96,7 @@ class PPDInterface(ServiceInterface):
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write("performance\n")
 
-            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
+            await restart_service('batman')
         elif profile == "balanced":
             set_vr(False)
             set_mtkpower(21) # PROCESS_CREATE, much less intensive than UX_MOVE_SCROLLING (45) which pushes everything up to 100
@@ -73,8 +109,7 @@ class PPDInterface(ServiceInterface):
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write(default_governor)
 
-            subprocess.Popen("systemctl restart batman", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
+            await restart_service('batman')
         elif profile == "power-saver":
             set_vr(False)
             set_mtkpower(21) # PROCESS_CREATE, much less intensive than UX_MOVE_SCROLLING (45) which pushes everything up to 100
@@ -89,7 +124,7 @@ class PPDInterface(ServiceInterface):
             offline_half(self.cores)
 
         self.props['ActiveProfile'] = Variant('s', profile)
-        self.SetProfile(profile)
+        self.set_profile(profile)
 
     @dbus_property(access=PropertyAccess.READ)
     def PerformanceInhibited(self) -> 's':
@@ -108,11 +143,14 @@ class PPDInterface(ServiceInterface):
         return self.props['Actions'].value
 
     @dbus_property(access=PropertyAccess.READ)
+    def ActionsInfo(self) -> 'aa{sv}':
+        return self.props['ActionsInfo'].value
+
+    @dbus_property(access=PropertyAccess.READ)
     def ActiveProfileHolds(self) -> 'aa{sv}':
         return self.props['ActiveProfileHolds'].value
 
-    @method()
-    def HoldProfile(self, profile: 's', reason: 's', application_id: 's') -> 'u':
+    def hold_profile(self, profile, reason, application_id):
         self.cookie += 1
         hold = {
             'Profile': Variant('s', profile),
@@ -128,9 +166,20 @@ class PPDInterface(ServiceInterface):
         return self.cookie
 
     @method()
+    def HoldProfile(self, profile: 's', reason: 's', application_id: 's') -> 'u':
+        return self.hold_profile(profile, reason, application_id)
+
+    @method()
     def ReleaseProfile(self, cookie: 'u'):
-        self.cookie = cookie
+        self.release_profile(cookie)
         self.ProfileReleased()
+
+    @method()
+    def SetActionEnabled(self, action: 's', enabled: 'b'):
+        self.set_action_enabled(action, enabled)
+
+    def set_action_enabled(action, enabled):
+        pass
 
     @signal()
     def ProfileReleased(self) -> 'u':
@@ -140,13 +189,25 @@ class PPDInterface(ServiceInterface):
     def Version(self) -> 's':
         return self.props['Version'].value
 
-    def UpdatePerformanceDegraded(self, temp_avg):
+    @dbus_property(access=PropertyAccess.READWRITE)
+    def BatteryAware(self) -> 'b':
+        return self.props['BatteryAware'].value
+
+    @BatteryAware.setter
+    def BatteryAware(self, battery_aware: 'b'):
+        self.set_battery_aware(battery_aware)
+
+    def set_battery_aware(self, battery_aware):
+        self.props['BatteryAware'] = Variant('b', battery_aware)
+
+    async def update_performance_degraded(self):
+        temp_avg = await get_thermal()
         if temp_avg > 50:
             self.props['PerformanceDegraded'] = Variant('s', 'high-operating-temperature')
         else:
             self.props['PerformanceDegraded'] = Variant('s', '')
 
-    def CreateStateFile(self):
+    def create_state_file(self):
         directory = "/var/lib/power-profiles-daemon/"
         file_path = os.path.join(directory, "state.ini")
 
@@ -158,57 +219,106 @@ class PPDInterface(ServiceInterface):
         if not os.path.isfile(file_path):
             config['State'] = {'Driver': 'batman', 'Profile': 'balanced'}
 
-            with open(file_path, 'w') as stateFile:
-                config.write(stateFile)
+            with open(file_path, 'w') as state_file:
+                config.write(state_file)
         else:
             config.read(file_path)
             if not config.has_option('State', 'Driver') or not config.has_option('State', 'Profile'):
                 config['State'] = {'Driver': 'batman', 'Profile': 'balanced'}
-                with open(file_path, 'w') as stateFile:
-                    config.write(stateFile)
+                with open(file_path, 'w') as state_file:
+                    config.write(state_file)
 
-    def StatesExist(self, file_path):
-        return os.path.isfile(file_path)
-
-    def SetState(self, driver, profile):
+    def set_profile(self, profile):
         directory = "/var/lib/power-profiles-daemon/"
         file_path = os.path.join(directory, "state.ini")
         config = configparser.ConfigParser()
-        if not self.StatesExist(file_path):
-            config["State"] = {'Driver': driver, 'Profile': profile}
-            with open(file_path, 'w') as stateFile:
-                config.write(stateFile)
-        else:
-            config.read(file_path)
-            config.set('State', 'Driver', driver)
-            config.set('State', 'Profile', profile)
-            with open(file_path, 'w') as stateFile:
-                config.write(stateFile)
-
-    def SetProfile(self, profile):
-        directory = "/var/lib/power-profiles-daemon/"
-        file_path = os.path.join(directory, "state.ini")
-        config = configparser.ConfigParser()
-        if not self.StatesExist(file_path):
+        if not os.path.isfile(file_path):
             config["State"] = {'Profile': profile}
-            with open(file_path, 'w') as stateFile:
-                config.write(stateFile)
+            with open(file_path, 'w') as state_file:
+                config.write(state_file)
         else:
             config.read(file_path)
             config.set('State', 'Profile', profile)
-            with open(file_path, 'w') as stateFile:
-                config.write(stateFile)
+            with open(file_path, 'w') as state_file:
+                config.write(state_file)
 
-    def GetProfile(self):
+    def get_profile(self):
         directory = "/var/lib/power-profiles-daemon/"
         file_path = os.path.join(directory, "state.ini")
         config = configparser.ConfigParser()
-        if self.StatesExist(file_path):
+        if os.path.isfile(file_path):
             try:
+                config.read(file_path)
                 profile = config.get('State', 'Profile')
-            except configparser.NoSectionError:
-                profile = None
+            except (configparser.NoSectionError, configparser.NoOptionError):
+                profile = "balanced"
             return profile
+        return "balanced"
+
+class UPowerPPDInterface(ServiceInterface):
+    def __init__(self, ppd_interface):
+        super().__init__('org.freedesktop.UPower.PowerProfiles')
+        self.ppd_interface = ppd_interface
+
+    @dbus_property(access=PropertyAccess.READWRITE)
+    async def ActiveProfile(self) -> 's':
+        return self.ppd_interface.props['ActiveProfile'].value
+
+    @ActiveProfile.setter
+    async def ActiveProfile(self, profile: 's'):
+        await self.ppd_interface.set_active_profile(profile)
+
+    @dbus_property(access=PropertyAccess.READ)
+    def PerformanceInhibited(self) -> 's':
+        return self.ppd_interface.props['PerformanceInhibited'].value
+
+    @dbus_property(access=PropertyAccess.READ)
+    def PerformanceDegraded(self) -> 's':
+        return self.ppd_interface.props['PerformanceDegraded'].value
+
+    @dbus_property(access=PropertyAccess.READ)
+    def Profiles(self) -> 'aa{sv}':
+        return self.ppd_interface.props['Profiles'].value
+
+    @dbus_property(access=PropertyAccess.READ)
+    def Actions(self) -> 'as':
+        return self.ppd_interface.props['Actions'].value
+
+    @dbus_property(access=PropertyAccess.READ)
+    def ActionsInfo(self) -> 'aa{sv}':
+        return self.ppd_interface.props['ActionsInfo'].value
+
+    @dbus_property(access=PropertyAccess.READ)
+    def ActiveProfileHolds(self) -> 'aa{sv}':
+        return self.ppd_interface.props['ActiveProfileHolds'].value
+
+    @method()
+    def HoldProfile(self, profile: 's', reason: 's', application_id: 's') -> 'u':
+        return self.ppd_interface.hold_profile(profile, reason, application_id)
+
+    @method()
+    def ReleaseProfile(self, cookie: 'u'):
+        self.ProfileReleased()
+
+    @method()
+    def SetActionEnabled(self, action: 's', enabled: 'b'):
+        self.ppd_interface.set_action_enabled(action, enabled)
+
+    @signal()
+    def ProfileReleased(self) -> 'u':
+        return self.ppd_interface.cookie
+
+    @dbus_property(access=PropertyAccess.READ)
+    def Version(self) -> 's':
+        return self.ppd_interface.props['Version'].value
+
+    @dbus_property(access=PropertyAccess.READWRITE)
+    def BatteryAware(self) -> 'b':
+        return self.ppd_interface.props['BatteryAware'].value
+
+    @BatteryAware.setter
+    def BatteryAware(self, battery_aware: 'b'):
+        self.ppd_interface.set_battery_aware(battery_aware)
 
 async def restart_service(service_name: str) -> bool:
     try:
@@ -308,7 +418,10 @@ def get_zone_type(zone):
     type_path = os.path.join(THERMAL_SYSFS_PATH, zone, "type")
     return read_sysfs_file(type_path)
 
-async def GetThermal():
+async def connect_to_dbus():
+    return await MessageBus(bus_type=BusType.SYSTEM).connect()
+
+async def get_thermal():
     i = 0
     temp_total = 0
     temp_avg = 0
@@ -334,25 +447,23 @@ async def GetThermal():
     return temp_avg
 
 async def main():
-    bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+    hadess_bus = await connect_to_dbus()
+    upower_bus = await connect_to_dbus()
+
     loop = asyncio.get_running_loop()
-    ppd_interface = PPDInterface(loop, bus)
-    bus.export('/net/hadess/PowerProfiles', ppd_interface)
-    await bus.request_name('net.hadess.PowerProfiles')
 
-    async def thermal_check():
-        while True:
-            temp_avg = await GetThermal()
-            ppd_interface.UpdatePerformanceDegraded(temp_avg)
-            await asyncio.sleep(5)
+    ppd_interface = PPDInterface(loop, hadess_bus)
+    hadess_bus.export('/net/hadess/PowerProfiles', ppd_interface)
+    await hadess_bus.request_name('net.hadess.PowerProfiles')
 
-    ppd_interface.CreateStateFile()
+    upower_interface = UPowerPPDInterface(ppd_interface)
+    upower_bus.export('/org/freedesktop/UPower/PowerProfiles', upower_interface)
+    await upower_bus.request_name('org.freedesktop.UPower.PowerProfiles')
 
-    if ppd_interface.GetProfile():
-        profile = ppd_interface.GetProfile()
-        ppd_interface.ActiveProfile(profile)
+    await asyncio.gather(
+        hadess_bus.wait_for_disconnect(),
+        upower_bus.wait_for_disconnect()
+    )
 
-    loop.create_task(thermal_check())
-    await bus.wait_for_disconnect()
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
