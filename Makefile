@@ -165,6 +165,9 @@ install: all
 	cp data/net.hadess.PowerProfiles.policy $(POLKITDIR)
 	cp data/net.hadess.PowerProfiles.conf $(DBUSDIR)
 
+	cp data/org.freedesktop.UPower.PowerProfiles.policy $(POLKITDIR)
+	cp data/org.freedesktop.UPower.PowerProfiles.conf $(DBUSDIR)
+
 	cp data/io.FuriOS.NicerDicer.conf $(DBUSDIR)
 	cp data/io.FuriOS.BatmanPowerConfig.conf $(DBUSDIR)
 
