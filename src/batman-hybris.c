@@ -1,73 +1,68 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "batman-gbinder.h"
-#include "mtk.h"
 
 int main(int argc, char *argv[]) {
-    // This is a weird way to handle it, we should do something about it
-    // but I don't have any good solution in mind right now ¯\_(ツ)_/¯
-    if (argc == 3) {
-        char *feature = argv[1];
-        int state = atoi(argv[2]);
+    if (argc != 3) {
+        printf("Usage: %s <feature> <state>\n", argv[0]);
+        printf("Features:\n");
+        printf("  power    - Power management (0: power saver, 1: performance)\n");
+        printf("  vr       - VR mode (0: off, 1: on)\n");
+        printf("  mtkpower - MTK power hint (value between 20 and 46)\n");
+        return 1;
+    }
 
-        if (strcmp(feature, "vr") == 0) {
-            if (state == 0 || state == 1) {
-                int ret = init_vr_hidl(state);
+    const char *feature = argv[1];
+    int state = atoi(argv[2]);
+    int ret = -1;
 
-                if (ret != 0) {
-                    printf("None of the backends are available for VR. Exiting.\n");
-                    return 1;
-                } else {
-                    //printf("Using VR HIDL backend\n");
-                }
-            } else {
-                printf("Invalid VR state argument. Use 0 for VR mode off or 1 for VR mode on\n");
-                return 1;
-            }
-        } else if (strcmp(feature, "power") == 0) {
-            if (state == 0 || state == 1) {
-                int ret = init_power_aidl(state);
-
-                if (ret != 0) {
-                    ret = init_power_hidl(state);
-
-                    if (ret != 0) {
-                        printf("None of the backends are available for power. Exiting.\n");
-                        return 1;
-                    } else {
-                        //printf("Using Power HIDL backend\n");
-                    }
-                } else {
-                    //printf("Using Power AIDL backend\n");
-                }
-            } else {
-                printf("Invalid Power state argument. Use 0 for non-interactive + powersave or 1 for interactive + performance.\n");
-                return 1;
-            }
-        } else if (strcmp(feature, "mtkpower") == 0) {
-            if (state >= 20 && state <= 46) {
-                int ret = init_mtkpower_hidl(state);
-
-                if (ret != 0) {
-                    printf("None of the backends are available for MTK Power. Exiting.\n");
-                    return 1;
-                } else {
-                    //printf("Using MTK Power HIDL backend\n");
-                }
-            } else {
-                printf("Invalid MTK Power state argument. State must be between 20 and 46\n");
+    if (strcmp(feature, "vr") == 0) {
+        if (state == 0 || state == 1) {
+            ret = batman_set_vr_mode(state);
+            if (ret != 0) {
+                printf("Failed to set VR mode. VR service might not be available.\n");
                 return 1;
             }
         } else {
-            printf("Invalid feature argument. Use 'vr' or 'power' or 'mtkpower'.\n");
+            printf("Invalid VR state. Use 0 for VR mode off or 1 for VR mode on.\n");
+            return 1;
+        }
+    } else if (strcmp(feature, "power") == 0) {
+        if (state == 0) {
+            ret = batman_set_power_saver();
+            if (ret != 0) {
+                printf("Failed to set power saver mode. Power service might not be available.\n");
+                return 1;
+            }
+        }  else if (state == 1) {
+            ret = batman_set_performance();
+            if (ret != 0) {
+                printf("Failed to set performance mode. Power service might not be available.\n");
+                return 1;
+            }
+        } else {
+            printf("Invalid power state. Use 0 for power saver or 1 for performance.\n");
+            return 1;
+        }
+    } else if (strcmp(feature, "mtkpower") == 0) {
+        if (state >= MTK_POWER_HINT_PROCESS_CREATE && state <= MTK_POWER_HINT_THERMAL_LIMIT) {
+            ret = batman_apply_mtkpower_hint((MtkPowerHint)state);
+            if (ret != 0) {
+                printf("Failed to apply MTK power hint. MTK Power service might not be available.\n");
+                return 1;
+            }
+        } else {
+            printf("Invalid MTK power hint. State must be between 20 and 46.\n");
             return 1;
         }
     } else {
-        printf("Usage: %s <feature> <state> for features 'vr' and 'power' and 'mtkpower'\n", argv[0]);
+        printf("Invalid feature. Use 'vr', 'power', or 'mtkpower'.\n");
         return 1;
     }
 
