@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #ifndef BATMAN_ANDROMEDA_H
 #define BATMAN_ANDROMEDA_H
@@ -12,8 +14,8 @@
  * @return A string containing the current state of Andromeda.
  *         Caller is responsible for freeing the returned string.
  */
-gchar*
-andromeda_get_state ();
+gchar *
+andromeda_get_state();
 
 /**
  * Sends a D-Bus request to Andromeda to either freeze or unfreeze.
@@ -21,14 +23,14 @@ andromeda_get_state ();
  * @param freeze TRUE to freeze, FALSE to unfreeze.
  */
 void
-andromeda_freezer (gboolean state);
+andromeda_freezer(gboolean state);
 
 /**
  * Toggles the Andromeda container's screen state.
  * If the screen is on, turns it off, and vice versa.
  */
 void
-andromeda_screen_toggle ();
+andromeda_screen_toggle();
 
 /**
  * Queries the current screen status of the Andromeda container.
@@ -36,7 +38,7 @@ andromeda_screen_toggle ();
  * @return TRUE if the screen is on, FALSE if the screen is off.
  */
 gboolean
-andromeda_screen_status ();
+andromeda_screen_status();
 
 /**
  * Sends a D-Bus request to Andromeda to check if it is available
@@ -45,7 +47,7 @@ andromeda_screen_status ();
  * @param state TRUE to turn the screen on, FALSE to turn the screen off.
  */
 void
-andromeda_screen (gboolean state);
+andromeda_screen(gboolean state);
 
 /**
  * Checks the Andromeda container for any currently running applications
@@ -55,7 +57,7 @@ andromeda_screen (gboolean state);
  *         FALSE if no applications are currently active.
  */
 gboolean
-andromeda_app_open ();
+andromeda_app_open();
 
 /**
  * Sets a system property in the Andromeda container via D-Bus.
@@ -64,6 +66,6 @@ andromeda_app_open ();
  * @param propvalue The value to set the property to.
  */
 void
-andromeda_setprop (const gchar* propname, const gchar* propvalue);
+andromeda_setprop(const gchar *propname, const gchar *propvalue);
 
 #endif // BATMAN_ANDROMEDA_H

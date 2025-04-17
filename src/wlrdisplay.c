@@ -1,7 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2019 Purism SPC
-// Copyright (c) 2019 The wlr-randr Contributors
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (c) 2019 Purism SPC
+ * Copyright (c) 2019 The wlr-randr Contributors
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -50,7 +52,8 @@ struct randr_state {
     bool running;
 };
 
-static const struct wl_interface *wlr_output_management_unstable_v1_types[] = {
+static const struct wl_interface *
+wlr_output_management_unstable_v1_types[] = {
     NULL,
     NULL,
     NULL,
@@ -65,24 +68,32 @@ static const struct wl_interface *wlr_output_management_unstable_v1_types[] = {
     &zwlr_output_mode_v1_interface,
 };
 
-static const struct wl_message zwlr_output_manager_v1_requests[] = {
+static const struct wl_message
+zwlr_output_manager_v1_requests[] =
+{
     { "create_configuration", "nu", wlr_output_management_unstable_v1_types + 3 },
     { "stop", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-static const struct wl_message zwlr_output_manager_v1_events[] = {
+static const struct wl_message
+zwlr_output_manager_v1_events[] =
+{
     { "head", "n", wlr_output_management_unstable_v1_types + 5 },
     { "done", "u", wlr_output_management_unstable_v1_types + 0 },
     { "finished", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-WL_PRIVATE const struct wl_interface zwlr_output_manager_v1_interface = {
+WL_PRIVATE const struct wl_interface
+zwlr_output_manager_v1_interface =
+{
     "zwlr_output_manager_v1", 1,
     2, zwlr_output_manager_v1_requests,
     3, zwlr_output_manager_v1_events,
 };
 
-static const struct wl_message zwlr_output_head_v1_events[] = {
+static const struct wl_message
+zwlr_output_head_v1_events[] =
+{
     { "name", "s", wlr_output_management_unstable_v1_types + 0 },
     { "description", "s", wlr_output_management_unstable_v1_types + 0 },
     { "physical_size", "ii", wlr_output_management_unstable_v1_types + 0 },
@@ -95,26 +106,34 @@ static const struct wl_message zwlr_output_head_v1_events[] = {
     { "finished", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-WL_PRIVATE const struct wl_interface zwlr_output_head_v1_interface = {
+WL_PRIVATE const struct wl_interface
+zwlr_output_head_v1_interface =
+{
     "zwlr_output_head_v1", 1,
     0, NULL,
     10, zwlr_output_head_v1_events,
 };
 
-static const struct wl_message zwlr_output_mode_v1_events[] = {
+static const struct wl_message
+zwlr_output_mode_v1_events[] =
+{
     { "size", "ii", wlr_output_management_unstable_v1_types + 0 },
     { "refresh", "i", wlr_output_management_unstable_v1_types + 0 },
     { "preferred", "", wlr_output_management_unstable_v1_types + 0 },
     { "finished", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-WL_PRIVATE const struct wl_interface zwlr_output_mode_v1_interface = {
+WL_PRIVATE const struct wl_interface
+zwlr_output_mode_v1_interface =
+{
     "zwlr_output_mode_v1", 1,
     0, NULL,
     4, zwlr_output_mode_v1_events,
 };
 
-static const struct wl_message zwlr_output_configuration_v1_requests[] = {
+static const struct wl_message
+zwlr_output_configuration_v1_requests[] =
+{
     { "enable_head", "no", wlr_output_management_unstable_v1_types + 8 },
     { "disable_head", "o", wlr_output_management_unstable_v1_types + 10 },
     { "apply", "", wlr_output_management_unstable_v1_types + 0 },
@@ -122,19 +141,25 @@ static const struct wl_message zwlr_output_configuration_v1_requests[] = {
     { "destroy", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-static const struct wl_message zwlr_output_configuration_v1_events[] = {
+static const struct wl_message
+zwlr_output_configuration_v1_events[] =
+{
     { "succeeded", "", wlr_output_management_unstable_v1_types + 0 },
     { "failed", "", wlr_output_management_unstable_v1_types + 0 },
     { "cancelled", "", wlr_output_management_unstable_v1_types + 0 },
 };
 
-WL_PRIVATE const struct wl_interface zwlr_output_configuration_v1_interface = {
+WL_PRIVATE const struct wl_interface
+zwlr_output_configuration_v1_interface =
+{
     "zwlr_output_configuration_v1", 1,
     5, zwlr_output_configuration_v1_requests,
     3, zwlr_output_configuration_v1_events,
 };
 
-static const struct wl_message zwlr_output_configuration_head_v1_requests[] = {
+static const struct wl_message
+zwlr_output_configuration_head_v1_requests[] =
+{
     { "set_mode", "o", wlr_output_management_unstable_v1_types + 11 },
     { "set_custom_mode", "iii", wlr_output_management_unstable_v1_types + 0 },
     { "set_position", "ii", wlr_output_management_unstable_v1_types + 0 },
@@ -142,67 +167,78 @@ static const struct wl_message zwlr_output_configuration_head_v1_requests[] = {
     { "set_scale", "f", wlr_output_management_unstable_v1_types + 0 },
 };
 
-WL_PRIVATE const struct wl_interface zwlr_output_configuration_head_v1_interface = {
+WL_PRIVATE const struct wl_interface
+zwlr_output_configuration_head_v1_interface =
+{
     "zwlr_output_configuration_head_v1", 1,
     5, zwlr_output_configuration_head_v1_requests,
     0, NULL,
 };
 
-static void mode_handle_size(void *data,
-        struct zwlr_output_mode_v1 *wlr_mode, int32_t width, int32_t height) {
-    // Left blank intentionally
+static void
+mode_handle_size(void *, struct zwlr_output_mode_v1 *, int32_t, int32_t)
+{
+    /* Left blank intentionally */
 }
 
-static void mode_handle_refresh(void *data,
-        struct zwlr_output_mode_v1 *wlr_mode, int32_t refresh) {
-    // Left blank intentionally
+static void
+mode_handle_refresh(void *, struct zwlr_output_mode_v1 *, int32_t)
+{
+    /* Left blank intentionally */
 }
 
-static void mode_handle_preferred(void *data,
-        struct zwlr_output_mode_v1 *wlr_mode) {
+static void
+mode_handle_preferred(void *data, struct zwlr_output_mode_v1 *)
+{
     struct randr_mode *mode = data;
     mode->preferred = true;
 }
 
-static void mode_handle_finished(void *data,
-        struct zwlr_output_mode_v1 *wlr_mode) {
+static void
+mode_handle_finished(void *data, struct zwlr_output_mode_v1 *wlr_mode)
+{
     struct randr_mode *mode = data;
     wl_list_remove(&mode->link);
     zwlr_output_mode_v1_destroy(mode->wlr_mode);
     free(mode);
 }
 
-static const struct zwlr_output_mode_v1_listener mode_listener = {
+static const struct
+zwlr_output_mode_v1_listener mode_listener =
+{
     .size = mode_handle_size,
     .refresh = mode_handle_refresh,
     .preferred = mode_handle_preferred,
     .finished = mode_handle_finished,
 };
 
-static void head_handle_name(void *data,
-        struct zwlr_output_head_v1 *wlr_head, const char *name) {
+static void
+head_handle_name(void *data, struct zwlr_output_head_v1 *, const char *name)
+{
     struct randr_head *head = data;
     free(head->name);
     head->name = name ? strdup(name) : NULL;
 }
 
-static void head_handle_description(void *data,
-        struct zwlr_output_head_v1 *wlr_head, const char *description) {
+static void
+head_handle_description(void *data, struct zwlr_output_head_v1 *, const char *description)
+{
     struct randr_head *head = data;
     free(head->description);
     head->description = description ? strdup(description) : NULL;
 }
 
-static void head_handle_physical_size(void *data,
-        struct zwlr_output_head_v1 *wlr_head, int32_t width, int32_t height) {
+static void
+head_handle_physical_size(void *data, struct zwlr_output_head_v1 *, int32_t width, int32_t height)
+{
     struct randr_head *head = data;
     head->phys_width = width;
     head->phys_height = height;
 }
 
-static void head_handle_mode(void *data,
-        struct zwlr_output_head_v1 *wlr_head,
-        struct zwlr_output_mode_v1 *wlr_mode) {
+static void
+head_handle_mode(void *data, struct zwlr_output_head_v1 *, struct zwlr_output_mode_v1 *wlr_mode)
+{
     struct randr_head *head = data;
 
     struct randr_mode *mode = calloc(1, sizeof(*mode));
@@ -213,17 +249,18 @@ static void head_handle_mode(void *data,
     zwlr_output_mode_v1_add_listener(wlr_mode, &mode_listener, mode);
 }
 
-static void head_handle_enabled(void *data,
-        struct zwlr_output_head_v1 *wlr_head, int32_t enabled) {
+static void
+head_handle_enabled(void *data, struct zwlr_output_head_v1 *, int32_t enabled)
+{
     struct randr_head *head = data;
     head->enabled = !!enabled;
     if (!enabled)
         head->mode = NULL;
 }
 
-static void head_handle_current_mode(void *data,
-        struct zwlr_output_head_v1 *wlr_head,
-        struct zwlr_output_mode_v1 *wlr_mode) {
+static void
+head_handle_current_mode(void *data, struct zwlr_output_head_v1 *, struct zwlr_output_mode_v1 *wlr_mode)
+{
     struct randr_head *head = data;
     struct randr_mode *mode;
 
@@ -238,23 +275,27 @@ static void head_handle_current_mode(void *data,
     head->mode = NULL;
 }
 
-static void head_handle_position(void *data,
-        struct zwlr_output_head_v1 *wlr_head, int32_t x, int32_t y) {
-    // Left blank intentionally
+static void
+head_handle_position(void *, struct zwlr_output_head_v1 *, int32_t, int32_t)
+{
+    /* Left blank intentionally */
 }
 
-static void head_handle_transform(void *data,
-        struct zwlr_output_head_v1 *wlr_head, int32_t transform) {
-    // Left blank intentionally
+static void
+head_handle_transform(void *, struct zwlr_output_head_v1 *, int32_t)
+{
+    /* Left blank intentionally */
 }
 
-static void head_handle_scale(void *data,
-        struct zwlr_output_head_v1 *wlr_head, wl_fixed_t scale) {
-    // Left blank intentionally
+static void
+head_handle_scale(void *, struct zwlr_output_head_v1 *, wl_fixed_t)
+{
+    /* Left blank intentionally */
 }
 
-static void head_handle_finished(void *data,
-        struct zwlr_output_head_v1 *wlr_head) {
+static void
+head_handle_finished(void *data, struct zwlr_output_head_v1 *wlr_head)
+{
     struct randr_head *head = data;
     wl_list_remove(&head->link);
     zwlr_output_head_v1_destroy(head->wlr_head);
@@ -263,7 +304,9 @@ static void head_handle_finished(void *data,
     free(head);
 }
 
-static const struct zwlr_output_head_v1_listener head_listener = {
+static const struct
+zwlr_output_head_v1_listener head_listener =
+{
     .name = head_handle_name,
     .description = head_handle_description,
     .physical_size = head_handle_physical_size,
@@ -276,9 +319,9 @@ static const struct zwlr_output_head_v1_listener head_listener = {
     .finished = head_handle_finished,
 };
 
-static void output_manager_handle_head(void *data,
-        struct zwlr_output_manager_v1 *manager,
-        struct zwlr_output_head_v1 *wlr_head) {
+static void
+output_manager_handle_head(void *data, struct zwlr_output_manager_v1 *, struct zwlr_output_head_v1 *wlr_head)
+{
     struct randr_state *state = data;
 
     struct randr_head *head = calloc(1, sizeof(*head));
@@ -290,28 +333,33 @@ static void output_manager_handle_head(void *data,
     zwlr_output_head_v1_add_listener(wlr_head, &head_listener, head);
 }
 
-static void output_manager_handle_done(void *data,
-        struct zwlr_output_manager_v1 *manager, uint32_t serial) {
+static void
+output_manager_handle_done(void *data, struct zwlr_output_manager_v1 *, uint32_t serial)
+{
     struct randr_state *state = data;
     state->serial = serial;
     state->has_serial = true;
 }
 
-static void output_manager_handle_finished(void *data,
-        struct zwlr_output_manager_v1 *manager) {
+static void
+output_manager_handle_finished(void *data, struct zwlr_output_manager_v1 *)
+{
     struct randr_state *state = data;
     state->output_manager = NULL;
     state->running = false;
 }
 
-static const struct zwlr_output_manager_v1_listener output_manager_listener = {
+static const struct
+zwlr_output_manager_v1_listener output_manager_listener =
+{
     .head = output_manager_handle_head,
     .done = output_manager_handle_done,
     .finished = output_manager_handle_finished,
 };
 
-static void registry_handle_global(void *data, struct wl_registry *registry,
-        uint32_t name, const char *interface, uint32_t version) {
+static void
+registry_handle_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t)
+{
     struct randr_state *state = data;
 
     if (strcmp(interface, zwlr_output_manager_v1_interface.name) == 0) {
@@ -322,17 +370,22 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
     }
 }
 
-static void registry_handle_global_remove(void *data,
-        struct wl_registry *registry, uint32_t name) {
-    // Left blank intentionally
+static void
+registry_handle_global_remove(void *, struct wl_registry *, uint32_t)
+{
+    /* Left blank intentionally */
 }
 
-static const struct wl_registry_listener registry_listener = {
+static const struct
+wl_registry_listener registry_listener =
+{
     .global = registry_handle_global,
     .global_remove = registry_handle_global_remove,
 };
 
-static int get_state(struct randr_state *state) {
+static int
+get_state(struct randr_state *state)
+{
     if (!state)
         return -1;
 
@@ -349,7 +402,9 @@ static int get_state(struct randr_state *state) {
     return result;
 }
 
-static void cleanup_wlroots(struct randr_state *state, struct wl_registry *registry, struct wl_display *display) {
+static void
+cleanup_wlroots(struct randr_state *state, struct wl_registry *registry, struct wl_display *display)
+{
     struct randr_head *head, *tmp_head;
     wl_list_for_each_safe(head, tmp_head, &state->heads, link) {
         struct randr_mode *mode, *tmp_mode;
@@ -372,7 +427,9 @@ static void cleanup_wlroots(struct randr_state *state, struct wl_registry *regis
         wl_display_disconnect(display);
 }
 
-int block_wlroots_available(void) {
+int
+block_wlroots_available(void)
+{
     struct wl_display *display = NULL;
     struct wl_registry *registry = NULL;
     struct randr_state state = { .running = true, .output_manager = NULL };
@@ -419,7 +476,9 @@ retry:
     return 1;
 }
 
-int get_wlroots_screen_status(void) {
+int
+get_wlroots_screen_status(void)
+{
     int result = -1;
     struct wl_display *display = NULL;
     struct wl_registry *registry = NULL;
@@ -464,7 +523,7 @@ int get_wlroots_screen_status(void) {
 
     result = get_state(&state);
     while (state.running && wl_display_dispatch(display) != -1) {
-        // Left blank intentionally
+        /* Left blank intentionally */
     }
 
 cleanup:
@@ -472,7 +531,9 @@ cleanup:
     return result;
 }
 
-int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value) {
+int
+retry_wlroots_changed(int retry_count, int delay_ms, int initial_value)
+{
     if (retry_count <= 0 || delay_ms < 0)
         return -1;
 
@@ -481,7 +542,7 @@ int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value) {
     for (int i = 0; i < retry_count; i++) {
         int current_status = get_wlroots_screen_status();
 
-        // return if there is an error or if status has changed
+        /* return if there is an error or if status has changed */
         if (current_status != initial_value || current_status == -1)
             return current_status;
         if (i < retry_count - 1)
@@ -491,6 +552,8 @@ int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value) {
     return initial_value;
 }
 
-int wlrdisplay(int argc, char *argv[]) {
+int
+wlrdisplay(int argc, char *argv[])
+{
     return get_wlroots_screen_status();
 }

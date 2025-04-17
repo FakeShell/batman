@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <stdio.h>
 #include <stddef.h>
@@ -58,16 +60,16 @@ get_unit_property(const gchar *property_name, GError **error)
         return NULL;
 
     unit_path_variant = g_dbus_connection_call_sync(connection,
-                                                   "org.freedesktop.systemd1",
-                                                   "/org/freedesktop/systemd1",
-                                                   "org.freedesktop.systemd1.Manager",
-                                                   "GetUnit",
-                                                   g_variant_new("(s)", "batman.service"),
-                                                   G_VARIANT_TYPE("(o)"),
-                                                   G_DBUS_CALL_FLAGS_NONE,
-                                                   -1,
-                                                   NULL,
-                                                   error);
+                                                    "org.freedesktop.systemd1",
+                                                    "/org/freedesktop/systemd1",
+                                                    "org.freedesktop.systemd1.Manager",
+                                                    "GetUnit",
+                                                    g_variant_new("(s)", "batman.service"),
+                                                    G_VARIANT_TYPE("(o)"),
+                                                    G_DBUS_CALL_FLAGS_NONE,
+                                                    -1,
+                                                    NULL,
+                                                    error);
 
     if (!unit_path_variant) {
         g_debug("Failed to get unit path");
@@ -77,18 +79,18 @@ get_unit_property(const gchar *property_name, GError **error)
     g_variant_get(unit_path_variant, "(o)", &unit_path);
 
     property_value = g_dbus_connection_call_sync(connection,
-                                               "org.freedesktop.systemd1",
-                                               unit_path,
-                                               "org.freedesktop.DBus.Properties",
-                                               "Get",
-                                               g_variant_new("(ss)",
-                                                           "org.freedesktop.systemd1.Unit",
-                                                           property_name),
-                                               G_VARIANT_TYPE("(v)"),
-                                               G_DBUS_CALL_FLAGS_NONE,
-                                               -1,
-                                               NULL,
-                                               error);
+                                                 "org.freedesktop.systemd1",
+                                                 unit_path,
+                                                 "org.freedesktop.DBus.Properties",
+                                                 "Get",
+                                                 g_variant_new("(ss)",
+                                                               "org.freedesktop.systemd1.Unit",
+                                                                property_name),
+                                                 G_VARIANT_TYPE("(v)"),
+                                                 G_DBUS_CALL_FLAGS_NONE,
+                                                 -1,
+                                                 NULL,
+                                                 error);
 
     if (!property_value) {
         g_debug("Failed to get property %s", property_name);
@@ -115,7 +117,7 @@ check_batman_active(void)
     }
 
     bm_state.active = (g_strcmp0(active_state, "active") == 0 ||
-                      g_strcmp0(active_state, "activating") == 0);
+                       g_strcmp0(active_state, "activating") == 0);
     return 0;
 }
 
@@ -133,7 +135,7 @@ check_batman_enabled(void)
     }
 
     bm_state.enabled = (g_strcmp0(unit_file_state, "enabled") == 0 ||
-                       g_strcmp0(unit_file_state, "static") == 0);
+                        g_strcmp0(unit_file_state, "static") == 0);
 
     return 0;
 }
@@ -149,18 +151,18 @@ start_batman_service(GError **error)
         return FALSE;
 
     start_result = g_dbus_connection_call_sync(connection,
-                                             "org.freedesktop.systemd1",
-                                             "/org/freedesktop/systemd1",
-                                             "org.freedesktop.systemd1.Manager",
-                                             "StartUnit",
-                                             g_variant_new("(ss)",
-                                                         "batman.service",
-                                                         "replace"),
-                                             G_VARIANT_TYPE("(o)"),
-                                             G_DBUS_CALL_FLAGS_NONE,
-                                             -1,
-                                             NULL,
-                                             error);
+                                               "org.freedesktop.systemd1",
+                                               "/org/freedesktop/systemd1",
+                                               "org.freedesktop.systemd1.Manager",
+                                               "StartUnit",
+                                               g_variant_new("(ss)",
+                                                             "batman.service",
+                                                             "replace"),
+                                               G_VARIANT_TYPE("(o)"),
+                                               G_DBUS_CALL_FLAGS_NONE,
+                                               -1,
+                                               NULL,
+                                               error);
 
     if (!start_result) {
         g_prefix_error(error, "Failed to start batman service: ");
@@ -181,18 +183,18 @@ stop_batman_service(GError **error)
         return FALSE;
 
     stop_result = g_dbus_connection_call_sync(connection,
-                                           "org.freedesktop.systemd1",
-                                           "/org/freedesktop/systemd1",
-                                           "org.freedesktop.systemd1.Manager",
-                                           "StopUnit",
-                                           g_variant_new("(ss)",
-                                                       "batman.service",
-                                                       "replace"),
-                                           G_VARIANT_TYPE("(o)"),
-                                           G_DBUS_CALL_FLAGS_NONE,
-                                           -1,
-                                           NULL,
-                                           error);
+                                              "org.freedesktop.systemd1",
+                                              "/org/freedesktop/systemd1",
+                                              "org.freedesktop.systemd1.Manager",
+                                              "StopUnit",
+                                              g_variant_new("(ss)",
+                                                            "batman.service",
+                                                            "replace"),
+                                              G_VARIANT_TYPE("(o)"),
+                                              G_DBUS_CALL_FLAGS_NONE,
+                                              -1,
+                                              NULL,
+                                              error);
 
     if (!stop_result) {
         g_prefix_error(error, "Failed to stop batman service: ");
@@ -214,18 +216,18 @@ enable_batman_service(GError **error)
         return FALSE;
 
     enable_result = g_dbus_connection_call_sync(connection,
-                                             "org.freedesktop.systemd1",
-                                             "/org/freedesktop/systemd1",
-                                             "org.freedesktop.systemd1.Manager",
-                                             "EnableUnitFiles",
-                                             g_variant_new("(^asbb)",
-                                                         service_list,
-                                                         FALSE, FALSE),
-                                             G_VARIANT_TYPE("(ba(sss))"),
-                                             G_DBUS_CALL_FLAGS_NONE,
-                                             -1,
-                                             NULL,
-                                             error);
+                                                "org.freedesktop.systemd1",
+                                                "/org/freedesktop/systemd1",
+                                                "org.freedesktop.systemd1.Manager",
+                                                "EnableUnitFiles",
+                                                g_variant_new("(^asbb)",
+                                                              service_list,
+                                                              FALSE, FALSE),
+                                                G_VARIANT_TYPE("(ba(sss))"),
+                                                G_DBUS_CALL_FLAGS_NONE,
+                                                -1,
+                                                NULL,
+                                                error);
 
     if (!enable_result) {
         g_prefix_error(error, "Failed to enable batman service: ");
@@ -247,18 +249,18 @@ disable_batman_service(GError **error)
         return FALSE;
 
     disable_result = g_dbus_connection_call_sync(connection,
-                                              "org.freedesktop.systemd1",
-                                              "/org/freedesktop/systemd1",
-                                              "org.freedesktop.systemd1.Manager",
-                                              "DisableUnitFiles",
-                                              g_variant_new("(^asb)",
-                                                          service_list,
-                                                          FALSE),
-                                              G_VARIANT_TYPE("(a(sss))"),
-                                              G_DBUS_CALL_FLAGS_NONE,
-                                              -1,
-                                              NULL,
-                                              error);
+                                                 "org.freedesktop.systemd1",
+                                                 "/org/freedesktop/systemd1",
+                                                 "org.freedesktop.systemd1.Manager",
+                                                 "DisableUnitFiles",
+                                                 g_variant_new("(^asb)",
+                                                               service_list,
+                                                               FALSE),
+                                                 G_VARIANT_TYPE("(a(sss))"),
+                                                 G_DBUS_CALL_FLAGS_NONE,
+                                                 -1,
+                                                 NULL,
+                                                 error);
 
     if (!disable_result) {
         g_prefix_error(error, "Failed to disable batman service: ");

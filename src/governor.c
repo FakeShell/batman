@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <stdio.h>
 #include <time.h>
@@ -9,7 +11,9 @@
 #include <unistd.h>
 #include "batman-wrappers.h"
 #include "wlrdisplay.h"
-#include "governor.h"
+#include <pthread.h>
+#include <signal.h>
+#include <sys/utsname.h>
 
 volatile sig_atomic_t keep_going = 1;
 char cpu_usage[1024] = "unknown\n";
@@ -106,21 +110,22 @@ const char *paths[] = {
     "/sys/kernel/apusys/mnoc_apu_qos_boost"
 };
 
-// Signal handler to handle Ctrl+C
-void handle_sigint(int sig)
+void
+handle_sigint(int sig)
 {
     keep_going = 0;
 }
 
-char *get_node_name(const char *path) {
+char *
+get_node_name(const char *path)
+{
     char *last_slash = strrchr(path, '/');
     if (last_slash != NULL) {
         char *second_last_slash = last_slash;
         while (second_last_slash > path) {
             --second_last_slash;
-            if (*second_last_slash == '/') {
+            if (*second_last_slash == '/')
                 return second_last_slash + 1;
-            }
         }
     }
 
@@ -129,7 +134,9 @@ char *get_node_name(const char *path) {
 
 const char *arch_x86[] = {"i686", "x86_64"};
 
-int is_arch_x86() {
+int
+is_arch_x86()
+{
     struct utsname buffer;
 
     if (uname(&buffer) != 0) {
@@ -138,26 +145,26 @@ int is_arch_x86() {
     }
 
     for(int i = 0; i < sizeof(arch_x86) / sizeof(arch_x86[0]); ++i) {
-        if(strcmp(buffer.machine, arch_x86[i]) == 0) {
+        if (strcmp(buffer.machine, arch_x86[i]) == 0)
             return 1;
-        }
     }
 
     return 0;
 }
 
-void *update_cpu_usage(void *arg) {
+void *
+update_cpu_usage(void *arg)
+{
     const int sleep_interval_in_seconds = 2;
     const int checks_per_interval = 10;
     const int sleep_time = sleep_interval_in_seconds / checks_per_interval;
 
     for (int i = 0; i < sleep_interval_in_seconds; i += sleep_time) {
-        if (!keep_going) {
+        if (!keep_going)
             break;
-        }
 
         if (i % sleep_interval_in_seconds == 0) {
-            double current_cpu_usage = cpuUsage();
+            double current_cpu_usage = get_cpu_usage();
             pthread_mutex_lock(&cpu_usage_mutex);
             snprintf(cpu_usage, sizeof(cpu_usage), "%.lf\n", current_cpu_usage);
             pthread_mutex_unlock(&cpu_usage_mutex);
@@ -169,7 +176,9 @@ void *update_cpu_usage(void *arg) {
     return NULL;
 }
 
-void get_system_info(int x86) {
+void
+get_system_info(int x86)
+{
     char buf[1024];
     FILE *file;
     int first_core = -1, last_core = -1, core;
@@ -194,7 +203,7 @@ void get_system_info(int x86) {
                     return;
                 }
 
-                int result = wlrdisplay(0, NULL);
+                int result = get_wlroots_screen_status();
                 printf("wlroots screen status for UID %s: %s", dir->d_name, result == 0 ? "yes\n" : "no\n");
                 break;
             }
@@ -216,7 +225,8 @@ void get_system_info(int x86) {
     } else {
         while ((getline(&line, &len, file)) != -1) {
             if (sscanf(line, "processor : %d", &core) == 1) {
-                if (first_core == -1) first_core = core;
+                if (first_core == -1)
+                    first_core = core;
                 last_core = core;
             }
         }
@@ -227,15 +237,14 @@ void get_system_info(int x86) {
     }
 
     const char *cpufreq_node;
-    if (x86 == 1) {
+    if (x86 == 1)
         cpufreq_node = "scaling_cur_freq";
-    } else if (x86 == 0) {
+    else if (x86 == 0)
         cpufreq_node = "cpuinfo_cur_freq";
-    } else {
-        cpufreq_node = "unknown"; // Failed to get architecture
-    }
+    else
+        cpufreq_node = "unknown";
 
-    for(int i = first_core; i <= last_core; ++i) {
+    for (int i = first_core; i <= last_core; ++i) {
         sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_available_governors", i);
         file = fopen(path, "r");
         char output_scaling[1024] = "cpufreq: ";
@@ -323,19 +332,16 @@ void get_system_info(int x86) {
         printf("cpufreq: cpuinfo_min_freq=%s cpuinfo_max_freq=%s scaling_min_freq=%s scaling_max_freq=%s\n", min_freq, max_freq, scaling_min, scaling_max);
     }
 
-    for(size_t i = 0; i < n_paths; ++i) {
-//        printf("path: %s\n", paths[i]);
+    for (size_t i = 0; i < n_paths; ++i) {
         file = fopen(paths[i], "r");
 
         if (file != NULL) {
-            if(fgets(buf, sizeof(buf), file) != NULL) {
-                // Get node name.
+            if (fgets(buf, sizeof(buf), file) != NULL) {
                 char node_name[1024];
                 strncpy(node_name, get_node_name(paths[i]), sizeof(node_name));
                 char *last_slash = strchr(node_name, '/');
-                if (last_slash != NULL) {
-                    *last_slash = '\0';  // Null terminate at the last slash to get only the node name.
-                }
+                if (last_slash != NULL)
+                    *last_slash = '\0';
 
                 printf("%s: %s", node_name, buf);
             }
@@ -345,8 +351,9 @@ void get_system_info(int x86) {
     }
 }
 
-int main() {
-    // Set up the signal handler for Ctrl+C
+int
+main()
+{
     signal(SIGINT, handle_sigint);
 
     int x86 = is_arch_x86();
@@ -354,8 +361,8 @@ int main() {
     pthread_t cpu_usage_thread;
     pthread_create(&cpu_usage_thread, NULL, update_cpu_usage, NULL);
 
-    while(keep_going) {
-        printf("\033[H\033[J");  // Clear the screen
+    while (keep_going) {
+        printf("\033[H\033[J");  /* Clear the screen */
         get_system_info(x86);
         sleep(1);
     }

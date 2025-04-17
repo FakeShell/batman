@@ -1,7 +1,9 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2019 Purism SPC
-// Copyright (c) 2019 The wlr-randr Contributors
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (c) 2019 Purism SPC
+ * Copyright (c) 2019 The wlr-randr Contributors
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #ifndef WLR_OUTPUT_MANAGEMENT_UNSTABLE_V1_CLIENT_PROTOCOL_H
 #define WLR_OUTPUT_MANAGEMENT_UNSTABLE_V1_CLIENT_PROTOCOL_H
@@ -179,11 +181,17 @@ zwlr_output_configuration_v1_add_listener(struct zwlr_output_configuration_v1 *z
 				     (void (**)(void)) listener, data);
 }
 
-int block_wlroots_available(void);
-int get_wlroots_screen_status(void);
-int retry_wlroots_changed(int retry_count, int delay_ms, int initial_value);
+int
+block_wlroots_available(void);
 
-int wlrdisplay(int argc, char *argv[]);
+int
+get_wlroots_screen_status(void);
+
+int
+retry_wlroots_changed(int retry_count, int delay_ms, int initial_value);
+
+int
+wlrdisplay(int argc, char *argv[]);
 
 #ifdef  __cplusplus
 }

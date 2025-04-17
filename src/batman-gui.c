@@ -1,6 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
-// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <gtk/gtk.h>
 #include <adwaita.h>
@@ -10,9 +12,11 @@
 #include "configcontrol.h"
 #include "getinfo.h"
 
-void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
+void
+about_activated(GSimpleAction *action, GVariant *parameter, gpointer app)
+{
     const char *developers[] = {
-        "Bardia Moshiri <fakeshell@bardia.tech>",
+        "Bardia Moshiri <bardia@furilabs.com>",
         "Erik Inkinen <erik.inkinen@erikinkinen.fi>",
         NULL
     };
@@ -27,7 +31,7 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         "application-name", "Batman GUI",
         "application-icon", "batman",
         "version", "2.0",
-        "copyright", "© 2024 Bardia Moshiri, Erik Inkinen",
+        "copyright", "© 2025 Bardia Moshiri, Erik Inkinen",
         "issue-url", "https://github.com/fakeshell/batman/issues/new",
         "license-type", GTK_LICENSE_GPL_2_0_ONLY,
         "developers", developers,
@@ -35,7 +39,9 @@ void about_activated(GSimpleAction *action, GVariant *parameter, gpointer app) {
         NULL);
 }
 
-void ctl_active_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
+void
+ctl_active_cb(GObject *src_ctl, GAsyncResult *, gpointer sender)
+{
     check_batman_active();
     gtk_switch_set_state(GTK_SWITCH(sender), bm_state.active);
     gtk_switch_set_active(GTK_SWITCH(sender), bm_state.active);
@@ -43,7 +49,9 @@ void ctl_active_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
     g_object_unref(src_ctl);
 }
 
-void ctl_enabled_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
+void
+ctl_enabled_cb(GObject *src_ctl, GAsyncResult *, gpointer sender)
+{
     check_batman_enabled();
     gtk_switch_set_state(GTK_SWITCH(sender), bm_state.enabled);
     gtk_switch_set_active(GTK_SWITCH(sender), bm_state.enabled);
@@ -51,7 +59,9 @@ void ctl_enabled_cb(GObject* src_ctl, GAsyncResult*, gpointer sender) {
     g_object_unref(src_ctl);
 }
 
-gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpointer user_data) {
+gboolean
+service_active_switch_state_set(GtkSwitch *sender, gboolean state, gpointer user_data)
+{
     g_autoptr(GError) error = NULL;
     gboolean success;
 
@@ -73,34 +83,40 @@ gboolean service_active_switch_state_set(GtkSwitch* sender, gboolean state, gpoi
     gtk_switch_set_state(GTK_SWITCH(sender), state);
     gtk_switch_set_active(GTK_SWITCH(sender), state);
 
-    // update bm_state
+    /* update bm_state */
     check_batman_active();
     return TRUE;
 }
 
-// switching this to the method in getinfo is not possible at the moment. polkit will complain
-gboolean service_enabled_switch_state_set(GtkSwitch* sender, gboolean state, gpointer) {
+/* switching this to the method in getinfo is not possible at the moment. polkit will complain */
+gboolean
+service_enabled_switch_state_set(GtkSwitch *sender, gboolean state, gpointer)
+{
     if (state == bm_state.enabled)
         return FALSE;
 
-    const gchar* ctl_argv[] = {
+    const gchar *ctl_argv[] = {
         "pkexec", "systemctl", (state) ? "enable" : "disable", "batman", NULL
     };
-    GSubprocess* ctl_proc = g_subprocess_newv(ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
+    GSubprocess *ctl_proc = g_subprocess_newv(ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
     g_subprocess_communicate_async(ctl_proc, NULL, NULL, ctl_enabled_cb, sender);
     return TRUE;
 }
 
-GActionEntry app_entries[] = {
+GActionEntry
+app_entries[] =
+{
     { "about", about_activated, NULL, NULL, NULL }
 };
 
-void activate(GtkApplication* app, gpointer user_data) {
+void
+activate(GtkApplication *app, gpointer user_data)
+{
     Config config = read_config();
     g_action_map_add_action_entries(G_ACTION_MAP (app),
         app_entries, G_N_ELEMENTS (app_entries), app);
 
-    // main window
+    /* main window */
     GtkWidget *window = adw_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Batman");
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 750);
@@ -131,7 +147,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_box_set_spacing(GTK_BOX(vbox), 18);
 
-    // Service management
+    /* Service management */
 
     GtkWidget *common_list_box = gtk_list_box_new();
     gtk_list_box_set_selection_mode(GTK_LIST_BOX(common_list_box), GTK_SELECTION_NONE);
@@ -166,13 +182,13 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_list_box_append(GTK_LIST_BOX(common_list_box), service_enabled_action_row);
     gtk_box_append(GTK_BOX(vbox), common_list_box);
 
-    // Configuration
+    /* Configuration */
 
     GtkWidget *config_list_box = gtk_list_box_new();
     gtk_list_box_set_selection_mode(GTK_LIST_BOX(config_list_box), GTK_SELECTION_NONE);
     gtk_widget_add_css_class(config_list_box, "boxed-list");
 
-    // Config : Powersave
+    /* Powersave */
 
     GtkWidget *powersave_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(powersave_action_row), "Powersave");
@@ -187,7 +203,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(powersave_action_row), powersave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), powersave_action_row);
 
-    // Config : Charge Save
+    /* Charge save */
 
     GtkWidget *chargesave_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(chargesave_action_row), "Charge save");
@@ -202,7 +218,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(chargesave_action_row), chargesave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), chargesave_action_row);
 
-    // Config : Offline
+    /* Offline */
 
     GtkWidget *offline_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(offline_action_row), "Offline");
@@ -217,7 +233,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(offline_action_row), offline_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), offline_action_row);
 
-    // Config : GPU Save
+    /* GPU save */
 
     GtkWidget *gpusave_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(gpusave_action_row), "GPU save");
@@ -232,7 +248,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(gpusave_action_row), gpusave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), gpusave_action_row);
 
-    // Config : Bus Save
+    /* Bus save */
 
     GtkWidget *bussave_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(bussave_action_row), "Bus save");
@@ -247,7 +263,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(bussave_action_row), bussave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), bussave_action_row);
 
-    // Config : BT Save
+    /* Bluetooth save */
 
     GtkWidget *btsave_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(btsave_action_row), "Bluetooth save");
@@ -262,7 +278,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(btsave_action_row), btsave_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), btsave_action_row);
 
-    // Config : Hybris save
+    /* Hybris save */
 
     GtkWidget *hybris_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(hybris_action_row), "Hybris save");
@@ -277,7 +293,7 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(hybris_action_row), hybris_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), hybris_action_row);
 
-    // Config : WiFi save
+    /* WiFi save */
 
     GtkWidget *wifi_action_row = adw_action_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(wifi_action_row), "WiFi save");
@@ -292,8 +308,6 @@ void activate(GtkApplication* app, gpointer user_data) {
     adw_action_row_add_suffix(ADW_ACTION_ROW(wifi_action_row), wifi_switch);
     gtk_list_box_append(GTK_LIST_BOX(config_list_box), wifi_action_row);
 
-    // END : Config
-
     gtk_box_append(GTK_BOX(vbox), config_list_box);
 
     adw_clamp_set_child(ADW_CLAMP(clamp), vbox);
@@ -303,7 +317,9 @@ void activate(GtkApplication* app, gpointer user_data) {
     gtk_window_present(GTK_WINDOW(window));
 }
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv)
+{
     GtkApplication *app;
     int status;
 

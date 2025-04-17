@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #ifndef BATMAN_WRAPPER_H
 #define BATMAN_WRAPPER_H
@@ -51,55 +53,63 @@ typedef struct {
  * @param percentage Pointer to store battery percentage (0-100)
  * @return String representation of battery state ("charging", "discharging", "fully-charged") or NULL if no battery
  */
-const gchar *get_battery_all(UpClient *upower, gdouble *percentage);
+const gchar *
+get_battery_all(UpClient *upower, gdouble *percentage);
 
 /**
  * Get only the battery percentage
  * @param upower The UPower client instance
  * @return Current battery percentage (0-100) or 0 if no battery
  */
-gdouble get_battery_percentage(UpClient *upower);
+gdouble
+get_battery_percentage(UpClient *upower);
 
 /**
  * Get battery state as an enum value
  * @param upower The UPower client instance
  * @return Current battery state as batman_state_t enum
  */
-batman_state_t get_battery_state(UpClient *upower);
+batman_state_t
+get_battery_state(UpClient *upower);
 
 /**
  * Read memory information from /proc/meminfo
  * @param mem Pointer to meminfo structure to fill
  * @return 1 on success, 0 on failure with errno set
  */
-int read_mem_info(struct meminfo *mem);
+int
+read_mem_info(struct meminfo *mem);
 
 /**
  * Calculate current memory usage as a percentage
  * @return Memory usage percentage (0-100) or -1.0 on error
  */
-long double mem_usage(void);
+long double
+mem_usage(void);
 
 /**
  * Read CPU statistics from /proc/stat
  * @param cpu_time Pointer to cpu_time_t structure to fill
  * @return Number of fields successfully read or -1 on error
  */
-int read_cpu_stats(cpu_time_t *cpu_time);
+int
+read_cpu_stats(cpu_time_t *cpu_time);
 
 /**
  * Calculate total CPU time across all states
  * @param cpu_time Pointer to cpu_time_t structure containing CPU stats
  * @return Total CPU time as sum of all states
  */
-long long get_total_time(const cpu_time_t *cpu_time);
+long long
+get_total_time(const cpu_time_t *cpu_time);
 
 /**
  * Calculate idle CPU time (idle + iowait)
  * @param cpu_time Pointer to cpu_time_t structure containing CPU stats
  * @return Sum of idle and iowait times
  */
-long long get_idle_time(const cpu_time_t *cpu_time);
+long long
+get_idle_time(const cpu_time_t *cpu_time);
 
 /**
  * Calculate current CPU usage as percentage based on multiple samples
@@ -113,35 +123,41 @@ double get_cpu_usage(void);
  * Legacy function for get_battery_all()
  * @see get_battery_all
  */
-const gchar *findBattery(UpClient *upower, gdouble *percentage);
+const gchar *
+findBattery(UpClient *upower, gdouble *percentage);
 
 /**
  * Legacy function for get_battery_all()
  * @see get_battery_all
  */
-const gchar *find_battery(UpClient *upower, gdouble *percentage);
+const gchar *
+find_battery(UpClient *upower, gdouble *percentage);
 
 /**
  * Legacy function for read_mem_info()
  * @see read_mem_info
  */
-int readMemInfo(struct meminfo *mem);
+int
+readMemInfo(struct meminfo *mem);
 
 /**
  * Legacy function for cpu_usage()
  * @see cpu_usage
  */
-double cpuUsage(void);
+double
+cpuUsage(void);
 
 /**
  * Legacy function for mem_usage()
  * @see mem_usage
  */
-long double memUsage(void);
+long double
+memUsage(void);
 
 /**
  * Block until device display configuration has been modified
  */
-void block_display_changed(void);
+void
+block_display_changed(void);
 
 #endif // BATMAN_WRAPPER_H

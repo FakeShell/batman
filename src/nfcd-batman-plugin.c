@@ -1,8 +1,8 @@
 /*
  * Copyright (C) 2020-2022 Jolla Ltd.
  * Copyright (C) 2020-2022 Slava Monich <slava.monich@jolla.com>
- * Copyright (C) 2024 Droidian Project
- * Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Furi Labs
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
  *
  * You may use this file under the terms of BSD license as follows:
  *
@@ -49,9 +49,9 @@ enum manager_events {
 typedef NfcPluginClass BatmanPluginClass;
 typedef struct batman_plugin {
     NfcPlugin parent;
-    NfcManager* manager;
+    NfcManager *manager;
     gulong manager_event_id[MANAGER_EVENT_COUNT];
-    GIOChannel* inotify_channel;
+    GIOChannel *inotify_channel;
     guint inotify_watch_id;
     int inotify_fd;
     int inotify_wd;
@@ -63,10 +63,10 @@ G_DEFINE_TYPE(BatmanPlugin, batman_plugin, NFC_TYPE_PLUGIN)
 #define THIS(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), THIS_TYPE, BatmanPlugin))
 
 static gboolean
-batman_plugin_read_screen_state(BatmanPlugin* self)
+batman_plugin_read_screen_state(BatmanPlugin *self)
 {
     char buf[4];
-    FILE* f = fopen(SCREEN_STATE_PATH, "r");
+    FILE *f = fopen(SCREEN_STATE_PATH, "r");
     if (!f) {
         g_debug("Failed to open %s: %s", SCREEN_STATE_PATH, strerror(errno));
         return FALSE;
@@ -84,9 +84,9 @@ batman_plugin_read_screen_state(BatmanPlugin* self)
 }
 
 static gboolean
-batman_plugin_inotify_callback(GIOChannel* source, GIOCondition condition, gpointer user_data)
+batman_plugin_inotify_callback(GIOChannel *source, GIOCondition condition, gpointer user_data)
 {
-    BatmanPlugin* self = THIS(user_data);
+    BatmanPlugin *self = THIS(user_data);
     char buffer[EVENT_BUF_LEN];
     gsize bytes_read;
     GError* error = NULL;
@@ -124,7 +124,7 @@ batman_plugin_inotify_callback(GIOChannel* source, GIOCondition condition, gpoin
 }
 
 static void
-batman_plugin_setup_inotify(BatmanPlugin* self)
+batman_plugin_setup_inotify(BatmanPlugin *self)
 {
     if (access(SCREEN_STATE_PATH, F_OK) != 0) {
         g_debug("Screen state file %s does not exist", SCREEN_STATE_PATH);
@@ -160,7 +160,7 @@ batman_plugin_setup_inotify(BatmanPlugin* self)
 }
 
 static void
-batman_plugin_cleanup_inotify(BatmanPlugin* self)
+batman_plugin_cleanup_inotify(BatmanPlugin *self)
 {
     if (self->inotify_watch_id) {
         g_source_remove(self->inotify_watch_id);
@@ -184,7 +184,7 @@ batman_plugin_cleanup_inotify(BatmanPlugin* self)
 }
 
 static gboolean
-batman_plugin_start(NfcPlugin* plugin, NfcManager* manager)
+batman_plugin_start(NfcPlugin *plugin, NfcManager *manager)
 {
     BatmanPlugin* self = THIS(plugin);
     self->manager = nfc_manager_ref(manager);
@@ -193,7 +193,7 @@ batman_plugin_start(NfcPlugin* plugin, NfcManager* manager)
 }
 
 static void
-batman_plugin_stop(NfcPlugin* plugin)
+batman_plugin_stop(NfcPlugin *plugin)
 {
     BatmanPlugin* self = THIS(plugin);
     batman_plugin_cleanup_inotify(self);
@@ -203,14 +203,14 @@ batman_plugin_stop(NfcPlugin* plugin)
 }
 
 static void
-batman_plugin_init(BatmanPlugin* self)
+batman_plugin_init(BatmanPlugin *self)
 {
     self->inotify_fd = -1;
     self->inotify_wd = -1;
 }
 
 static void
-batman_plugin_class_init(BatmanPluginClass* klass)
+batman_plugin_class_init(BatmanPluginClass *klass)
 {
     klass->start = batman_plugin_start;
     klass->stop = batman_plugin_stop;

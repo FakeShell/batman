@@ -1,6 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
-// Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2023 Erik Inkinen <erik.inkinen@erikinkinen.fi>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <stdio.h>
 #include <stddef.h>
@@ -8,13 +10,15 @@
 #include <stdlib.h>
 #include "configcontrol.h"
 
-Config read_config() {
+Config
+read_config()
+{
     Config config;
     GKeyFile *keyfile = g_key_file_new();
     GError *error = NULL;
 
     if (!g_key_file_load_from_file(keyfile, CONFIG_FILE, G_KEY_FILE_NONE, &error)) {
-        g_error("Error loading config file: %s\n", error->message);
+        g_debug("Error loading config file: %s", error->message);
     } else {
         config.offline = g_key_file_get_boolean(keyfile, "Settings", "OFFLINE", NULL);
         config.powersave = g_key_file_get_boolean(keyfile, "Settings", "POWERSAVE", NULL);
@@ -31,12 +35,14 @@ Config read_config() {
     return config;
 }
 
-void update_config_value(const char* config_key, const char* config_value) {
+void
+update_config_value(const char *config_key, const char *config_value)
+{
     FILE *src, *dst;
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
-    int found = 0; // To check if key has been found
+    int found = 0;
 
     src = fopen(CONFIG_FILE, "r");
     if (src == NULL) {
@@ -53,56 +59,67 @@ void update_config_value(const char* config_key, const char* config_value) {
 
     while ((read = getline(&line, &len, src)) != -1) {
         if (strstr(line, config_key) == line) {
-            // This is the line to replace
             fprintf(dst, "%s=%s\n", config_key, config_value);
-            found = 1; // Set flag to indicate key has been found
+            found = 1;
         } else {
-            // This line remains unchanged
             fprintf(dst, "%s", line);
         }
     }
 
-    // If key not found, add it
-    if (!found) {
+    if (!found)
         fprintf(dst, "%s=%s\n", config_key, config_value);
-    }
 
     free(line);
     fclose(src);
     fclose(dst);
 
-    // Replace the original file with the modified one
     rename(TEMP_FILE, CONFIG_FILE);
 }
 
-gboolean powersave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+powersave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("POWERSAVE", state ? "true" : "false");
 }
 
-gboolean offline_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+offline_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("OFFLINE", state ? "true" : "false");
 }
 
-gboolean gpusave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+gpusave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("GPUSAVE", state ? "true" : "false");
 }
 
-gboolean chargesave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+chargesave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("CHARGESAVE", state ? "true" : "false");
 }
 
-gboolean bussave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+bussave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("BUSSAVE", state ? "true" : "false");
 }
 
-gboolean btsave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+btsave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("BTSAVE", state ? "true" : "false");
 }
 
-gboolean hybrissave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+hybrissave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("HYBRIS", state ? "true" : "false");
 }
 
-gboolean wifisave_switch_state_set(GtkSwitch*, gboolean state, gpointer) {
+gboolean
+wifisave_switch_state_set(GtkSwitch *, gboolean state, gpointer)
+{
     update_config_value("WIFI", state ? "true" : "false");
 }

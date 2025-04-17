@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2018 Jolla Ltd
- * Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
  */
 
 #include <net/if.h>
@@ -31,8 +31,8 @@
 #define WMTWIFI_DEVICE "/dev/wmtWifi"
 #define CAM_NODE "/proc/net/wlan/setCAM"
 #define TESTMODE_CMD_ID_SUSPEND 101
-
 #define PRIV_CMD_SIZE 512
+
 typedef struct android_wifi_priv_cmd {
     char buf[PRIV_CMD_SIZE];
     int used_len;
@@ -52,11 +52,8 @@ struct testmode_cmd_suspend {
 static struct nl_sock *nl_socket = NULL;
 static int driver_id = -1;
 
-static
-int
-handle_nl_command_valid(
-    struct nl_msg *msg,
-    void *arg)
+static int
+handle_nl_command_valid(struct nl_msg *msg, void *arg)
 {
     int *ret = arg;
     *ret = 0;
@@ -64,12 +61,10 @@ handle_nl_command_valid(
     return NL_SKIP;
 }
 
-static
-int
-handle_nl_command_error(
-    struct sockaddr_nl *nla,
-    struct nlmsgerr *err,
-    void *arg)
+static int
+handle_nl_command_error(struct sockaddr_nl *nla,
+                        struct nlmsgerr *err,
+                        void *arg)
 {
     int *ret = arg;
     *ret = err->error;
@@ -77,11 +72,8 @@ handle_nl_command_error(
     return NL_SKIP;
 }
 
-static
-int
-handle_nl_command_finished(
-    struct nl_msg *msg,
-    void *arg)
+static int
+handle_nl_command_finished(struct nl_msg *msg, void *arg)
 {
     int *ret = arg;
     *ret = 0;
@@ -89,11 +81,8 @@ handle_nl_command_finished(
     return NL_SKIP;
 }
 
-static
-int
-handle_nl_command_ack(
-    struct nl_msg *msg,
-    void *arg)
+static int
+handle_nl_command_ack(struct nl_msg *msg, void *arg)
 {
     int *ret = arg;
     *ret = 0;
@@ -101,17 +90,13 @@ handle_nl_command_ack(
     return NL_STOP;
 }
 
-static
-int
-handle_nl_seq_check(
-    struct nl_msg *msg,
-    void *arg)
+static int
+handle_nl_seq_check(struct nl_msg *msg, void *arg)
 {
     return NL_OK;
 }
 
-static
-int
+static int
 suspend_plugin_netlink_handler()
 {
     struct nl_cb *cb;
@@ -148,10 +133,8 @@ suspend_plugin_netlink_handler()
     return err;
 }
 
-static
-int
-suspend_set_wowlan(
-    const char *ifname)
+static int
+suspend_set_wowlan(const char *ifname)
 {
     int err = 0;
     struct nl_msg *msg;
@@ -192,9 +175,8 @@ suspend_set_wowlan(
 }
 
 void
-wifi_set_powersave(
-    const char *ifname,
-    bool is_enable)
+wifi_set_powersave(const char *ifname,
+                   bool is_enable)
 {
     int err = 0;
     struct nl_msg *msg;
@@ -232,9 +214,8 @@ wifi_set_powersave(
 }
 
 void
-wifi_set_wmtwifi(
-    const char *ifname,
-    uint8_t suspend_value)
+wifi_set_wmtwifi(const char *ifname,
+                 uint8_t suspend_value)
 {
     struct nl_msg *msg = NULL;
     int ifindex = 0;
@@ -311,8 +292,7 @@ wifi_set_wmtwifi(
 }
 
 void
-wifi_set_setcam(
-    bool is_enable)
+wifi_set_setcam(bool is_enable)
 {
     FILE *fp;
 
@@ -333,7 +313,9 @@ wifi_set_setcam(
     fclose(fp);
 }
 
-int wifi_init(void) {
+int
+wifi_init(void)
+{
     nl_socket = nl_socket_alloc();
     if (!nl_socket) {
         fprintf(stderr, "Failed to allocate netlink socket\n");
@@ -356,7 +338,9 @@ int wifi_init(void) {
     return 0;
 }
 
-void wifi_cleanup(void) {
+void
+wifi_cleanup(void)
+{
     if (nl_socket) {
         nl_socket_free(nl_socket);
         nl_socket = NULL;

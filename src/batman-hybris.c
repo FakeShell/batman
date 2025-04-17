@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-2.0-only
- * Copyright (C) 2025 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
  */
 
 #include <stdio.h>
@@ -8,7 +8,9 @@
 #include <string.h>
 #include "batman-gbinder.h"
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[])
+{
     if (argc != 3) {
         printf("Usage: %s <feature> <state>\n", argv[0]);
         printf("Features:\n");

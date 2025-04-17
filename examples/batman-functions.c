@@ -1,10 +1,17 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
+
 #include <batman/batman-wrappers.h>
 #include <batman/wlrdisplay.h>
 #include <batman/getinfo.h>
 #include <batman/batman-andromeda.h>
 #include <stdio.h>
 
-int main(int argc, char *argv[]) {
+int
+main()
+{
     g_autoptr(UpClient) upower = NULL;
 
     upower = up_client_new();
@@ -33,7 +40,7 @@ int main(int argc, char *argv[]) {
     else
         printf("Failed to check Batman enabled status\n");
 
-    int display_result = wlrdisplay(argc, argv);
+    int display_result = get_wlroots_screen_status(argc, argv);
     printf("wlroots screen status: %s", display_result == 0 ? "yes\n" : "no\n");
 
     if (battery_state != BATMAN_NO_BATTERY && battery_state != BATMAN_UNKNOWN)

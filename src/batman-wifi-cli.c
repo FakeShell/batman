@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: GPL-2.0-only
  * Copyright (C) 2018 Jolla Ltd
- * Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
  */
 
 #include <stdio.h>
@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include "batman-wifi.h"
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[])
+{
     if (argc != 2) {
         printf("Usage: %s [suspend|resume]\n", argv[0]);
         return 1;

@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include "batman-wrappers.h"
 #include "batman-andromeda.h"
@@ -7,10 +9,10 @@
 #include "wlrdisplay.h"
 #include "getinfo.h"
 
-static const char* USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|andromeda_state|andromeda_screen|andromeda_app_open|block_display_changed|block_wlroots_available|retry_wlroots_changed yes/no delay_ms retry_count]";
+static const char *USAGE = "[cpu|mem|wlrdisplay|battery|battery_percentage|battery_state|batman_active|batman_enabled|andromeda_state|andromeda_screen|andromeda_app_open|block_display_changed|block_wlroots_available|retry_wlroots_changed yes/no delay_ms retry_count]";
 
 static void
-print_usage(const char* program_name)
+print_usage(const char *program_name)
 {
     printf("Usage: %s %s\n", program_name, USAGE);
 }

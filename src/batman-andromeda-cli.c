@@ -1,11 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include <stdio.h>
 #include "batman-andromeda.h"
 
-// yes this is stupid, once batman is rewritten this will be dropped
-int main(int argc, char *argv[]) {
+/* yes this is stupid, once batman is rewritten this will be dropped */
+int
+main(int argc, char *argv[])
+{
     if (argc != 3) {
         g_print("Usage: %s <screen|freeze> <0|1>\n0 to unfreeze/screen off, 1 to freeze/screen on\n", argv[0]);
         return 1;

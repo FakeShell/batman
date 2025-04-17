@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #ifndef GETINFO_H
 #define GETINFO_H
@@ -27,7 +29,8 @@ extern BatmanState bm_state;
  *
  * Returns: 0 on success, -1 on failure
  */
-int check_batman_active(void);
+int
+check_batman_active(void);
 
 /**
  * check_batman_enabled:
@@ -36,7 +39,8 @@ int check_batman_active(void);
  *
  * Returns: 0 on success, -1 on failure
  */
-int check_batman_enabled(void);
+int
+check_batman_enabled(void);
 
 /**
  * start_batman_service:
@@ -46,7 +50,8 @@ int check_batman_enabled(void);
  *
  * Returns: %TRUE on success, %FALSE if an error occurred
  */
-gboolean start_batman_service(GError **error);
+gboolean
+start_batman_service(GError **error);
 
 /**
  * stop_batman_service:
@@ -56,7 +61,8 @@ gboolean start_batman_service(GError **error);
  *
  * Returns: %TRUE on success, %FALSE if an error occurred
  */
-gboolean stop_batman_service(GError **error);
+gboolean
+stop_batman_service(GError **error);
 
 /**
  * enable_batman_service:
@@ -66,7 +72,8 @@ gboolean stop_batman_service(GError **error);
  *
  * Returns: %TRUE on success, %FALSE if an error occurred
  */
-gboolean enable_batman_service(GError **error);
+gboolean
+enable_batman_service(GError **error);
 
 /**
  * disable_batman_service:
@@ -76,6 +83,7 @@ gboolean enable_batman_service(GError **error);
  *
  * Returns: %TRUE on success, %FALSE if an error occurred
  */
-gboolean disable_batman_service(GError **error);
+gboolean
+disable_batman_service(GError **error);
 
 #endif /* GETINFO_H */

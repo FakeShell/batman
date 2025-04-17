@@ -1,5 +1,7 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (C) 2024 Bardia Moshiri <fakeshell@bardia.tech>
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ */
 
 #include "batman-wrappers.h"
 #include <err.h>
@@ -251,7 +253,7 @@ get_cpu_usage(void)
     if (initial_avg < 0)
         return -1.0;
 
-    // if cpu usage is over 80, get another set of samples. this can happen during switches between online and offline
+    /* if cpu usage is over 80, get another set of samples. this can happen during switches between online and offline */
     if (initial_avg > 80.0) {
         double additional_avg = get_samples_average(samples, usage_samples, NUM_SAMPLES, NUM_SAMPLES);
         if (additional_avg < 0)
