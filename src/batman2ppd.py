@@ -8,6 +8,7 @@ import asyncio
 import gbinder
 import time
 import os
+import re
 
 from dbus_fast.aio import MessageBus
 from dbus_fast.service import ServiceInterface, method, dbus_property, signal
@@ -15,6 +16,8 @@ from dbus_fast.constants import PropertyAccess
 from dbus_fast import Variant, BusType
 
 THERMAL_SYSFS_PATH = "/sys/class/thermal"
+GPUFREQ_OPP_DUMP_PATH = "/proc/gpufreq/gpufreq_opp_dump"
+GPUFREQ_OPP_FREQ_PATH = "/proc/gpufreq/gpufreq_opp_freq"
 
 class PPDInterface(ServiceInterface):
     def __init__(self, loop, bus):
@@ -96,6 +99,10 @@ class PPDInterface(ServiceInterface):
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write("performance\n")
 
+            # lock frequency to highest available value provided by the driver
+            low, high = parse_gpufreq_opp_dump()
+            write_gpufreq_opp_freq(high)
+
             await restart_service('batman')
         elif profile == "balanced":
             set_vr(False)
@@ -109,6 +116,9 @@ class PPDInterface(ServiceInterface):
                 with open("/var/lib/batman/CUSTOM_DEFAULT_GOVERNOR", "w+") as f:
                     f.write(default_governor)
 
+            # return to dynamic frequency managed by dvfs
+            write_gpufreq_opp_freq(0)
+
             await restart_service('batman')
         elif profile == "power-saver":
             set_vr(False)
@@ -119,6 +129,10 @@ class PPDInterface(ServiceInterface):
                     half_cores = self.cores // 2
                     #print(half_cores)
                     f.write(f'{half_cores}')
+
+            # lock frequency to lowest available value provided by the driver
+            low, high = parse_gpufreq_opp_dump()
+            write_gpufreq_opp_freq(low)
 
             await restart_service('batman')
             offline_half(self.cores)
@@ -347,6 +361,38 @@ async def restart_service(service_name: str) -> bool:
         return True
     except Exception as e:
         print(f"Error restarting {service_name}: {e}")
+        return False
+
+def parse_gpufreq_opp_dump(path=GPUFREQ_OPP_DUMP_PATH):
+    if not os.path.exists(path):
+        return 0, 0
+
+    try:
+        freqs = []
+        freq_pattern = re.compile(r'freq\s*=\s*(\d+)')
+
+        with open(path, "r") as f:
+            for line in f:
+                m = freq_pattern.search(line)
+                if m:
+                    freqs.append(int(m.group(1)))
+
+        if not freqs:
+            return 0, 0
+        return min(freqs), max(freqs)
+    except Exception:
+        return 0, 0
+
+def write_gpufreq_opp_freq(freq, path=GPUFREQ_OPP_FREQ_PATH):
+    if not os.path.exists(path):
+        return False
+
+    try:
+        freq_str = str(int(freq)).strip()
+        with open(path, "w") as f:
+            f.write(freq_str)
+        return True
+    except Exception:
         return False
 
 def offline_half(cpu_count):
