@@ -26,6 +26,9 @@ class PPDInterface(ServiceInterface):
         self.bus = bus
         self.cookie = 0
         self.cores = os.cpu_count()
+
+        self.overdrive_enabled = False
+
         self.props = {
             'ActiveProfile': Variant('s', 'balanced'),
             'PerformanceInhibited': Variant('s', ''),
@@ -54,7 +57,8 @@ class PPDInterface(ServiceInterface):
             ]),
             'ActiveProfileHolds': Variant('aa{sv}', []),
             'Version': Variant('s', '0.30'),
-            'BatteryAware': Variant('b', True)
+            'BatteryAware': Variant('b', True),
+            'Overdrive': Variant('b', False),
         }
 
         self.loop.create_task(self.initialize_profile())
@@ -80,14 +84,59 @@ class PPDInterface(ServiceInterface):
     async def ActiveProfile(self, profile: 's'):
         await self.set_active_profile(profile)
 
-    async def set_active_profile(self, profile):
+    async def set_overdrive(self, enabled: bool):
+        enabled = bool(enabled)
+
+        if enabled and not self.overdrive_enabled:
+            self.overdrive_enabled = True
+            self.props['Overdrive'] = Variant('b', True)
+
+            await self.set_active_profile(
+                'performance',
+                write_state=False,
+                force=True,
+                treat_as_overdrive=True,
+                update_active=False
+            )
+            return True
+
+        if (not enabled) and self.overdrive_enabled:
+            self.overdrive_enabled = False
+            self.props['Overdrive'] = Variant('b', False)
+
+            # Restore backend to user's saved profile
+            restore_profile = self.get_profile() or 'balanced'
+            await self.set_active_profile(
+                restore_profile,
+                write_state=False,
+                force=True,
+                treat_as_overdrive=False,
+                update_active=True
+            )
+            return True
+        return True
+
+    async def set_active_profile(self, profile, write_state=True, force=False, treat_as_overdrive=False, update_active=True):
         if os.path.exists("/var/lib/batman/default_cpu_governor"):
             with open("/var/lib/batman/default_cpu_governor", "r") as default_governor_file:
                 default_governor = default_governor_file.read()
         else:
             default_governor = ""
 
-        if profile == "performance" and self.props['PerformanceDegraded'].value == "":
+        if self.overdrive_enabled and not treat_as_overdrive:
+            if write_state:
+                self.set_profile(profile)
+
+            if update_active:
+                self.props['ActiveProfile'] = Variant('s', profile)
+
+            return
+
+        allow_performance = False
+        if self.props['PerformanceDegraded'].value == "" or force:
+            allow_performance = True
+
+        if profile == "performance" and allow_performance:
             set_vr(True)
             set_mtkpower(45)
 
@@ -120,6 +169,7 @@ class PPDInterface(ServiceInterface):
             write_gpufreq_opp_freq(0)
 
             await restart_service('batman')
+
         elif profile == "power-saver":
             set_vr(False)
             set_mtkpower(21) # PROCESS_CREATE, much less intensive than UX_MOVE_SCROLLING (45) which pushes everything up to 100
@@ -127,7 +177,6 @@ class PPDInterface(ServiceInterface):
             if default_governor:
                 with open("/var/lib/batman/CUSTOM_FIRSTPOLCORE", "w+") as f:
                     half_cores = self.cores // 2
-                    #print(half_cores)
                     f.write(f'{half_cores}')
 
             # lock frequency to lowest available value provided by the driver
@@ -137,8 +186,11 @@ class PPDInterface(ServiceInterface):
             await restart_service('batman')
             offline_half(self.cores)
 
-        self.props['ActiveProfile'] = Variant('s', profile)
-        self.set_profile(profile)
+        if update_active:
+            self.props['ActiveProfile'] = Variant('s', profile)
+
+        if write_state and (not treat_as_overdrive):
+            self.set_profile(profile)
 
     @dbus_property(access=PropertyAccess.READ)
     def PerformanceInhibited(self) -> 's':
@@ -318,6 +370,14 @@ class UPowerPPDInterface(ServiceInterface):
     def SetActionEnabled(self, action: 's', enabled: 'b'):
         self.ppd_interface.set_action_enabled(action, enabled)
 
+    @method()
+    async def EnableOverdrive(self, enabled: 'b'):
+        await self.ppd_interface.set_overdrive(enabled)
+
+    @dbus_property(access=PropertyAccess.READ)
+    def Overdrive(self) -> 'b':
+        return self.ppd_interface.props['Overdrive'].value
+
     @signal()
     def ProfileReleased(self) -> 'u':
         return self.ppd_interface.cookie
@@ -414,7 +474,6 @@ def online_half(cpu_count):
         try:
             with open(cpu_path, 'w') as f:
                 f.write('1')
-            #print(f"Enabled CPU {i}")
         except Exception as e:
             print(f"Error enabling CPU {i}: {e}")
 
@@ -482,14 +541,12 @@ async def get_thermal():
             # we know that anything below 5-10C is basically impossible under normal usage and environment.
             # this is not a perfect solution but should be good enough for now.
             if temperature_celsius > 10:
-                #print(f"{zone}: {temperature_celsius:.1f}C")
                 temp_total += temperature_celsius
                 i += 1
 
     if i > 0:
         temp_avg = temp_total / i
 
-    #print(f"Average sys temp: {temp_avg:.1f}C")
     return temp_avg
 
 async def main():
