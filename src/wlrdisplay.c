@@ -2,14 +2,12 @@
  * SPDX-License-Identifier: GPL-2.0-only
  * Copyright (c) 2019 Purism SPC
  * Copyright (c) 2019 The wlr-randr Contributors
- * Copyright (C) 2025 Bardia Moshiri <bardia@furilabs.com>
+ * Copyright (C) 2026 Bardia Moshiri <bardia@furilabs.com>
  */
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include <unistd.h>
 #include "wlrdisplay.h"
 
@@ -389,11 +387,11 @@ get_state(struct randr_state *state)
     if (!state)
         return -1;
 
-    int result = 1;
+    int result = 0;
     struct randr_head *head;
     wl_list_for_each(head, &state->heads, link) {
         if (head->enabled) {
-            result = 0;
+            result = 1;
             break;
         }
     }
@@ -425,55 +423,6 @@ cleanup_wlroots(struct randr_state *state, struct wl_registry *registry, struct 
         wl_registry_destroy(registry);
     if (display)
         wl_display_disconnect(display);
-}
-
-int
-block_wlroots_available(void)
-{
-    struct wl_display *display = NULL;
-    struct wl_registry *registry = NULL;
-    struct randr_state state = { .running = true, .output_manager = NULL };
-    int available = 0;
-
-    while (!available) {
-        wl_list_init(&state.heads);
-
-        display = wl_display_connect(NULL);
-        if (!display) {
-            cleanup_wlroots(&state, NULL, NULL);
-            goto retry;
-        }
-
-        registry = wl_display_get_registry(display);
-        if (!registry) {
-            cleanup_wlroots(&state, NULL, display);
-            goto retry;
-        }
-
-        if (wl_registry_add_listener(registry, &registry_listener, &state) < 0) {
-            cleanup_wlroots(&state, registry, display);
-            goto retry;
-        }
-
-        if (wl_display_roundtrip(display) < 0) {
-            cleanup_wlroots(&state, registry, display);
-            goto retry;
-        }
-
-        if (state.output_manager == NULL) {
-            cleanup_wlroots(&state, registry, display);
-            goto retry;
-        }
-
-        available = 1;
-        cleanup_wlroots(&state, registry, display);
-
-retry:
-        if (!available)
-            sleep(2);
-    }
-
-    return 1;
 }
 
 int
@@ -529,31 +478,4 @@ get_wlroots_screen_status(void)
 cleanup:
     cleanup_wlroots(&state, registry, display);
     return result;
-}
-
-int
-retry_wlroots_changed(int retry_count, int delay_ms, int initial_value)
-{
-    if (retry_count <= 0 || delay_ms < 0)
-        return -1;
-
-    unsigned int delay_us = delay_ms * 1000;
-
-    for (int i = 0; i < retry_count; i++) {
-        int current_status = get_wlroots_screen_status();
-
-        /* return if there is an error or if status has changed */
-        if (current_status != initial_value || current_status == -1)
-            return current_status;
-        if (i < retry_count - 1)
-            usleep(delay_us);
-    }
-
-    return initial_value;
-}
-
-int
-wlrdisplay(int argc, char *argv[])
-{
-    return get_wlroots_screen_status();
 }

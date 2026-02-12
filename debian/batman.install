@@ -1,2 +1,5 @@
 usr/sbin/batman
+usr/bin/powerprofilesctl
+usr/share/polkit-1/actions/org.freedesktop.UPower.PowerProfiles.policy
+usr/share/dbus-1/system.d/org.freedesktop.UPower.PowerProfiles.conf
 var/lib/batman/config

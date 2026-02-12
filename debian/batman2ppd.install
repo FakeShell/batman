@@ -1,6 +1,0 @@
-usr/sbin/batman2ppd
-usr/bin/powerprofilesctl
-usr/share/polkit-1/actions/net.hadess.PowerProfiles.policy
-usr/share/dbus-1/system.d/net.hadess.PowerProfiles.conf
-usr/share/polkit-1/actions/org.freedesktop.UPower.PowerProfiles.policy
-usr/share/dbus-1/system.d/org.freedesktop.UPower.PowerProfiles.conf

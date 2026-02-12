@@ -5,6 +5,4 @@
 
 override_dh_installsystemd:
 	dh_installsystemd -pbatman --name=batman batman.service --no-stop-on-upgrade
-	dh_installsystemd -pbatman2ppd --name=batman2ppd batman2ppd.service --no-stop-on-upgrade
 	dh_installsystemd -pbatman-nicerdicer --name=nicerdicer nicerdicer.service --no-stop-on-upgrade
-	dh_installsystemd -pbatman-powerconfig --name=powerconfig powerconfig.service --no-stop-on-upgrade

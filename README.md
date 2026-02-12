@@ -1,14 +1,6 @@
-## Battery Management
+## Battery Manager
 
 Batman is a battery management service which tweaks different nodes and pieces of hardware in real time.
-
-batman-gui is based on GTK4 and can tweak batman configuration file in real time.
-
-Tested with Phosh only but it should work with any wlroots based compositor
-
-It should be noted at this program has been tested on FuriOS only.
-
-upower must provide a proper battery status on `/org/freedesktop/UPower/devices/DisplayDevice`
 
 # Building
 
@@ -38,24 +30,32 @@ sudo systemctl enable --now batman
 # Configuration
 
 `POWERSAVE`
-Powersave allows CPU go into powersaving.
+Powersave allows CPU to go into powersaving mode.
 
 
 `OFFLINE`
-Offlining is the process of CPU cores shutting down. These two only activate when device is idling. They also save a lot of battery.
+Offlining is the process of CPU cores shutting down.
 
 
 `GPUSAVE`
-GPU save allows GPU go into powersaving. This feature is still experimental.
+GPU save allows GPU to go into powersaving.
 
 
 `CHARGESAVE`
-Chargesave indicates whether or not put device to powersave when its charging up.
+Chargesave indicates whether or not put device to powersave when it is connected to a power source.
 
 
 `BUSSAVE`
-This option allows devfreq bus nodes to be set to powersave. They also save a lot of battery.
+This option allows devfreq bus nodes to be set to powersave.
 
 
 `BTSAVE`
-This option will allow batman to moderate bluetooth power management and switch states accordingly. it will check if it is connected and if something is using it and changes states accordingly
+This option will allow batman to moderate bluetooth power management and switch states accordingly.
+
+
+`HYBRIS`
+This option will use binder IPC to set various pieces of hardware to powersave mode.
+
+
+`WIFI`
+This option will set the WiFi adapter to powersave mode.

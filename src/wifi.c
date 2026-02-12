@@ -1,0 +1,316 @@
+/**
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (C) 2018 Jolla Ltd
+ * Copyright (C) 2026 Bardia Moshiri <bardia@furilabs.com>
+ */
+
+#include "wifi.h"
+
+#include <net/if.h>
+#include <netlink/genl/genl.h>
+#include <netlink/genl/ctrl.h>
+#include <linux/nl80211.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
+
+#define QUOTE(x) #x
+#define STRINGIFY(x) QUOTE(x)
+
+#define SET_WOWLAN(iface)   do { \
+                                if (!wowlan_##iface##_enabled) { \
+                                    wowlan_##iface##_enabled = (suspend_set_wowlan(STRINGIFY(iface)) == 0) ? TRUE : FALSE; \
+                                } \
+                            } while(FALSE)
+
+#define WMTWIFI_DEVICE "/dev/wmtWifi"
+#define TESTMODE_CMD_ID_SUSPEND 101
+#define PRIV_CMD_SIZE 512
+
+typedef struct android_wifi_priv_cmd {
+    char buf[PRIV_CMD_SIZE];
+    int used_len;
+    int total_len;
+} android_wifi_priv_cmd;
+
+struct testmode_cmd_hdr {
+    uint32_t idx;
+    uint32_t buflen;
+};
+
+struct testmode_cmd_suspend {
+    struct testmode_cmd_hdr header;
+    uint8_t suspend;
+};
+
+static struct nl_sock *nl_socket = NULL;
+static int driver_id = -1;
+
+static int
+handle_nl_command_valid(struct nl_msg *msg, void *arg)
+{
+    int *ret = arg;
+    *ret = 0;
+    (void)msg;
+    g_debug("%s: netlink command valid (ret=%d)", G_STRFUNC, *ret);
+    return NL_SKIP;
+}
+
+static int
+handle_nl_command_error(struct sockaddr_nl *nla,
+                        struct nlmsgerr *err,
+                        void *arg)
+{
+    int *ret = arg;
+    *ret = err->error;
+    (void)nla;
+    g_debug("%s: netlink error: %d", G_STRFUNC, *ret);
+    return NL_SKIP;
+}
+
+static int
+handle_nl_command_finished(struct nl_msg *msg, void *arg)
+{
+    int *ret = arg;
+    *ret = 0;
+    (void)msg;
+    g_debug("%s: netlink command finished (ret=%d)", G_STRFUNC, *ret);
+    return NL_SKIP;
+}
+
+static int
+handle_nl_command_ack(struct nl_msg *msg, void *arg)
+{
+    int *ret = arg;
+    *ret = 0;
+    (void)msg;
+    g_debug("%s: netlink ack (ret=%d)", G_STRFUNC, *ret);
+    return NL_STOP;
+}
+
+static int
+handle_nl_seq_check(struct nl_msg *msg, void *arg)
+{
+    (void)msg;
+    (void)arg;
+    return NL_OK;
+}
+
+static int
+suspend_plugin_netlink_handler(void)
+{
+    struct nl_cb *cb;
+    int res = 0;
+    int err = 0;
+
+    cb = nl_cb_alloc(NL_CB_VERBOSE);
+    if (!cb) {
+        g_debug("%s: failed to allocate netlink callbacks", G_STRFUNC);
+        return 1;
+    }
+
+    err = 1;
+    nl_cb_err(cb, NL_CB_CUSTOM, handle_nl_command_error, &err);
+    nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, handle_nl_command_valid, &err);
+    nl_cb_set(cb, NL_CB_FINISH, NL_CB_CUSTOM, handle_nl_command_finished, &err);
+    nl_cb_set(cb, NL_CB_ACK, NL_CB_CUSTOM, handle_nl_command_ack, &err);
+    nl_cb_set(cb, NL_CB_SEQ_CHECK, NL_CB_CUSTOM, handle_nl_seq_check, &err);
+
+    while (err == 1) {
+        g_debug("%s: waiting until nl testmode command has been processed", G_STRFUNC);
+        res = nl_recvmsgs(nl_socket, cb);
+        if (res < 0) {
+            g_debug("%s: nl_recvmsgs failed: %d", G_STRFUNC, res);
+            break;
+        }
+    }
+
+    if (err == 0)
+        g_debug("%s: suspend on/off successfully done", G_STRFUNC);
+
+    nl_cb_put(cb);
+
+    return err;
+}
+
+static int
+suspend_set_wowlan(const char *ifname)
+{
+    int err = 0;
+    struct nl_msg *msg;
+    struct nlattr *wowlan_triggers;
+    int ifindex = 0;
+
+    ifindex = if_nametoindex(ifname);
+
+    if (ifindex == 0) {
+        g_debug("%s: iface %s is not active/present (set_wowlan)", G_STRFUNC, ifname);
+        return -1;
+    }
+
+    g_debug("%s: iface %s, setting wowlan", G_STRFUNC, ifname);
+
+    msg = nlmsg_alloc();
+
+    genlmsg_put(msg, 0, 0, driver_id, 0, 0, NL80211_CMD_SET_WOWLAN, 0);
+
+    nla_put_u32(msg, NL80211_ATTR_IFINDEX, ifindex);
+
+    wowlan_triggers = nla_nest_start(msg, NL80211_ATTR_WOWLAN_TRIGGERS);
+
+    nla_put_flag(msg, NL80211_WOWLAN_TRIG_ANY);
+
+    nla_nest_end(msg, wowlan_triggers);
+
+    if ((err = nl_send_auto(nl_socket, msg)) < 0) {
+        g_debug("%s: failed to send wowlan command (err=%d)", G_STRFUNC, err);
+    } else {
+        if ((err = suspend_plugin_netlink_handler()) != 0)
+            g_debug("%s: setting wowlan failed for %s with error %d", G_STRFUNC, ifname, err);
+    }
+
+    nlmsg_free(msg);
+    return err;
+}
+
+void
+wifi_set_powersave(const char *ifname,
+                   gboolean is_enable)
+{
+    int err = 0;
+    struct nl_msg *msg;
+    enum nl80211_ps_state ps_state;
+    int ifindex = 0;
+
+    ifindex = if_nametoindex(ifname);
+    if (ifindex == 0) {
+        g_debug("%s: iface %s is not active/present (set_powersave)", G_STRFUNC, ifname);
+        return;
+    }
+
+    g_debug("%s: iface %s, setting powersave=%s", G_STRFUNC, ifname, is_enable ? "enabled" : "disabled");
+
+    msg = nlmsg_alloc();
+    genlmsg_put(msg, 0, 0, driver_id, 0, 0, NL80211_CMD_SET_POWER_SAVE, 0);
+    nla_put_u32(msg, NL80211_ATTR_IFINDEX, ifindex);
+
+    if (is_enable)
+        ps_state = NL80211_PS_ENABLED;
+    else
+        ps_state = NL80211_PS_DISABLED;
+
+    nla_put_u32(msg, NL80211_ATTR_PS_STATE, ps_state);
+
+    if ((err = nl_send_auto(nl_socket, msg)) < 0) {
+        g_debug("%s: failed to send powersave command (err=%d)", G_STRFUNC, err);
+    } else {
+        if ((err = suspend_plugin_netlink_handler()) != 0)
+            g_debug("%s: setting powersave failed for %s with error %d", G_STRFUNC, ifname, err);
+    }
+
+    nlmsg_free(msg);
+}
+
+void
+wifi_set_wmtwifi(const char *ifname,
+                 uint8_t suspend_value)
+{
+    struct nl_msg *msg = NULL;
+    int ifindex = 0;
+    struct testmode_cmd_suspend susp_cmd;
+    int success = 0;
+
+    ifindex = if_nametoindex(ifname);
+    if (ifindex == 0) {
+        g_debug("%s: iface %s is not active/present (handle on_off)", G_STRFUNC, ifname);
+        return;
+    }
+
+    g_debug("%s: iface=%s suspend_value=%d", G_STRFUNC, ifname, (int)suspend_value);
+
+    msg = nlmsg_alloc();
+    genlmsg_put(msg, 0, 0, driver_id, 0, 0, NL80211_CMD_TESTMODE, 0);
+
+    memset(&susp_cmd, 0, sizeof(susp_cmd));
+    susp_cmd.header.idx = TESTMODE_CMD_ID_SUSPEND;
+    susp_cmd.header.buflen = 0;
+    susp_cmd.suspend = suspend_value;
+
+    nla_put_u32(msg, NL80211_ATTR_IFINDEX, ifindex);
+    nla_put(msg, NL80211_ATTR_TESTDATA, sizeof(susp_cmd), (void*)&susp_cmd);
+
+    if (nl_send_auto(nl_socket, msg) < 0) {
+        g_debug("%s: failed to send testmode command", G_STRFUNC);
+    } else {
+        if (suspend_plugin_netlink_handler() != 0)
+            g_debug("%s: TESTMODE command failed; ignore if kernel uses gen3 wmtWifi driver", G_STRFUNC);
+        else
+            success = 1;
+    }
+
+    nlmsg_free(msg);
+
+    int cmd_len = 0;
+    struct ifreq ifr;
+    android_wifi_priv_cmd priv_cmd;
+    int ret;
+    int ioctl_sock;
+
+    ioctl_sock = socket(PF_INET, SOCK_DGRAM, 0);
+    memset(&ifr, 0, sizeof(ifr));
+    memset(&priv_cmd, 0, sizeof(priv_cmd));
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+
+    cmd_len = snprintf(priv_cmd.buf, sizeof(priv_cmd.buf),
+                       "SETSUSPENDMODE %d", (int)suspend_value);
+
+    priv_cmd.used_len = cmd_len + 1;
+    priv_cmd.total_len = PRIV_CMD_SIZE;
+    ifr.ifr_data = (void*)&priv_cmd;
+
+    ret = ioctl(ioctl_sock, SIOCDEVPRIVATE + 1, &ifr);
+    if (ret != 0)
+        g_debug("%s: SETSUSPENDMODE private command failed: %d (errno=%d); ignore if kernel uses gen2 wmtWifi driver",
+                G_STRFUNC, ret, errno);
+    else
+        success = 1;
+
+    close(ioctl_sock);
+
+    if (!success)
+        g_debug("%s: could not enter suspend mode, both methods failed", G_STRFUNC);
+}
+
+int
+wifi_init(void)
+{
+    nl_socket = nl_socket_alloc();
+    if (!nl_socket) {
+        fprintf(stderr, "Failed to allocate netlink socket\n");
+        return -1;
+    }
+
+    if (genl_connect(nl_socket)) {
+        fprintf(stderr, "Failed to connect to generic netlink\n");
+        nl_socket_free(nl_socket);
+        return -2;
+    }
+
+    driver_id = genl_ctrl_resolve(nl_socket, "nl80211");
+    if (driver_id < 0) {
+        fprintf(stderr, "Could not resolve nl80211 driver id\n");
+        nl_socket_free(nl_socket);
+        return -3;
+    }
+
+    return 0;
+}
+
+void
+wifi_cleanup(void)
+{
+    if (nl_socket) {
+        nl_socket_free(nl_socket);
+        nl_socket = NULL;
+    }
+}

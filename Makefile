@@ -1,203 +1,117 @@
 CC = gcc
-CFLAGS_HELPER = `pkg-config --cflags upower-glib gtk4 libadwaita-1 gio-2.0`
-LDFLAGS_HELPER = -lwayland-client `pkg-config --libs upower-glib gtk4 libadwaita-1 gio-2.0`
-CFLAGS_WRAPPERS = `pkg-config --cflags upower-glib`
-LDFLAGS_WRAPPERS = `pkg-config --libs upower-glib` -lwayland-client
-CFLAGS_GOVERNOR = `pkg-config --cflags upower-glib`
-LDFLAGS_GOVERNOR = -lwayland-client `pkg-config --libs upower-glib`
-CFLAGS_GUI = `pkg-config --cflags gtk4 libadwaita-1`
-LDFLAGS_GUI = `pkg-config --libs gtk4 libadwaita-1`
+
+CFLAGS_BATMAN = `pkg-config --cflags upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -Iinclude
+LDFLAGS_BATMAN = `pkg-config --libs upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -lwayland-client
+
+CFLAGS_MONITOR = `pkg-config --cflags upower-glib` -Iinclude
+LDFLAGS_MONITOR = -lwayland-client `pkg-config --libs upower-glib`
+
 CFLAGS_NFCD = -fPIC -DNFC_PLUGIN_EXTERNAL `pkg-config --cflags nfcd-plugin libglibutil gobject-2.0 glib-2.0`
-LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0` -lwayland-client
-CFLAGS_GBINDER = `pkg-config --cflags libgbinder`
-LDFLAGS_GBINDER = `pkg-config --libs libgbinder`
-CFLAGS_HYBRIS = `pkg-config --cflags libgbinder`
-LDFLAGS_HYBRIS = `pkg-config --libs libgbinder`
-CFLAGS_WIFI = `pkg-config --cflags glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
-LDFLAGS_WIFI = `pkg-config --libs glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0`
-CFLAGS_ANDROMEDA = `pkg-config --cflags gio-2.0`
-LDFLAGS_ANDROMEDA = `pkg-config --libs gio-2.0`
-CFLAGS_NICERDICER = `pkg-config --cflags gio-2.0`
+LDFLAGS_NFCD = -fPIC -shared `pkg-config --libs libglibutil gobject-2.0 glib-2.0`
+
+CFLAGS_NICERDICER = `pkg-config --cflags gio-2.0` -Iinclude
 LDFLAGS_NICERDICER = `pkg-config --libs gio-2.0`
-CFLAGS_POWERCONFIG = `pkg-config --cflags gio-2.0`
-LDFLAGS_POWERCONFIG = `pkg-config --libs gio-2.0`
-CFLAGS_EXAMPLES = `pkg-config --cflags upower-glib`
-LDFLAGS_EXAMPLES = `pkg-config --libs upower-glib` -lbatman-wrappers -lbatman-andromeda -lwayland-client
 
-TARGET = batman
-TARGET_HELPER = batman-helper
-TARGET_GUI = batman-gui
-TARGET_GOVERNOR = governor
-TARGET_WRAPPERS = libbatman-wrappers.so
-TARGET_GBINDER = libbatman-gbinder.so
-TARGET_HYBRIS = batman-hybris
-TARGET_NFCD = batman.so
-TARGET_WIFI = libbatman-wifi.so
-TARGET_WIFI_CLI = batman-wifi
-TARGET_BATMAN2PPD = src/batman2ppd.py
-TARGET_PPDCLI = src/powerprofilesctl.py
-TARGET_ANDROMEDA = libbatman-andromeda.so
-TARGET_ANDROMEDA_CLI = batman-andromeda
+SOURCES_BATMAN = src/main.c \
+                 src/utils.c \
+                 src/binder.c \
+                 src/wifi.c \
+                 src/wlrdisplay.c \
+                 src/bluetooth.c \
+                 src/config.c \
+                 src/cpu.c \
+                 src/gpu.c \
+                 src/device_node.c \
+                 src/logind.c \
+                 src/mtk.c \
+                 src/ppd.c \
+                 src/thermal.c
+
+SOURCES_MONITOR = src/monitor/batman-system-monitor.c \
+                  src/wlrdisplay.c \
+                  src/utils.c
+
+SOURCES_NFCD = src/nfcd/nfcd-batman-plugin.c
+SOURCES_NICERDICER = src/nicerdicer/nicerdicer.c
+
+TARGET_BATMAN = batman
+TARGET_MONITOR = batman-system-monitor
 TARGET_NICERDICER = batman-nicerdicer
-TARGET_POWERCONFIG = batman-powerconfig
-TARGET_EXAMPLES = batman-examples
-
-SRC_HELPER = src/batman-helper.c src/wlrdisplay.c src/batman-wrappers.c src/getinfo.c src/batman-andromeda.c
-SRC_GUI = src/batman-gui.c src/configcontrol.c src/getinfo.c
-SRC_GOVERNOR = src/governor.c src/wlrdisplay.c src/batman-wrappers.c
-SRC_WRAPPERS = src/batman-wrappers.c src/wlrdisplay.c src/getinfo.c
-SRC_GBINDER = src/batman-gbinder.c
-SRC_HYBRIS = src/batman-hybris.c src/batman-gbinder.c
-SRC_NFCD = src/nfcd-batman-plugin.c src/wlrdisplay.c
-SRC_WIFI = src/batman-wifi.c
-SRC_WIFI_CLI = src/batman-wifi-cli.c src/batman-wifi.c
-SRC_ANDROMEDA = src/batman-andromeda.c
-SRC_ANDROMEDA_CLI = src/batman-andromeda-cli.c src/batman-andromeda.c
-SRC_NICERDICER = src/nicerdicer.c
-SRC_POWERCONFIG = src/powerconfig.c
-SRC_EXAMPLES = examples/batman-functions.c
-HEADERS = src/batman-wrappers.h src/getinfo.h src/wlrdisplay.h src/batman-gbinder.h src/batman-andromeda.h src/batman-wifi.h
+TARGET_NFCD = batman.so
+TARGET_PPDCLI = src/cli/powerprofilesctl.py
 
 PREFIX ?= /usr
-LIBDIR ?= $(DESTDIR)$(PREFIX)/lib
-BINDIR ?= $(DESTDIR)$(PREFIX)/bin
-SBINDIR ?= $(DESTDIR)$(PREFIX)/sbin
-ETCDIR ?= $(DESTDIR)/etc
-VARDIR ?= $(DESTDIR)/var
-CONFIGDIR ?= $(VARDIR)/lib/batman
-SYSTEMDDIR ?= $(LIBDIR)/systemd/system
-INITDIR ?= $(ETCDIR)/init.d
-DESKTOPDIR ?= $(DESTDIR)$(PREFIX)/share/applications
-ICONDIR ?= $(DESTDIR)$(PREFIX)/share/icons
-INCLUDEDIR ?= $(DESTDIR)$(PREFIX)/include/batman
-POLKITDIR ?= $(DESTDIR)$(PREFIX)/share/polkit-1/actions
-DBUSDIR ?= $(DESTDIR)$(PREFIX)/share/dbus-1/system.d
-NFCDDIR ?= $(LIBDIR)/nfcd/plugins
 TRIPLET ?= $(shell $(CC) -dumpmachine)
 
-.PHONY: all
-all: helper wrappers governor gui gbinder hybris wifi nfcd andromeda nicerdicer powerconfig
+all: $(TARGET_BATMAN) $(TARGET_MONITOR) $(TARGET_NFCD) $(TARGET_NICERDICER)
 
-helper: $(TARGET_HELPER)
-$(TARGET_HELPER):
-	$(CC) $(SRC_HELPER) $(CFLAGS_HELPER) $(LDFLAGS_HELPER) -o $(TARGET_HELPER)
+$(TARGET_BATMAN):
+	$(CC) $(CFLAGS_BATMAN) $(SOURCES_BATMAN) -o $(TARGET_BATMAN) $(LDFLAGS_BATMAN)
 
-wrappers: $(TARGET_WRAPPERS)
-$(TARGET_WRAPPERS):
-	$(CC) -fPIC -shared $(SRC_WRAPPERS) $(CFLAGS_WRAPPERS) $(LDFLAGS_WRAPPERS) -o $(TARGET_WRAPPERS)
+$(TARGET_MONITOR):
+	$(CC) $(CFLAGS_MONITOR) $(SOURCES_MONITOR) -o $(TARGET_MONITOR) $(LDFLAGS_MONITOR)
 
-governor: $(TARGET_GOVERNOR)
-$(TARGET_GOVERNOR):
-	$(CC) $(SRC_GOVERNOR) $(LDFLAGS_GOVERNOR) $(CFLAGS_GOVERNOR) -o $(TARGET_GOVERNOR)
+$(TARGET_NFCD):
+	$(CC) $(CFLAGS_NFCD) $(SOURCES_NFCD) -o $(TARGET_NFCD) $(LDFLAGS_NFCD)
 
-gui: $(TARGET_GUI)
-$(TARGET_GUI):
-	$(CC) $(SRC_GUI) $(CFLAGS_GUI) $(LDFLAGS_GUI) -o $(TARGET_GUI)
-
-gbinder: $(TARGET_GBINDER)
-$(TARGET_GBINDER):
-	$(CC) -fPIC -shared $(SRC_GBINDER) $(CFLAGS_GBINDER) $(LDFLAGS_GBINDER) -o $(TARGET_GBINDER)
-
-hybris: $(TARGET_HYBRIS)
-$(TARGET_HYBRIS):
-	$(CC) $(SRC_HYBRIS) $(CFLAGS_HYBRIS) $(LDFLAGS_HYBRIS) -o $(TARGET_HYBRIS)
-
-wifi: $(TARGET_WIFI)
-$(TARGET_WIFI):
-	$(CC) -fPIC -shared $(SRC_WIFI) $(CFLAGS_WIFI) $(LDFLAGS_WIFI) -o $(TARGET_WIFI)
-	$(CC) $(SRC_WIFI_CLI) $(CFLAGS_WIFI) -L. -lbatman-wifi $(LDFLAGS_WIFI) -o $(TARGET_WIFI_CLI)
-
-nfcd: $(TARGET_NFCD)
-$(TARGET_NFCD): nfcd-batman-plugin.o wlrdisplay.o
-	$(CC) $^ $(LDFLAGS_NFCD) -o $@
-
-andromeda: $(TARGET_ANDROMEDA)
-$(TARGET_ANDROMEDA):
-	$(CC) -fPIC -shared $(SRC_ANDROMEDA) $(CFLAGS_ANDROMEDA) $(LDFLAGS_ANDROMEDA) -o $(TARGET_ANDROMEDA)
-	$(CC) $(SRC_ANDROMEDA_CLI) $(CFLAGS_ANDROMEDA) $(LDFLAGS_ANDROMEDA) -o $(TARGET_ANDROMEDA_CLI)
-
-nicerdicer: $(TARGET_NICERDICER)
 $(TARGET_NICERDICER):
-	$(CC) $(SRC_NICERDICER) $(CFLAGS_NICERDICER) $(LDFLAGS_NICERDICER) -o $(TARGET_NICERDICER)
+	$(CC) $(CFLAGS_NICERDICER) $(SOURCES_NICERDICER) -o $(TARGET_NICERDICER) $(LDFLAGS_NICERDICER)
 
-powerconfig: $(TARGET_POWERCONFIG)
-$(TARGET_POWERCONFIG):
-	$(CC) $(SRC_POWERCONFIG) $(CFLAGS_POWERCONFIG) $(LDFLAGS_POWERCONFIG) -o $(TARGET_POWERCONFIG)
-
-examples: $(TARGET_EXAMPLES)
-$(TARGET_EXAMPLES):
-	$(CC) $(SRC_EXAMPLES) $(CFLAGS_EXAMPLES) $(LDFLAGS_EXAMPLES) -o $(TARGET_EXAMPLES)
-
-nfcd-batman-plugin.o: src/nfcd-batman-plugin.c
-	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
-
-wlrdisplay.o: src/wlrdisplay.c
-	$(CC) -c $< $(CFLAGS_NFCD) -O2 -o $@
-
-.PHONY: install
 install: all
-	install -d $(LIBDIR) $(BINDIR) $(SBINDIR) $(ETCDIR) $(VARDIR) $(CONFIGDIR) $(SYSTEMDDIR) $(INITDIR) $(DESKTOPDIR)
-	install -d $(ICONDIR) $(INCLUDEDIR) $(POLKITDIR) $(DBUSDIR) $(LIBDIR)/$(TRIPLET) $(NFCDDIR)
+	install -d $(DESTDIR)$(PREFIX)/lib
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install -d $(DESTDIR)$(PREFIX)/sbin
+	install -d $(DESTDIR)/etc
+	install -d $(DESTDIR)/var
+	install -d $(DESTDIR)/var/lib/batman
+	install -d $(DESTDIR)$(PREFIX)/share/polkit-1/actions
+	install -d $(DESTDIR)$(PREFIX)/share/dbus-1/system.d
+	install -d $(DESTDIR)$(PREFIX)/lib/$(TRIPLET)
+	install -d $(DESTDIR)$(PREFIX)/lib/nfcd/plugins
 
-	cp src/$(TARGET) $(SBINDIR)/
-	cp $(TARGET_HELPER) $(BINDIR)
-	cp $(TARGET_GUI) $(BINDIR)
-	cp $(TARGET_GOVERNOR) $(BINDIR)
-	cp $(TARGET_WRAPPERS) $(LIBDIR)/$(TRIPLET)
-	cp $(TARGET_GBINDER) $(LIBDIR)/$(TRIPLET)
-	cp $(TARGET_HYBRIS) $(BINDIR)
-	cp $(TARGET_WIFI) $(LIBDIR)/$(TRIPLET)
-	cp $(TARGET_WIFI_CLI) $(BINDIR)
-	cp $(TARGET_BATMAN2PPD) $(SBINDIR)/batman2ppd
-	cp $(TARGET_PPDCLI) $(BINDIR)/powerprofilesctl
-	cp $(TARGET_ANDROMEDA) $(LIBDIR)/$(TRIPLET)
-	cp $(TARGET_ANDROMEDA_CLI) $(BINDIR)
-	cp $(TARGET_NICERDICER) $(SBINDIR)
-	cp $(TARGET_POWERCONFIG) $(SBINDIR)
-	cp $(TARGET_NFCD) $(NFCDDIR)
+	install -m 0755 $(TARGET_BATMAN) $(DESTDIR)$(PREFIX)/sbin/
+	install -m 0755 $(TARGET_MONITOR) $(DESTDIR)$(PREFIX)/bin/
+	install -m 0755 $(TARGET_NICERDICER) $(DESTDIR)$(PREFIX)/sbin/
 
-	cp $(HEADERS) $(INCLUDEDIR)
+	install -m 0755 $(TARGET_PPDCLI) $(DESTDIR)$(PREFIX)/bin/powerprofilesctl
 
-	cp data/batman-gui.desktop $(DESKTOPDIR)
-	cp data/batman.png $(ICONDIR)
-	cp data/config $(CONFIGDIR)
+	install -m 0644 $(TARGET_NFCD) $(DESTDIR)$(PREFIX)/lib/nfcd/plugins/
 
-	cp data/net.hadess.PowerProfiles.policy $(POLKITDIR)
-	cp data/net.hadess.PowerProfiles.conf $(DBUSDIR)
+	install -m 0644 data/config $(DESTDIR)/var/lib/batman/config
 
-	cp data/org.freedesktop.UPower.PowerProfiles.policy $(POLKITDIR)
-	cp data/org.freedesktop.UPower.PowerProfiles.conf $(DBUSDIR)
+	install -m 0644 data/org.freedesktop.UPower.PowerProfiles.policy $(DESTDIR)$(PREFIX)/share/polkit-1/actions/
+	install -m 0644 data/org.freedesktop.UPower.PowerProfiles.conf $(DESTDIR)$(PREFIX)/share/dbus-1/system.d/
+	install -m 0644 data/io.FuriOS.NicerDicer.conf $(DESTDIR)$(PREFIX)/share/dbus-1/system.d/
 
-	cp data/io.FuriOS.NicerDicer.conf $(DBUSDIR)
-	cp data/io.FuriOS.BatmanPowerConfig.conf $(DBUSDIR)
-
-ifeq ($(shell test -d $(SYSTEMDDIR) && echo 1),1)
-	cp data/batman.service $(SYSTEMDDIR)
-	cp data/batman2ppd.service $(SYSTEMDDIR)
-	cp data/nicerdicer.service $(SYSTEMDDIR)
-	cp data/powerconfig.service $(SYSTEMDDIR)
-else ifeq ($(shell test -e /sbin/openrc && echo 1),1)
-	cp data/batman.rc $(INITDIR)/batman
-else
-	cp data/batman-init $(INITDIR)/batman
+ifeq ($(strip $(DESTDIR)),)
+	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
+	install -m 0644 data/batman.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
+	install -m 0644 data/nicerdicer.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
 endif
 
-	cp data/nicerdicer.conf $(ETCDIR)/nicerdicer.conf
+	install -m 0644 data/nicerdicer.conf $(DESTDIR)/etc/nicerdicer.conf
 
-.PHONY: clean
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/sbin/$(TARGET_BATMAN)
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET_MONITOR)
+	rm -f $(DESTDIR)$(PREFIX)/sbin/$(TARGET_NICERDICER)
+
+	rm -f $(DESTDIR)$(PREFIX)/bin/powerprofilesctl
+
+	rm -f $(DESTDIR)$(PREFIX)/lib/nfcd/plugins/$(TARGET_NFCD)
+
+	rm -f $(DESTDIR)/var/lib/batman/config
+
+	rm -f $(DESTDIR)$(PREFIX)/share/polkit-1/actions/org.freedesktop.UPower.PowerProfiles.policy
+	rm -f $(DESTDIR)$(PREFIX)/share/dbus-1/system.d/org.freedesktop.UPower.PowerProfiles.conf
+	rm -f $(DESTDIR)$(PREFIX)/share/dbus-1/system.d/io.FuriOS.NicerDicer.conf
+
+	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/batman.service
+	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/nicerdicer.service
+
+	rm -f $(DESTDIR)/etc/nicerdicer.conf
+
 clean:
-	rm -f $(TARGET_HELPER)
-	rm -f $(TARGET_GUI)
-	rm -f $(TARGET_GOVERNOR)
-	rm -f $(TARGET_WRAPPERS)
-	rm -f $(TARGET_GBINDER)
-	rm -f $(TARGET_HYBRIS)
-	rm -f $(TARGET_NFCD)
-	rm -f $(TARGET_WIFI)
-	rm -f $(TARGET_WIFI_CLI)
-	rm -f $(TARGET_ANDROMEDA)
-	rm -f $(TARGET_ANDROMEDA_CLI)
-	rm -f $(TARGET_NICERDICER)
-	rm -f $(TARGET_EXAMPLES)
-	rm -f $(TARGET_POWERCONFIG)
-	rm -f nfcd-batman-plugin.o wlrdisplay.o
+	rm -f $(TARGET_BATMAN) $(TARGET_MONITOR) $(TARGET_NFCD) $(TARGET_NICERDICER)
+
+.PHONY: all clean install uninstall
