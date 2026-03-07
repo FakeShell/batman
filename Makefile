@@ -1,7 +1,7 @@
 CC = gcc
 
-CFLAGS_BATMAN = `pkg-config --cflags upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -Iinclude
-LDFLAGS_BATMAN = `pkg-config --libs upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0` -lwayland-client
+CFLAGS_BATMAN = `pkg-config --cflags upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0 libpulse libpulse-mainloop-glib` -Iinclude
+LDFLAGS_BATMAN = `pkg-config --libs upower-glib libgbinder glib-2.0 libnl-3.0 libnl-genl-3.0 libnl-route-3.0 libpulse libpulse-mainloop-glib` -lwayland-client
 
 CFLAGS_MONITOR = `pkg-config --cflags upower-glib` -Iinclude
 LDFLAGS_MONITOR = -lwayland-client `pkg-config --libs upower-glib`
@@ -25,7 +25,8 @@ SOURCES_BATMAN = src/main.c \
                  src/logind.c \
                  src/mtk.c \
                  src/ppd.c \
-                 src/thermal.c
+                 src/thermal.c \
+                 src/pulse.c
 
 SOURCES_MONITOR = src/monitor/batman-system-monitor.c \
                   src/wlrdisplay.c \

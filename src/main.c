@@ -18,6 +18,7 @@
 #include "wlrdisplay.h"
 #include "binder.h"
 #include "ppd.h"
+#include "pulse.h"
 
 #define BATMAN_STATE_DIR "/var/lib/batman"
 #define BATMAN_CUSTOM_UID_PATH BATMAN_STATE_DIR "/CUSTOM_UID"
@@ -32,6 +33,7 @@ typedef struct {
     GpuContext gpu;
     BluetoothContext bt;
     MtkContext mtk;
+    PulseContext pulse;
     DeviceNodeContext devnodes;
 
     Binder *binder;
@@ -42,6 +44,7 @@ typedef struct {
     gboolean last_screen_on;
     gboolean have_last_state;
     gboolean irqbalance_available;
+    gboolean audio_playing_cached;
 } BatmanApp;
 
 static gboolean
@@ -151,11 +154,23 @@ ensure_xdg_runtime_dir(void)
     if (!find_batman_uid(&target_uid))
         target_uid = getuid();
 
-    char path[256];
-    snprintf(path, sizeof(path), "/run/user/%d", (int)target_uid);
+    char runtime_path[256];
+    snprintf(runtime_path, sizeof(runtime_path), "/run/user/%d", (int)target_uid);
 
-    if (dir_exists(path))
-        g_setenv("XDG_RUNTIME_DIR", path, TRUE);
+    if (!dir_exists(runtime_path))
+        return;
+
+    g_setenv("XDG_RUNTIME_DIR", runtime_path, TRUE);
+
+    /*
+     * we use a dedicated extra socket for batman, so root does not need
+     * to use the default per-user native socket or pulse cookie logic.
+     */
+    char pulse_server[256];
+    snprintf(pulse_server, sizeof(pulse_server),
+             "unix:%s/pulse/batman", runtime_path);
+
+    g_setenv("PULSE_SERVER", pulse_server, TRUE);
 }
 
 static void
@@ -193,6 +208,21 @@ app_savings_allowed(const BatmanApp *app)
     return app_is_on_battery((BatmanApp *)app);
 }
 
+static gboolean
+get_current_screen_on(BatmanApp *app)
+{
+    if (app && app->logind) {
+        LogindScreenState s = logind_monitor_get_screen_state(app->logind);
+        if (s == LOGIND_SCREEN_ON)
+            return TRUE;
+        if (s == LOGIND_SCREEN_OFF)
+            return FALSE;
+    }
+
+    int wlr = get_wlroots_screen_status();
+    return (wlr != 0) ? TRUE : FALSE;
+}
+
 static void
 app_irqbalance_apply(BatmanApp *app, gboolean screen_on)
 {
@@ -203,6 +233,61 @@ app_irqbalance_apply(BatmanApp *app, gboolean screen_on)
         systemd_service_start_async("irqbalance.service");
     else
         systemd_service_stop_async("irqbalance.service");
+}
+
+static void
+app_refresh_audio_offline_state(BatmanApp *app)
+{
+    if (app == NULL)
+        return;
+
+    if (app->cpu.is_x86)
+        return;
+
+    if (!app->have_last_state)
+        return;
+
+    if (app->last_screen_on) {
+        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+        return;
+    }
+
+    if (!app_savings_allowed(app)) {
+        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+        return;
+    }
+
+    if (app->audio_playing_cached)
+        cpu_apply_audio_safe_offline_limit(&app->cpu, &app->cfg, FALSE);
+    else
+        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+
+    if (app->cfg.offline_enabled)
+        cpu_apply_offline(&app->cpu);
+}
+
+static void
+on_pulse_audio_state_changed(const PulseContext *pulse,
+                             gboolean audio_playing,
+                             void *userdata)
+{
+    BatmanApp *app = userdata;
+
+    (void)pulse;
+
+    if (app == NULL)
+        return;
+
+    if (app->audio_playing_cached == audio_playing)
+        return;
+
+    app->audio_playing_cached = audio_playing;
+
+    g_debug("pulse: cached audio state changed: %s",
+            app->audio_playing_cached ? "YES" : "NO");
+
+    if (!get_current_screen_on(app))
+        app_refresh_audio_offline_state(app);
 }
 
 static void
@@ -286,7 +371,7 @@ app_apply_state(BatmanApp *app,
         }
 
         if (!app->cpu.is_x86) {
-            if (cpu_is_audio_playing())
+            if (app->audio_playing_cached)
                 cpu_apply_audio_safe_offline_limit(&app->cpu, &app->cfg, screen_on);
             else
                 cpu_restore_offline_limit(&app->cpu, &app->cfg);
@@ -334,21 +419,6 @@ app_apply_state(BatmanApp *app,
     app_irqbalance_apply(app, screen_on);
 
     write_str(BATMAN_SCREEN_STATE_PATH, screen_on ? "yes" : "no");
-}
-
-static gboolean
-get_current_screen_on(BatmanApp *app)
-{
-    if (app && app->logind) {
-        LogindScreenState s = logind_monitor_get_screen_state(app->logind);
-        if (s == LOGIND_SCREEN_ON)
-            return TRUE;
-        if (s == LOGIND_SCREEN_OFF)
-            return FALSE;
-    }
-
-    int wlr = get_wlroots_screen_status();
-    return (wlr != 0) ? TRUE : FALSE;
 }
 
 static void
@@ -476,6 +546,8 @@ main(void)
 
     memset(&app, 0, sizeof(app));
 
+    app.loop = g_main_loop_new(NULL, FALSE);
+
     config_set_defaults(&app.cfg);
     config_load(&app.cfg);
 
@@ -493,6 +565,8 @@ main(void)
     device_node_init(&app.devnodes);
     mtk_init(&app.mtk);
     bluetooth_init(&app.bt);
+    pulse_init(&app.pulse, on_pulse_audio_state_changed, &app);
+    app.audio_playing_cached = pulse_is_audio_playing(&app.pulse);
     app.binder = binder_init();
 
     app.wifi_initialized = FALSE;
@@ -510,8 +584,6 @@ main(void)
     app.irqbalance_available = systemd_service_exists("irqbalance.service");
     g_debug("irqbalance available: %s", app.irqbalance_available ? "True" : "False");
 
-    app.loop = g_main_loop_new(NULL, FALSE);
-
     g_idle_add(initial_probe_cb, &app);
 
     g_main_loop_run(app.loop);
@@ -526,6 +598,8 @@ main(void)
 
     if (app.wifi_initialized)
         wifi_cleanup();
+
+    pulse_cleanup(&app.pulse);
 
     bluetooth_cleanup(&app.bt);
 

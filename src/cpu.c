@@ -847,68 +847,6 @@ cpu_apply_online(CpuContext *cpu)
     }
 }
 
-gboolean
-cpu_is_audio_playing(void)
-{
-    DIR *cards = opendir("/proc/asound");
-    if (!cards)
-        return FALSE;
-
-    struct dirent *de;
-    while ((de = readdir(cards)) != NULL) {
-        if (strncmp(de->d_name, "card", 4) != 0)
-            continue;
-
-        char card_path[256];
-        g_snprintf(card_path, sizeof(card_path), "/proc/asound/%s", de->d_name);
-
-        DIR *card_dir = opendir(card_path);
-        if (!card_dir)
-            continue;
-
-        struct dirent *pcm_de;
-        while ((pcm_de = readdir(card_dir)) != NULL) {
-            if (strncmp(pcm_de->d_name, "pcm", 3) != 0)
-                continue;
-
-            char pcm_path[512];
-            g_snprintf(pcm_path, sizeof(pcm_path), "%s/%s", card_path, pcm_de->d_name);
-
-            DIR *pcm_dir = opendir(pcm_path);
-            if (!pcm_dir)
-                continue;
-
-            struct dirent *sub_de;
-            while ((sub_de = readdir(pcm_dir)) != NULL) {
-                if (strncmp(sub_de->d_name, "sub", 3) != 0)
-                    continue;
-
-                char status_path[1024];
-                g_snprintf(status_path, sizeof(status_path), "%s/%s/status", pcm_path, sub_de->d_name);
-
-                char buf[256];
-                buf[0] = '\0';
-                if (!read_str(status_path, buf, sizeof(buf)))
-                    buf[0] = '\0';
-
-                if (string_contains_token(buf, "RUNNING")) {
-                    closedir(pcm_dir);
-                    closedir(card_dir);
-                    closedir(cards);
-                    return TRUE;
-                }
-            }
-
-            closedir(pcm_dir);
-        }
-
-        closedir(card_dir);
-    }
-
-    closedir(cards);
-    return FALSE;
-}
-
 void
 cpu_apply_audio_safe_offline_limit(CpuContext *cpu, const BatmanConfig *cfg, gboolean screen_on)
 {

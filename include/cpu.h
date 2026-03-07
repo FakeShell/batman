@@ -130,14 +130,6 @@ void
 cpu_apply_online(CpuContext *cpu);
 
 /**
- * Determine whether audio is actively playing by checking ALSA PCM substream status.
- *
- * @return true if any substream is RUNNING, false otherwise
- */
-gboolean
-cpu_is_audio_playing(void);
-
-/**
  * Apply a reduced offline limit when audio is playing to avoid choppy audio.
  *
  * When audio is RUNNING and screen is off, temporarily reduce last_pol_core by half
