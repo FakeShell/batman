@@ -63,30 +63,11 @@ typedef struct {
     long long exynos_min_limit;        /** /sys/power/cpufreq_min_limit */
     long long exynos_max_limit;        /** /sys/power/cpufreq_max_limit */
 
-    int audio_saved_last_pol_core;     /** Temporary reduced last_pol_core during audio */
-    gboolean audio_limit_active;       /** True if last_pol_core is currently reduced */
-
     int base_first_pol_core;           /** Base first_pol_core detected at init (before CUSTOM_* overrides) */
     int base_last_pol_core;            /** Base last_pol_core detected at init (before CUSTOM_* overrides) */
     int base_offline_count;            /** Base offline_count detected at init (before CUSTOM_* overrides) */
     char base_default_governor[64];    /** Base default governor detected at init (before CUSTOM_* overrides) */
 } CpuContext;
-
-/**
- * Detect whether the current architecture is x86 (x86_64 or i686).
- *
- * @return true if x86, false otherwise
- */
-gboolean
-cpu_is_x86_arch(void);
-
-/**
- * Detect whether the device appears to be Exynos.
- *
- * @return true if EXYNOS token is found, false otherwise
- */
-gboolean
-cpu_detect_exynos(void);
 
 /**
  * Initialize CPU context.
@@ -130,23 +111,10 @@ void
 cpu_apply_online(CpuContext *cpu);
 
 /**
- * Apply a reduced offline limit when audio is playing to avoid choppy audio.
- *
- * When audio is RUNNING and screen is off, temporarily reduce last_pol_core by half
- * and re-apply online/offline to settle the state.
+ * Restore last_pol_core/offline_count back to the original value.
  *
  * @param cpu CpuContext
- * @param cfg BatmanConfig (for offline_enabled)
- * @param screen_on true if display is on, false if off
- */
-void
-cpu_apply_audio_safe_offline_limit(CpuContext *cpu, const BatmanConfig *cfg, gboolean screen_on);
-
-/**
- * Restore last_pol_core/offline_count back to the original value after audio stops.
- *
- * @param cpu CpuContext
- * @param cfg BatmanConfig (for offline_enabled)
+ * @param cfg BatmanConfig
  */
 void
 cpu_restore_offline_limit(CpuContext *cpu, const BatmanConfig *cfg);

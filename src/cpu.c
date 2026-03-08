@@ -571,9 +571,6 @@ cpu_refresh_overrides(CpuContext *cpu)
               cpu->base_default_governor,
               sizeof(cpu->default_governor));
 
-    cpu->audio_limit_active = FALSE;
-    cpu->audio_saved_last_pol_core = cpu->offline_count;
-
     /* CUSTOM_DEFAULT_GOVERNOR overrides default_governor */
     if (exists(CUSTOM_DEFAULT_GOVERNOR_FILE)) {
         char custom[128] = {0};
@@ -637,7 +634,6 @@ cpu_refresh_overrides(CpuContext *cpu)
                 cpu->first_pol_core, cpu->last_pol_core);
 
     cpu->offline_count = cpu->last_pol_core;
-    cpu->audio_saved_last_pol_core = cpu->offline_count;
 
     g_debug("cpu_refresh_overrides: range %d..%d offline_count=%d default_gov=%s",
             cpu->first_pol_core,
@@ -671,8 +667,6 @@ cpu_init(CpuContext *cpu)
 
     select_save_backend(cpu);
 
-    cpu->audio_saved_last_pol_core = cpu->last_pol_core;
-    cpu->audio_limit_active = FALSE;
     cpu->runtime_cur_governor[0] = '\0';
 
     cpu_refresh_overrides(cpu);
@@ -848,49 +842,12 @@ cpu_apply_online(CpuContext *cpu)
 }
 
 void
-cpu_apply_audio_safe_offline_limit(CpuContext *cpu, const BatmanConfig *cfg, gboolean screen_on)
-{
-    if (!cpu || !cfg)
-        return;
-    if (cpu->is_x86)
-        return;
-    if (!cfg->offline_enabled)
-        return;
-    if (screen_on)
-        return;
-    if (cpu->audio_limit_active)
-        return;
-    if (cpu->last_pol_core < cpu->offline_count)
-        return;
-
-    cpu->audio_saved_last_pol_core = cpu->last_pol_core;
-    cpu->last_pol_core = cpu->last_pol_core / 2;
-    cpu->audio_limit_active = TRUE;
-
-    /* bring everything online briefly, then re-offline with reduced range */
-    int tmp_last = cpu->last_pol_core;
-    cpu->last_pol_core = cpu->offline_count;
-    cpu_apply_online(cpu);
-    cpu->last_pol_core = tmp_last;
-
-    g_usleep(300000);
-    cpu_apply_offline(cpu);
-}
-
-void
 cpu_restore_offline_limit(CpuContext *cpu, const BatmanConfig *cfg)
 {
     if (!cpu || !cfg)
         return;
 
-    if (!cpu->audio_limit_active) {
-        cpu->last_pol_core = cpu->offline_count;
-        return;
-    }
-
     cpu->last_pol_core = cpu->offline_count;
-    cpu->audio_limit_active = FALSE;
-    cpu->audio_saved_last_pol_core = cpu->offline_count;
 }
 
 int

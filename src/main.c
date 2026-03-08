@@ -241,9 +241,6 @@ app_refresh_audio_offline_state(BatmanApp *app)
     if (app == NULL)
         return;
 
-    if (app->cpu.is_x86)
-        return;
-
     if (!app->have_last_state)
         return;
 
@@ -257,13 +254,30 @@ app_refresh_audio_offline_state(BatmanApp *app)
         return;
     }
 
-    if (app->audio_playing_cached)
-        cpu_apply_audio_safe_offline_limit(&app->cpu, &app->cfg, FALSE);
-    else
-        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+    if (app->audio_playing_cached) {
+        if (app->cfg.offline_enabled) {
+            cpu_apply_online(&app->cpu);
 
-    if (app->cfg.offline_enabled)
+            if (app->mtk.isolation_available)
+                mtk_deisolate(&app->mtk,
+                              app->cpu.first_pol_core,
+                              app->cpu.last_pol_core);
+        }
+
+        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+        return;
+    }
+
+    cpu_restore_offline_limit(&app->cpu, &app->cfg);
+
+    if (app->cfg.offline_enabled) {
+        if (app->mtk.isolation_available)
+            mtk_isolate(&app->mtk,
+                        app->cpu.first_pol_core,
+                        app->cpu.last_pol_core);
+
         cpu_apply_offline(&app->cpu);
+    }
 }
 
 static void
@@ -370,20 +384,28 @@ app_apply_state(BatmanApp *app,
                 binder_set_power_saver(app->binder);
         }
 
-        if (!app->cpu.is_x86) {
-            if (app->audio_playing_cached)
-                cpu_apply_audio_safe_offline_limit(&app->cpu, &app->cfg, screen_on);
-            else
-                cpu_restore_offline_limit(&app->cpu, &app->cfg);
-        }
-
         if (app->cfg.offline_enabled) {
-            if (app->mtk.isolation_available)
-                mtk_isolate(&app->mtk,
-                            app->cpu.first_pol_core,
-                            app->cpu.last_pol_core);
+            if (app->audio_playing_cached) {
+                cpu_apply_online(&app->cpu);
 
-            cpu_apply_offline(&app->cpu);
+                if (app->mtk.isolation_available)
+                    mtk_deisolate(&app->mtk,
+                                  app->cpu.first_pol_core,
+                                  app->cpu.last_pol_core);
+
+                cpu_restore_offline_limit(&app->cpu, &app->cfg);
+            } else {
+                cpu_restore_offline_limit(&app->cpu, &app->cfg);
+
+                if (app->mtk.isolation_available)
+                    mtk_isolate(&app->mtk,
+                                app->cpu.first_pol_core,
+                                app->cpu.last_pol_core);
+
+                cpu_apply_offline(&app->cpu);
+            }
+        } else {
+            cpu_restore_offline_limit(&app->cpu, &app->cfg);
         }
 
         if (app->cfg.wifi_enabled && app->wifi_initialized) {
