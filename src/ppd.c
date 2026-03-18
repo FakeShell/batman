@@ -569,6 +569,15 @@ ppd_set_overdrive(PpdContext *ppd, gboolean enabled)
     }
 }
 
+gboolean
+ppd_is_overdrive_enabled(const PpdContext *ppd)
+{
+    if (!ppd)
+        return FALSE;
+
+    return ppd->overdrive_enabled ? TRUE : FALSE;
+}
+
 static gboolean
 thermal_poll_cb(gpointer userdata)
 {
@@ -746,6 +755,11 @@ ppd_method_call(GDBusConnection *connection,
 
         g_variant_get(parameters, "(&s&s&s)", &profile, &reason, &app_id);
 
+        g_debug("ppd: HoldProfile(profile=%s, reason=%s, application_id=%s)",
+                profile ? profile : "",
+                reason ? reason : "",
+                app_id ? app_id : "");
+
         guint32 cookie = holds_add(ppd, profile, reason, app_id);
 
         GVariantBuilder changed;
@@ -760,6 +774,8 @@ ppd_method_call(GDBusConnection *connection,
     if (g_strcmp0(method_name, "ReleaseProfile") == 0) {
         guint32 cookie = 0;
         g_variant_get(parameters, "(u)", &cookie);
+
+        g_debug("ppd: ReleaseProfile(cookie=%u)", cookie);
 
         holds_remove(ppd, cookie);
 
@@ -778,8 +794,9 @@ ppd_method_call(GDBusConnection *connection,
         gboolean enabled = FALSE;
         g_variant_get(parameters, "(&sb)", &action, &enabled);
 
-        (void)action;
-        (void)enabled;
+        g_debug("ppd: SetActionEnabled(action=%s, enabled=%s)",
+                action ? action : "",
+                enabled ? "true" : "false");
 
         g_dbus_method_invocation_return_value(invocation, NULL);
         return;
@@ -788,10 +805,15 @@ ppd_method_call(GDBusConnection *connection,
     if (g_strcmp0(method_name, "EnableOverdrive") == 0) {
         gboolean enabled = FALSE;
         g_variant_get(parameters, "(b)", &enabled);
+
+        g_debug("ppd: EnableOverdrive(enabled=%s)", enabled ? "true" : "false");
+
         ppd_set_overdrive(ppd, enabled);
         g_dbus_method_invocation_return_value(invocation, NULL);
         return;
     }
+
+    g_debug("ppd: unknown method call %s", method_name ? method_name : "(null)");
 
     g_dbus_method_invocation_return_error(invocation,
                                           G_IO_ERROR,

@@ -27,4 +27,13 @@ ppd_init(CpuContext *cpu);
 void
 ppd_cleanup(PpdContext *ppd);
 
+/**
+ * Check whether overdrive mode is currently enabled.
+ *
+ * @param ppd PpdContext
+ * @return TRUE if overdrive is enabled, otherwise FALSE
+ */
+gboolean
+ppd_is_overdrive_enabled(const PpdContext *ppd);
+
 #endif /* PPD_H */

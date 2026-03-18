@@ -223,6 +223,15 @@ get_current_screen_on(BatmanApp *app)
     return (wlr != 0) ? TRUE : FALSE;
 }
 
+static gboolean
+app_overdrive_active(const BatmanApp *app)
+{
+    if (app == NULL || app->ppd == NULL)
+        return FALSE;
+
+    return ppd_is_overdrive_enabled(app->ppd) ? TRUE : FALSE;
+}
+
 static void
 app_irqbalance_apply(BatmanApp *app, gboolean screen_on)
 {
@@ -236,6 +245,43 @@ app_irqbalance_apply(BatmanApp *app, gboolean screen_on)
 }
 
 static void
+app_apply_overdrive_runtime(BatmanApp *app, gboolean screen_on)
+{
+    if (!app)
+        return;
+
+    if (app->cfg.offline_enabled) {
+        cpu_apply_online(&app->cpu);
+
+        if (app->mtk.isolation_available)
+            mtk_deisolate(&app->mtk,
+                          app->cpu.first_pol_core,
+                          app->cpu.last_pol_core);
+    }
+
+    cpu_restore_offline_limit(&app->cpu, &app->cfg);
+
+    if (app->cfg.powersave_enabled) {
+        device_node_apply_default(&app->devnodes, &app->cfg);
+        bluetooth_apply_default(&app->bt, &app->cfg);
+    } else {
+        bluetooth_apply_default(&app->bt, &app->cfg);
+    }
+
+    if (app->cfg.wifi_enabled && app->wifi_initialized) {
+        wifi_set_powersave(WIFI_IFACE, FALSE);
+        wifi_set_wmtwifi(WIFI_IFACE, WMTWIFI_RESUME_VALUE);
+    }
+
+    if (app->cfg.binder_enabled && app->binder)
+        binder_set_performance(app->binder);
+
+    app_irqbalance_apply(app, TRUE);
+
+    write_str(BATMAN_SCREEN_STATE_PATH, screen_on ? "yes" : "no");
+}
+
+static void
 app_refresh_audio_offline_state(BatmanApp *app)
 {
     if (app == NULL)
@@ -243,6 +289,20 @@ app_refresh_audio_offline_state(BatmanApp *app)
 
     if (!app->have_last_state)
         return;
+
+    if (app_overdrive_active(app)) {
+        if (app->cfg.offline_enabled) {
+            cpu_apply_online(&app->cpu);
+
+            if (app->mtk.isolation_available)
+                mtk_deisolate(&app->mtk,
+                              app->cpu.first_pol_core,
+                              app->cpu.last_pol_core);
+        }
+
+        cpu_restore_offline_limit(&app->cpu, &app->cfg);
+        return;
+    }
 
     if (app->last_screen_on) {
         cpu_restore_offline_limit(&app->cpu, &app->cfg);
@@ -372,6 +432,12 @@ app_apply_state(BatmanApp *app,
 
     app->have_last_state = TRUE;
     app->last_screen_on = screen_on;
+
+    /* Overdrive explicitly overrides normal screen off mode */
+    if (app_overdrive_active(app)) {
+        app_apply_overdrive_runtime(app, screen_on);
+        return;
+    }
 
     if (!screen_on) {
         if (app->cfg.powersave_enabled) {
