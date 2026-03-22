@@ -102,7 +102,7 @@ write_str(const char *path, const char *value)
     if (wrote != want)
         g_debug("write_str: write(%s) failed: %s", path, g_strerror(errno));
     else
-        g_debug("write_str: wrote %zd bytes to %s", wrote, path);
+        g_debug("write_str: wrote %zd bytes to %s, value: \"%s\"", wrote, path, value);
 
     close(fd);
 }
@@ -158,6 +158,8 @@ read_str(const char *path, char *out, size_t out_len)
             break;
         }
     }
+
+    g_debug("read_str: read from %s, value: \"%s\"", path, out);
 
     return TRUE;
 }
