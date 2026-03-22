@@ -45,6 +45,9 @@ typedef struct {
     gboolean have_last_state;
     gboolean irqbalance_available;
     gboolean audio_playing_cached;
+
+    guint isolate_source_id;
+    guint deisolate_source_id;
 } BatmanApp;
 
 static gboolean
@@ -233,6 +236,110 @@ app_overdrive_active(const BatmanApp *app)
 }
 
 static void
+app_cancel_isolate(BatmanApp *app)
+{
+    if (!app)
+        return;
+
+    if (app->isolate_source_id != 0) {
+        g_source_remove(app->isolate_source_id);
+        app->isolate_source_id = 0;
+    }
+}
+
+static void
+app_cancel_deisolate(BatmanApp *app)
+{
+    if (!app)
+        return;
+
+    if (app->deisolate_source_id != 0) {
+        g_source_remove(app->deisolate_source_id);
+        app->deisolate_source_id = 0;
+    }
+}
+
+static gboolean
+isolate_cb(gpointer userdata)
+{
+    BatmanApp *app = userdata;
+
+    if (!app)
+        return G_SOURCE_REMOVE;
+
+    app->isolate_source_id = 0;
+
+    if (!app->cfg.offline_enabled)
+        return G_SOURCE_REMOVE;
+
+    if (!app->mtk.isolation_available)
+        return G_SOURCE_REMOVE;
+
+    mtk_isolate(&app->mtk,
+                app->cpu.first_pol_core,
+                app->cpu.last_pol_core);
+
+    return G_SOURCE_REMOVE;
+}
+
+static gboolean
+deisolate_cb(gpointer userdata)
+{
+    BatmanApp *app = userdata;
+
+    if (!app)
+        return G_SOURCE_REMOVE;
+
+    app->deisolate_source_id = 0;
+
+    if (!app->cfg.offline_enabled)
+        return G_SOURCE_REMOVE;
+
+    if (!app->mtk.isolation_available)
+        return G_SOURCE_REMOVE;
+
+    mtk_deisolate(&app->mtk,
+                  app->cpu.first_pol_core,
+                  app->cpu.last_pol_core);
+
+    return G_SOURCE_REMOVE;
+}
+
+static void
+app_schedule_isolate(BatmanApp *app)
+{
+    if (!app)
+        return;
+
+    app_cancel_deisolate(app);
+
+    if (!app->cfg.offline_enabled || !app->mtk.isolation_available)
+        return;
+
+    if (app->isolate_source_id != 0)
+        return;
+
+    app->isolate_source_id = g_timeout_add(1000, isolate_cb, app);
+}
+
+static void
+app_schedule_deisolate(BatmanApp *app)
+{
+    if (!app)
+        return;
+
+    app_cancel_isolate(app);
+
+    if (!app->cfg.offline_enabled || !app->mtk.isolation_available)
+        return;
+
+    if (app->deisolate_source_id != 0)
+        return;
+
+    app->deisolate_source_id = g_timeout_add(1000, deisolate_cb, app);
+}
+
+static void
 app_irqbalance_apply(BatmanApp *app, gboolean screen_on)
 {
     if (!app || !app->irqbalance_available)
@@ -252,11 +359,7 @@ app_apply_overdrive_runtime(BatmanApp *app, gboolean screen_on)
 
     if (app->cfg.offline_enabled) {
         cpu_apply_online(&app->cpu);
-
-        if (app->mtk.isolation_available)
-            mtk_deisolate(&app->mtk,
-                          app->cpu.first_pol_core,
-                          app->cpu.last_pol_core);
+        app_schedule_deisolate(app);
     }
 
     cpu_restore_offline_limit(&app->cpu, &app->cfg);
@@ -293,11 +396,7 @@ app_refresh_audio_offline_state(BatmanApp *app)
     if (app_overdrive_active(app)) {
         if (app->cfg.offline_enabled) {
             cpu_apply_online(&app->cpu);
-
-            if (app->mtk.isolation_available)
-                mtk_deisolate(&app->mtk,
-                              app->cpu.first_pol_core,
-                              app->cpu.last_pol_core);
+            app_schedule_deisolate(app);
         }
 
         cpu_restore_offline_limit(&app->cpu, &app->cfg);
@@ -317,11 +416,7 @@ app_refresh_audio_offline_state(BatmanApp *app)
     if (app->audio_playing_cached) {
         if (app->cfg.offline_enabled) {
             cpu_apply_online(&app->cpu);
-
-            if (app->mtk.isolation_available)
-                mtk_deisolate(&app->mtk,
-                              app->cpu.first_pol_core,
-                              app->cpu.last_pol_core);
+            app_schedule_deisolate(app);
         }
 
         cpu_restore_offline_limit(&app->cpu, &app->cfg);
@@ -331,11 +426,7 @@ app_refresh_audio_offline_state(BatmanApp *app)
     cpu_restore_offline_limit(&app->cpu, &app->cfg);
 
     if (app->cfg.offline_enabled) {
-        if (app->mtk.isolation_available)
-            mtk_isolate(&app->mtk,
-                        app->cpu.first_pol_core,
-                        app->cpu.last_pol_core);
-
+        app_schedule_isolate(app);
         cpu_apply_offline(&app->cpu);
     }
 }
@@ -380,11 +471,7 @@ app_apply_neutral(BatmanApp *app, gboolean screen_on)
      */
     if (app->cfg.offline_enabled) {
         cpu_apply_online(&app->cpu);
-
-        if (app->mtk.isolation_available)
-            mtk_deisolate(&app->mtk,
-                          app->cpu.first_pol_core,
-                          app->cpu.last_pol_core);
+        app_schedule_deisolate(app);
     }
 
     if (app->cfg.powersave_enabled) {
@@ -453,21 +540,11 @@ app_apply_state(BatmanApp *app,
         if (app->cfg.offline_enabled) {
             if (app->audio_playing_cached) {
                 cpu_apply_online(&app->cpu);
-
-                if (app->mtk.isolation_available)
-                    mtk_deisolate(&app->mtk,
-                                  app->cpu.first_pol_core,
-                                  app->cpu.last_pol_core);
-
+                app_schedule_deisolate(app);
                 cpu_restore_offline_limit(&app->cpu, &app->cfg);
             } else {
                 cpu_restore_offline_limit(&app->cpu, &app->cfg);
-
-                if (app->mtk.isolation_available)
-                    mtk_isolate(&app->mtk,
-                                app->cpu.first_pol_core,
-                                app->cpu.last_pol_core);
-
+                app_schedule_isolate(app);
                 cpu_apply_offline(&app->cpu);
             }
         } else {
@@ -486,11 +563,7 @@ app_apply_state(BatmanApp *app,
 
         if (app->cfg.offline_enabled) {
             cpu_apply_online(&app->cpu);
-
-            if (app->mtk.isolation_available)
-                mtk_deisolate(&app->mtk,
-                              app->cpu.first_pol_core,
-                              app->cpu.last_pol_core);
+            app_schedule_deisolate(app);
         }
 
         if (app->cfg.powersave_enabled) {
@@ -677,6 +750,9 @@ main(void)
     g_main_loop_run(app.loop);
 
     config_monitor_stop(&app.cfg);
+
+    app_cancel_isolate(&app);
+    app_cancel_deisolate(&app);
 
     if (app.logind)
         logind_monitor_free(app.logind);
