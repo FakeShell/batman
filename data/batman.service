@@ -6,6 +6,10 @@ After=multi-user.target
 [Service]
 Type=simple
 ExecStart=/usr/sbin/batman
+Restart=on-failure
+RestartSec=2s
+StartLimitIntervalSec=30
+StartLimitBurst=5
 
 [Install]
 WantedBy=graphical.target
