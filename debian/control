@@ -1,5 +1,5 @@
 Source: batman
-Maintainer: Bardia Moshiri
+Maintainer: Bardia Moshiri <bardia@furilabs.com>
 Section: misc
 Priority: optional
 Build-Depends: debhelper-compat (= 13),
