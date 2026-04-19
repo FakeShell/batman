@@ -2,14 +2,14 @@
 Description=Battery manager for Linux phones
 Requires=upower.service
 After=multi-user.target
+StartLimitIntervalSec=30
+StartLimitBurst=5
 
 [Service]
 Type=simple
 ExecStart=/usr/sbin/batman
 Restart=on-failure
 RestartSec=2s
-StartLimitIntervalSec=30
-StartLimitBurst=5
 
 [Install]
 WantedBy=graphical.target
