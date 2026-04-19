@@ -27,10 +27,16 @@ typedef struct {
     GDBusProxy *manager_proxy;        /** org.freedesktop.login1.Manager */
     GDBusProxy *session_props_proxy;  /** org.freedesktop.DBus.Properties */
 
-    guint properties_changed_id;      /** Signal subscription id */
-    guint retry_source_id;            /** Retry timer id */
+    guint properties_changed_id;      /** Session PropertiesChanged subscription id */
+    guint manager_session_removed_id; /** Manager SessionRemoved subscription id */
+    guint retry_source_id;            /** Initial setup retry timer id */
 
-    char *session_id;                 /** Current tty7 session id */
+    guint switch_retry_source_id;     /** Session switch retry timer id */
+    guint switch_retry_attempts;      /** Session switch retry attempts */
+
+    char *session_id;                 /** Current session id */
+    char *session_path;               /** D-Bus object path for the session */
+
     LogindScreenState screen_state;   /** Cached screen state */
 
     void (*on_screen_changed)(LogindScreenState state, void *user_data); /** Callback */
