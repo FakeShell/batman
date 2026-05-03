@@ -129,6 +129,9 @@ device_node_apply_save_tweaks(void)
     dn_write_int_if_exists("/sys/module/ged/parameters/gx_boost_on", 0);
     dn_write_int_if_exists("/sys/module/ged/parameters/ged_force_mdp_enable", 1);
     dn_write_int_if_exists("/sys/module/ged/parameters/boost_amp", 0);
+    dn_write_int_if_exists("/sys/module/ged/parameters/ged_boost_enable", 0);
+    dn_write_int_if_exists("/sys/module/ged/parameters/enable_gpu_boost", 0);
+    dn_write_int_if_exists("/sys/module/ged/parameters/enable_cpu_boost", 0);
 
     /* MediaTek GBE */
     dn_write_int_if_exists("/sys/kernel/gbe/gbe_enable1", 0);
@@ -158,6 +161,9 @@ device_node_apply_save_tweaks(void)
     /* MediaTek perfmgr */
     dn_write_int_if_exists("/proc/perfmgr/boost_ctrl/dram_ctrl/ddr", 0);
     dn_write_int_if_exists("/proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost", 0);
+
+    /* DRM */
+    dn_write_str_if_exists("/sys/module/drm_kms_helper/parameters/poll", "N");
 }
 
 static void
@@ -183,6 +189,9 @@ device_node_apply_boost_tweaks(void)
     dn_write_int_if_exists("/sys/module/ged/parameters/gx_boost_on", 1);
     dn_write_int_if_exists("/sys/module/ged/parameters/ged_force_mdp_enable", 1);
     dn_write_int_if_exists("/sys/module/ged/parameters/boost_amp", 1);
+    dn_write_int_if_exists("/sys/module/ged/parameters/ged_boost_enable", 1);
+    dn_write_int_if_exists("/sys/module/ged/parameters/enable_gpu_boost", 1);
+    dn_write_int_if_exists("/sys/module/ged/parameters/enable_cpu_boost", 1);
 
     /* MediaTek GBE */
     dn_write_int_if_exists("/sys/kernel/gbe/gbe_enable1", 1);
@@ -212,6 +221,9 @@ device_node_apply_boost_tweaks(void)
     /* MediaTek perfmgr */
     dn_write_int_if_exists("/proc/perfmgr/boost_ctrl/dram_ctrl/ddr", 2);
     dn_write_int_if_exists("/proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost", 1);
+
+    /* DRM */
+    dn_write_str_if_exists("/sys/module/drm_kms_helper/parameters/poll", "Y");
 }
 
 void
