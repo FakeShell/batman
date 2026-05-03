@@ -164,6 +164,10 @@ device_node_apply_save_tweaks(void)
 
     /* DRM */
     dn_write_str_if_exists("/sys/module/drm_kms_helper/parameters/poll", "N");
+
+    /* schedtune */
+    dn_write_int_if_exists("/sys/fs/cgroup/schedtune/schedtune.boost", 0);
+    dn_write_int_if_exists("/sys/fs/cgroup/schedtune/schedtune.prefer_idle", 0);
 }
 
 static void
@@ -224,6 +228,10 @@ device_node_apply_boost_tweaks(void)
 
     /* DRM */
     dn_write_str_if_exists("/sys/module/drm_kms_helper/parameters/poll", "Y");
+
+    /* schedtune */
+    dn_write_int_if_exists("/sys/fs/cgroup/schedtune/schedtune.boost", 40);
+    dn_write_int_if_exists("/sys/fs/cgroup/schedtune/schedtune.prefer_idle", 1);
 }
 
 void
