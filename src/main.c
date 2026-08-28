@@ -19,6 +19,7 @@
 #include "binder.h"
 #include "ppd.h"
 #include "pulse.h"
+#include "nice.h"
 
 #define BATMAN_STATE_DIR "/var/lib/batman"
 #define BATMAN_CUSTOM_UID_PATH BATMAN_STATE_DIR "/CUSTOM_UID"
@@ -39,6 +40,7 @@ typedef struct {
     Binder *binder;
     LogindMonitor *logind;
     PpdContext *ppd;
+    NiceContext *nice;
 
     gboolean wifi_initialized;
     gboolean last_screen_on;
@@ -233,6 +235,19 @@ app_overdrive_active(const BatmanApp *app)
         return FALSE;
 
     return ppd_is_overdrive_enabled(app->ppd) ? TRUE : FALSE;
+}
+
+static void
+app_nice_apply(BatmanApp *app, gboolean screen_on)
+{
+    if (!app || !app->nice)
+        return;
+
+    if (nice_is_enabled(app->nice) == screen_on)
+        return;
+
+    if (!nice_enable(app->nice, screen_on))
+        g_warning("nice: failed to %s", screen_on ? "enable" : "disable");
 }
 
 static void
@@ -504,6 +519,8 @@ app_apply_state(BatmanApp *app,
     if (!app)
         return;
 
+    app_nice_apply(app, screen_on);
+
     /* if charging and CHARGESAVE=false, neutralize and do nothing */
     if (!app_savings_allowed(app)) {
         app->have_last_state = TRUE;
@@ -740,6 +757,10 @@ main(void)
     if (!app.ppd)
         g_warning("ppd_init failed (PowerProfiles D-Bus service not available)");
 
+    app.nice = nice_init();
+    if (!app.nice)
+        g_warning("nice_init failed");
+
     app.logind = logind_monitor_new(on_logind_screen_changed, &app);
 
     app.irqbalance_available = systemd_service_exists("irqbalance.service");
@@ -756,6 +777,9 @@ main(void)
 
     if (app.logind)
         logind_monitor_free(app.logind);
+
+    if (app.nice)
+        nice_cleanup(app.nice);
 
     if (app.ppd)
         ppd_cleanup(app.ppd);

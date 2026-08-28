@@ -27,7 +27,6 @@ Architecture: any
 Depends: ${misc:Depends},
 Recommends: nfcd-batman-plugin (= ${binary:Version}),
             batman-system-monitor (= ${binary:Version}),
-            batman-nicerdicer (= ${binary:Version}),
 Replaces: power-profiles-daemon, batman2ppd,
 Provides: power-profiles-daemon, batman2ppd,
 Conflicts: power-profiles-daemon, batman2ppd,
@@ -53,3 +52,5 @@ Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: batman-nicerdicer
  A battery management service for Linux phones - nicerdicer service
+ .
+ this is a transitional package
